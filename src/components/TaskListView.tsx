@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Task, TaskCount } from '@/types/task';
+import React, { useState, useMemo } from 'react';
+import { Task, TaskCount, SortOption, FilterOption } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { 
   Table, 
@@ -11,16 +11,46 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, isToday, addDays } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TaskForm } from './TaskForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Filter, SortAsc, SortDesc, Calendar, User, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 export const TaskListView: React.FC = () => {
   const { tasks, updateTask } = useTaskContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  
+  const [sortBy, setSortBy] = useState<string>('dueDate-asc');
+  const [filters, setFilters] = useState<FilterOption[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const sortOptions: SortOption[] = [
+    { label: 'Due Date (Earliest First)', value: 'dueDate-asc' },
+    { label: 'Due Date (Latest First)', value: 'dueDate-desc' },
+    { label: 'Priority (High to Low)', value: 'priority-desc' },
+    { label: 'Priority (Low to High)', value: 'priority-asc' },
+    { label: 'Title (A-Z)', value: 'title-asc' },
+    { label: 'Title (Z-A)', value: 'title-desc' },
+    { label: 'Status', value: 'status' },
+  ];
+
   const handleTaskClick = (task: Task) => {
     setEditingTask(task);
     setIsDialogOpen(true);
@@ -33,22 +63,120 @@ export const TaskListView: React.FC = () => {
     setIsDialogOpen(false);
   };
 
+  const toggleFilter = (filter: FilterOption) => {
+    const exists = filters.some(
+      f => f.type === filter.type && f.value === filter.value
+    );
+    
+    if (exists) {
+      setFilters(filters.filter(
+        f => !(f.type === filter.type && f.value === filter.value)
+      ));
+    } else {
+      setFilters([...filters, filter]);
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters([]);
+    setSearchTerm('');
+  };
+
   // Calculate task counts
   const taskCounts: TaskCount = {
     total: tasks.length,
     todo: tasks.filter(task => task.status === 'todo').length,
     inProgress: tasks.filter(task => task.status === 'inProgress').length,
     done: tasks.filter(task => task.status === 'done').length,
-    upcoming: tasks.filter(task => task.dueDate && task.dueDate > new Date()).length
+    upcoming: tasks.filter(task => task.dueDate && isAfter(task.dueDate, new Date())).length
   };
 
-  // Sort tasks by due date (upcoming first)
-  const sortedTasks = [...tasks].sort((a, b) => {
-    if (!a.dueDate && !b.dueDate) return 0;
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return a.dueDate.getTime() - b.dueDate.getTime();
-  });
+  // Filter and sort tasks
+  const filteredAndSortedTasks = useMemo(() => {
+    // First apply search term filter
+    let filtered = tasks.filter(task => {
+      if (!searchTerm) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        task.title.toLowerCase().includes(searchLower) ||
+        (task.description?.toLowerCase().includes(searchLower)) ||
+        (task.assigneeName?.toLowerCase().includes(searchLower)) ||
+        task.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      );
+    });
+    
+    // Apply status/priority/due date filters
+    filtered = filtered.filter(task => {
+      if (filters.length === 0) return true;
+      
+      return filters.every(filter => {
+        switch (filter.type) {
+          case 'status':
+            return task.status === filter.value;
+          case 'priority':
+            return task.priority === filter.value;
+          case 'assignee':
+            if (filter.value === 'unassigned') {
+              return !task.assignedTo;
+            }
+            return task.assignedTo === filter.value;
+          case 'dueDate':
+            if (!task.dueDate) return filter.value === 'none';
+            if (filter.value === 'today') return isToday(task.dueDate);
+            if (filter.value === 'upcoming') {
+              return isAfter(task.dueDate, new Date()) && 
+                     isBefore(task.dueDate, addDays(new Date(), 7));
+            }
+            if (filter.value === 'overdue') {
+              return isBefore(task.dueDate, new Date()) && !isToday(task.dueDate);
+            }
+            return true;
+          default:
+            return true;
+        }
+      });
+    });
+    
+    // Sort the filtered tasks
+    const [sortField, sortOrder] = sortBy.split('-');
+    
+    return [...filtered].sort((a, b) => {
+      switch (sortField) {
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return sortOrder === 'asc' 
+            ? a.dueDate.getTime() - b.dueDate.getTime()
+            : b.dueDate.getTime() - a.dueDate.getTime();
+        
+        case 'priority': {
+          const priorityValues = { high: 3, medium: 2, low: 1 };
+          const priorityA = priorityValues[a.priority] || 0;
+          const priorityB = priorityValues[b.priority] || 0;
+          return sortOrder === 'asc' 
+            ? priorityA - priorityB
+            : priorityB - priorityA;
+        }
+        
+        case 'title':
+          return sortOrder === 'asc'
+            ? a.title.localeCompare(b.title)
+            : b.title.localeCompare(a.title);
+        
+        case 'status': {
+          const statusValues = { todo: 1, inProgress: 2, done: 3 };
+          const statusA = statusValues[a.status] || 0;
+          const statusB = statusValues[b.status] || 0;
+          return statusA - statusB;
+        }
+        
+        default:
+          return 0;
+      }
+    });
+  }, [tasks, sortBy, filters, searchTerm]);
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -74,6 +202,10 @@ export const TaskListView: React.FC = () => {
       default:
         return null;
     }
+  };
+
+  const isFilterActive = (type: string, value: string) => {
+    return filters.some(f => f.type === type && f.value === value);
   };
 
   return (
@@ -113,6 +245,136 @@ export const TaskListView: React.FC = () => {
         </Card>
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+        
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SortAsc className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1">
+                <Filter className="h-4 w-4" />
+                Filter
+                {filters.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1">
+                    {filters.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => clearFilters()}>
+                  Clear all filters
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="font-semibold">Status</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('status', 'todo') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'status', value: 'todo' })}
+                >
+                  To Do
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('status', 'inProgress') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'status', value: 'inProgress' })}
+                >
+                  In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('status', 'done') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'status', value: 'done' })}
+                >
+                  Done
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="font-semibold">Priority</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('priority', 'high') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'high' })}
+                >
+                  High
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('priority', 'medium') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'medium' })}
+                >
+                  Medium
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('priority', 'low') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'low' })}
+                >
+                  Low
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="font-semibold">Due Date</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('dueDate', 'today') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'today' })}
+                >
+                  Today
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('dueDate', 'upcoming') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'upcoming' })}
+                >
+                  Next 7 days
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('dueDate', 'overdue') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'overdue' })}
+                >
+                  Overdue
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('dueDate', 'none') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'none' })}
+                >
+                  No due date
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuItem className="font-semibold">Assignee</DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('assignee', 'unassigned') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'assignee', value: 'unassigned' })}
+                >
+                  Unassigned
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -126,26 +388,36 @@ export const TaskListView: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedTasks.map((task) => (
-              <TableRow 
-                key={task.id} 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleTaskClick(task)}
-              >
-                <TableCell className="font-medium">{task.title}</TableCell>
-                <TableCell>{getStatusBadge(task.status)}</TableCell>
-                <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                <TableCell>
-                  {task.dueDate ? format(task.dueDate, 'MMM dd, yyyy') : '-'}
-                </TableCell>
-                <TableCell>{task.assignedTo || '-'}</TableCell>
-                <TableCell>
-                  {task.tags.map(tag => (
-                    <Badge key={tag} className="mr-1 bg-slate-200 text-slate-800">{tag}</Badge>
-                  ))}
+            {filteredAndSortedTasks.length > 0 ? (
+              filteredAndSortedTasks.map((task) => (
+                <TableRow 
+                  key={task.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleTaskClick(task)}
+                >
+                  <TableCell className="font-medium">{task.title}</TableCell>
+                  <TableCell>{getStatusBadge(task.status)}</TableCell>
+                  <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                  <TableCell>
+                    {task.dueDate ? format(task.dueDate, 'MMM dd, yyyy') : '-'}
+                  </TableCell>
+                  <TableCell>{task.assigneeName || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {task.tags.map(tag => (
+                        <Badge key={tag} className="mr-1 bg-slate-200 text-slate-800">{tag}</Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                  No tasks match your filters or search criteria
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

@@ -10,6 +10,14 @@ export interface Client {
   createdAt: Date;
 }
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+  avatar?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -21,6 +29,7 @@ export interface Task {
   tags: string[];
   clientId?: string;
   assignedTo?: string;
+  assigneeName?: string; // Store the name for easier display
 }
 
 export interface TaskColumn {
@@ -42,3 +51,14 @@ export interface TaskCount {
   done: number;
   upcoming: number; // Tasks with future due dates
 }
+
+export interface SortOption {
+  label: string;
+  value: string;
+}
+
+export interface FilterOption {
+  type: 'status' | 'priority' | 'assignee' | 'dueDate';
+  value: string;
+}
+
