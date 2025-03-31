@@ -1,6 +1,7 @@
 
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
 
 export interface Client {
   id: string;
@@ -18,6 +19,15 @@ export interface TeamMember {
   avatar?: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  clientId?: string;
+  createdAt: Date;
+  color?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -30,6 +40,10 @@ export interface Task {
   clientId?: string;
   assignedTo?: string;
   assigneeName?: string; // Store the name for easier display
+  projectId?: string;
+  projectName?: string; // Store the project name for easier display
+  recurrence: RecurrenceType;
+  recurrenceEndDate?: Date;
 }
 
 export interface TaskColumn {
@@ -58,7 +72,6 @@ export interface SortOption {
 }
 
 export interface FilterOption {
-  type: 'status' | 'priority' | 'assignee' | 'dueDate';
+  type: 'status' | 'priority' | 'assignee' | 'dueDate' | 'project';
   value: string;
 }
-

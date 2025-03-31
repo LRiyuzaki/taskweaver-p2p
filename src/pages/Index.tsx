@@ -4,19 +4,27 @@ import { Header } from "@/components/Header";
 import { TaskBoard } from "@/components/TaskBoard";
 import { TaskListView } from "@/components/TaskListView";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List, Plus } from "lucide-react";
+import { LayoutGrid, List, Plus, FolderPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/TaskForm";
+import { ProjectForm } from "@/components/ProjectForm";
 import { useTaskContext } from "@/contexts/TaskContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
-  const { addTask } = useTaskContext();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { addTask, addProject } = useTaskContext();
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
-  const handleFormSubmit = (formData: any) => {
+  const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
-    setIsDialogOpen(false);
+    setIsTaskDialogOpen(false);
+  };
+
+  const handleProjectFormSubmit = (formData: any) => {
+    addProject(formData);
+    setIsProjectDialogOpen(false);
   };
 
   return (
@@ -46,15 +54,19 @@ const Index = () => {
                 List
               </Button>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button onClick={() => setIsTaskDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Task
+            </Button>
+            <Button variant="outline" onClick={() => setIsProjectDialogOpen(true)}>
+              <FolderPlus className="h-4 w-4 mr-2" />
+              New Project
             </Button>
           </div>
         </div>
         {viewMode === 'board' ? <TaskBoard /> : <TaskListView />}
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Create Task</DialogTitle>
@@ -62,7 +74,19 @@ const Index = () => {
                 Add a new task to your board.
               </DialogDescription>
             </DialogHeader>
-            <TaskForm onSubmit={handleFormSubmit} />
+            <TaskForm onSubmit={handleTaskFormSubmit} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Create Project</DialogTitle>
+              <DialogDescription>
+                Add a new project to organize your tasks.
+              </DialogDescription>
+            </DialogHeader>
+            <ProjectForm onSubmit={handleProjectFormSubmit} />
           </DialogContent>
         </Dialog>
       </main>

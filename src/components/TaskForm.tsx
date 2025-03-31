@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Plus, X, User } from 'lucide-react';
-import { Task, TaskPriority, TaskStatus } from '@/types/task';
+import { Calendar as CalendarIcon, Plus, X, User, Repeat } from 'lucide-react';
+import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -32,6 +32,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTaskContext } from '@/contexts/TaskContext';
 
 // Simulate team members data (in a real app, this would come from your API/context)
 const teamMembers = [
@@ -48,6 +49,9 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   tags: z.array(z.string()).optional(),
   assignedTo: z.string().optional(),
+  projectId: z.string().optional(),
+  recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
+  recurrenceEndDate: z.date().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,6 +63,7 @@ interface TaskFormProps {
 
 export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
   const [tagInput, setTagInput] = useState('');
+  const { projects } = useTaskContext();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,8 +75,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
       dueDate: task?.dueDate,
       tags: task?.tags || [],
       assignedTo: task?.assignedTo || '',
+      projectId: task?.projectId || '',
+      recurrence: task?.recurrence || 'none',
+      recurrenceEndDate: task?.recurrenceEndDate,
     },
   });
+
+  // Set additional conditions for recurrence end date visibility
+  const showRecurrenceEndDate = form.watch('recurrence') !== 'none';
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
@@ -100,6 +111,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
       const assignee = teamMembers.find(member => member.id === values.assignedTo);
       if (assignee) {
         submitValues.assigneeName = assignee.name;
+      }
+    }
+    
+    // Add the project name if a project is selected
+    if (values.projectId) {
+      const project = projects.find(p => p.id === values.projectId);
+      if (project) {
+        submitValues.projectName = project.name;
       }
     }
     
@@ -261,6 +280,122 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
             )}
           />
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">No Project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="recurrence"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Recurrence</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">One-time (No recurrence)</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="halfYearly">Half-yearly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {showRecurrenceEndDate && (
+          <FormField
+            control={form.control}
+            name="recurrenceEndDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Recurrence End Date (Optional)</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>No end date</span>
+                        )}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-2">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start mb-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          field.onChange(undefined);
+                        }}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Clear date
+                      </Button>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
