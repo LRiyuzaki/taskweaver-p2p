@@ -56,10 +56,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     setTasks((prevTasks) => [...prevTasks, newTask]);
-    toast({
-      title: "Task created",
-      description: `"${newTask.title}" was added successfully${newTask.assigneeName ? ` and assigned to ${newTask.assigneeName}` : ''}`,
-    });
+    toast.success(`"${newTask.title}" was added successfully${newTask.assigneeName ? ` and assigned to ${newTask.assigneeName}` : ''}`);
   };
 
   const updateTask = (id: string, taskData: Partial<Task>) => {
@@ -68,18 +65,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         task.id === id ? { ...task, ...taskData } : task
       )
     );
-    toast({
-      title: "Task updated",
-      description: "Your changes have been saved",
-    });
+    toast.success("Task updated successfully");
   };
 
   const deleteTask = (id: string) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-    toast({
-      title: "Task deleted",
-      description: "The task has been removed",
-    });
+    toast.success("Task deleted successfully");
   };
 
   const moveTask = (taskId: string, newStatus: TaskStatus) => {
