@@ -20,8 +20,8 @@ const App = () => (
           <div className="flex min-h-screen w-full">
             <AppSidebar />
             <div className="flex-1 flex flex-col">
+              {/* We only need one toaster component, not both */}
               <Toaster />
-              <Sonner />
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
