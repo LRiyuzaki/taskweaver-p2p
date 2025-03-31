@@ -7,12 +7,11 @@ import { MenuIcon } from 'lucide-react';
 export const Header: React.FC = () => {
   return (
     <header className="bg-background border-b flex items-center h-16 px-4">
-      <SidebarTrigger asChild className="mr-2 md:hidden">
-        <Button variant="ghost" size="icon">
+      <div className="mr-2 md:hidden">
+        <SidebarTrigger>
           <MenuIcon className="h-5 w-5" />
-          <span className="sr-only">Toggle sidebar</span>
-        </Button>
-      </SidebarTrigger>
+        </SidebarTrigger>
+      </div>
       
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 font-semibold text-lg">
