@@ -40,7 +40,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit }) =
   });
 
   const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
+    // Ensure name is treated as a required field to match the Project type
+    onSubmit({
+      name: values.name, // This is guaranteed to be a non-empty string due to zod validation
+      description: values.description,
+      color: values.color,
+    });
   };
 
   return (
