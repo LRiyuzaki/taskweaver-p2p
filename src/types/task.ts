@@ -1,4 +1,3 @@
-
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -26,6 +25,7 @@ export interface Project {
   clientId?: string;
   createdAt: Date;
   color?: string;
+  icon?: string; // Added icon property
 }
 
 export interface Task {

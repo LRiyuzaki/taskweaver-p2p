@@ -3,9 +3,10 @@ import React, { useState } from "react";
 import { Header } from "@/components/Header";
 import { TaskBoard } from "@/components/TaskBoard";
 import { TaskListView } from "@/components/TaskListView";
+import { ProjectView } from "@/components/ProjectView";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List, Plus, FolderPlus } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { LayoutGrid, List, Plus, FolderPlus, Briefcase } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/TaskForm";
 import { ProjectForm } from "@/components/ProjectForm";
 import { useTaskContext } from "@/contexts/TaskContext";
@@ -16,6 +17,7 @@ const Index = () => {
   const { addTask, addProject } = useTaskContext();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'tasks' | 'projects'>('tasks');
 
   const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
@@ -31,40 +33,72 @@ const Index = () => {
     <div className="flex flex-col h-screen">
       <Header />
       <main className="flex-1 overflow-auto">
-        <div className="p-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Task Management</h1>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border rounded-md overflow-hidden">
+        <Tabs 
+          defaultValue="tasks" 
+          value={activeTab} 
+          onValueChange={(value) => setActiveTab(value as 'tasks' | 'projects')} 
+          className="w-full"
+        >
+          <div className="p-4 flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="tasks" className="flex items-center gap-1">
+                <CheckSquare className="h-4 w-4" />
+                Tasks
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="flex items-center gap-1">
+                <Briefcase className="h-4 w-4" />
+                Projects
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="flex items-center gap-4">
+              {activeTab === 'tasks' && (
+                <>
+                  <div className="flex items-center border rounded-md overflow-hidden">
+                    <Button 
+                      variant={viewMode === 'board' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('board')}
+                      className="rounded-none"
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-2" />
+                      Board
+                    </Button>
+                    <Button 
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm" 
+                      onClick={() => setViewMode('list')}
+                      className="rounded-none"
+                    >
+                      <List className="h-4 w-4 mr-2" />
+                      List
+                    </Button>
+                  </div>
+                  <Button onClick={() => setIsTaskDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Task
+                  </Button>
+                </>
+              )}
+              
               <Button 
-                variant={viewMode === 'board' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('board')}
-                className="rounded-none"
+                variant={activeTab === 'projects' ? 'default' : 'outline'} 
+                onClick={() => setIsProjectDialogOpen(true)}
               >
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Board
-              </Button>
-              <Button 
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm" 
-                onClick={() => setViewMode('list')}
-                className="rounded-none"
-              >
-                <List className="h-4 w-4 mr-2" />
-                List
+                <FolderPlus className="h-4 w-4 mr-2" />
+                New Project
               </Button>
             </div>
-            <Button onClick={() => setIsTaskDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-            <Button variant="outline" onClick={() => setIsProjectDialogOpen(true)}>
-              <FolderPlus className="h-4 w-4 mr-2" />
-              New Project
-            </Button>
           </div>
-        </div>
-        {viewMode === 'board' ? <TaskBoard /> : <TaskListView />}
+
+          <TabsContent value="tasks" className="mt-0">
+            {viewMode === 'board' ? <TaskBoard /> : <TaskListView />}
+          </TabsContent>
+          
+          <TabsContent value="projects" className="mt-0">
+            <ProjectView />
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
