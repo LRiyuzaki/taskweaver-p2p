@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { TaskProvider } from "@/contexts/TaskContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -23,6 +24,7 @@ const App = () => (
               <div className="flex-1 flex flex-col">
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

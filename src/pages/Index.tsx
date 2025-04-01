@@ -11,7 +11,7 @@ import {
   Plus, 
   FolderPlus, 
   Briefcase,
-  CheckSquare 
+  CheckSquare as CheckSquareIcon 
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/TaskForm";
@@ -49,7 +49,7 @@ const Index = () => {
           <div className="p-4 flex justify-between items-center">
             <TabsList>
               <TabsTrigger value="tasks" className="flex items-center gap-1">
-                <CheckSquare className="h-4 w-4" />
+                <CheckSquareIcon className="h-4 w-4" />
                 Tasks
               </TabsTrigger>
               <TabsTrigger value="projects" className="flex items-center gap-1">
