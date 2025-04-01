@@ -5,7 +5,14 @@ import { TaskBoard } from "@/components/TaskBoard";
 import { TaskListView } from "@/components/TaskListView";
 import { ProjectView } from "@/components/ProjectView";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List, Plus, FolderPlus, Briefcase } from "lucide-react";
+import { 
+  LayoutGrid, 
+  List, 
+  Plus, 
+  FolderPlus, 
+  Briefcase,
+  CheckSquare 
+} from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/TaskForm";
 import { ProjectForm } from "@/components/ProjectForm";

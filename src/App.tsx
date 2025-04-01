@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -16,19 +17,19 @@ const App = () => (
     <TooltipProvider>
       <TaskProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full">
-            <AppSidebar />
-            <div className="flex-1 flex flex-col">
-              <Toaster />
-              <BrowserRouter>
+          <BrowserRouter>
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <div className="flex-1 flex flex-col">
                 <Routes>
                   <Route path="/" element={<Index />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </BrowserRouter>
+                <Toaster />
+              </div>
             </div>
-          </div>
+          </BrowserRouter>
         </SidebarProvider>
       </TaskProvider>
     </TooltipProvider>
