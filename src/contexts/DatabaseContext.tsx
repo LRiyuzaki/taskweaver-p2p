@@ -156,7 +156,8 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       prevTables.map(table => {
         if (table.id === tableId) {
           // Ensure each row has the new field with default value and maintains the TableRow type
-          const updatedRows = table.rows.map(row => ({
+          // Make sure we preserve the id property in each row
+          const updatedRows: TableRow[] = table.rows.map(row => ({
             ...row,
             [newField.id]: newField.default || null
           }));
