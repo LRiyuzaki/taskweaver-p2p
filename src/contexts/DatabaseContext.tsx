@@ -155,13 +155,16 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTables(prevTables => 
       prevTables.map(table => {
         if (table.id === tableId) {
+          // Ensure each row has the new field with default value and maintains the TableRow type
+          const updatedRows = table.rows.map(row => ({
+            ...row,
+            [newField.id]: newField.default || null
+          }));
+          
           return {
             ...table,
             fields: [...table.fields, newField],
-            rows: table.rows.map(row => ({
-              ...row,
-              [newField.id]: newField.default || null
-            }))
+            rows: updatedRows
           };
         }
         return table;
