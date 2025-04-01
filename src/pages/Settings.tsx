@@ -3,9 +3,19 @@ import React from 'react';
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CollaborationPanel } from '@/components/CollaborationPanel';
+import { DataManagementPanel } from '@/components/DataManagementPanel';
+import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { Settings as SettingsIcon, Users, Database, Bell } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
 
 const Settings = () => {
+  const handleTabChange = (value: string) => {
+    toast({
+      title: `${value.charAt(0).toUpperCase() + value.slice(1)} Settings`,
+      description: `You are now viewing the ${value} settings`,
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Header />
@@ -16,7 +26,7 @@ const Settings = () => {
             <h1 className="text-2xl font-bold">Settings</h1>
           </div>
 
-          <Tabs defaultValue="collaboration" className="w-full">
+          <Tabs defaultValue="collaboration" className="w-full" onValueChange={handleTabChange}>
             <TabsList className="w-full justify-start mb-6">
               <TabsTrigger value="collaboration" className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -37,15 +47,11 @@ const Settings = () => {
             </TabsContent>
             
             <TabsContent value="data">
-              <div className="bg-muted/30 p-12 rounded-lg text-center text-muted-foreground">
-                Data management settings will be available soon.
-              </div>
+              <DataManagementPanel />
             </TabsContent>
             
             <TabsContent value="notifications">
-              <div className="bg-muted/30 p-12 rounded-lg text-center text-muted-foreground">
-                Notification settings will be available soon.
-              </div>
+              <NotificationsPanel />
             </TabsContent>
           </Tabs>
         </div>
