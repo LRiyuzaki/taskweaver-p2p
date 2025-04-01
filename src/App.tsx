@@ -8,6 +8,7 @@ import { TaskProvider } from "@/contexts/TaskContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
+import AdvancedSettings from "./pages/AdvancedSettings";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -25,6 +26,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/advanced-settings" element={<AdvancedSettings />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

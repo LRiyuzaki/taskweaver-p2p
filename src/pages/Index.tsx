@@ -11,7 +11,7 @@ import {
   Plus, 
   FolderPlus, 
   Briefcase,
-  CheckSquare as CheckSquareIcon 
+  CheckSquareIcon 
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TaskForm } from "@/components/TaskForm";
