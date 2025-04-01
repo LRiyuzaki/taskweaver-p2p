@@ -33,7 +33,11 @@ import { Button } from '@/components/ui/button';
 import { Filter, SortAsc, SortDesc, Calendar, User, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export const TaskListView: React.FC = () => {
+interface TaskListViewProps {
+  filterClient?: string; // Optional client ID to filter tasks
+}
+
+export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
   const { tasks, updateTask } = useTaskContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -82,19 +86,24 @@ export const TaskListView: React.FC = () => {
     setSearchTerm('');
   };
 
+  // Initial filtering by client if filterClient is provided
+  const clientFilteredTasks = filterClient
+    ? tasks.filter(task => task.clientId === filterClient)
+    : tasks;
+
   // Calculate task counts
   const taskCounts: TaskCount = {
-    total: tasks.length,
-    todo: tasks.filter(task => task.status === 'todo').length,
-    inProgress: tasks.filter(task => task.status === 'inProgress').length,
-    done: tasks.filter(task => task.status === 'done').length,
-    upcoming: tasks.filter(task => task.dueDate && isAfter(task.dueDate, new Date())).length
+    total: clientFilteredTasks.length,
+    todo: clientFilteredTasks.filter(task => task.status === 'todo').length,
+    inProgress: clientFilteredTasks.filter(task => task.status === 'inProgress').length,
+    done: clientFilteredTasks.filter(task => task.status === 'done').length,
+    upcoming: clientFilteredTasks.filter(task => task.dueDate && isAfter(task.dueDate, new Date())).length
   };
 
   // Filter and sort tasks
   const filteredAndSortedTasks = useMemo(() => {
     // First apply search term filter
-    let filtered = tasks.filter(task => {
+    let filtered = clientFilteredTasks.filter(task => {
       if (!searchTerm) return true;
       
       const searchLower = searchTerm.toLowerCase();
@@ -176,7 +185,7 @@ export const TaskListView: React.FC = () => {
           return 0;
       }
     });
-  }, [tasks, sortBy, filters, searchTerm]);
+  }, [clientFilteredTasks, sortBy, filters, searchTerm]);
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -209,7 +218,7 @@ export const TaskListView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">

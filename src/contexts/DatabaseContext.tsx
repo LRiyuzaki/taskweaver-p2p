@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/hooks/use-toast';
@@ -95,7 +94,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   const activeTable = tables.find(table => table.id === activeTableId) || null;
   
-  // Save tables to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('database_tables', JSON.stringify(tables));
   }, [tables]);
@@ -155,8 +153,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTables(prevTables => 
       prevTables.map(table => {
         if (table.id === tableId) {
-          // Ensure each row has the new field with default value and maintains the TableRow type
-          // Make sure we preserve the id property in each row
           const updatedRows: TableRow[] = table.rows.map(row => ({
             ...row,
             [newField.id]: newField.default || null
@@ -201,7 +197,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTables(prevTables => 
       prevTables.map(table => {
         if (table.id === tableId) {
-          // Don't allow deleting the last remaining field
           if (table.fields.length <= 1) {
             toast({
               variant: "destructive",
@@ -216,7 +211,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             fields: table.fields.filter(field => field.id !== fieldId),
             rows: table.rows.map(row => {
               const { [fieldId]: _, ...rest } = row;
-              return rest;
+              return rest as TableRow;
             })
           };
         }

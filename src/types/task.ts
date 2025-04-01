@@ -1,3 +1,4 @@
+
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -8,6 +9,11 @@ export interface Client {
   email: string;
   company: string;
   createdAt: Date;
+  gstRequired?: boolean;
+  incomeTaxRequired?: boolean;
+  tdsRequired?: boolean;
+  auditRequired?: boolean;
+  startDate?: Date;
 }
 
 export interface TeamMember {
@@ -25,7 +31,7 @@ export interface Project {
   clientId?: string;
   createdAt: Date;
   color?: string;
-  icon?: string; // Added icon property
+  icon?: string;
 }
 
 export interface Task {
@@ -44,6 +50,8 @@ export interface Task {
   projectName?: string; // Store the project name for easier display
   recurrence: RecurrenceType;
   recurrenceEndDate?: Date;
+  completedDate?: Date;
+  reminderDate?: Date;
 }
 
 export interface TaskColumn {
@@ -64,6 +72,7 @@ export interface TaskCount {
   inProgress: number;
   done: number;
   upcoming: number; // Tasks with future due dates
+  overdue?: number; // Overdue tasks
 }
 
 export interface SortOption {
@@ -74,4 +83,25 @@ export interface SortOption {
 export interface FilterOption {
   type: 'status' | 'priority' | 'assignee' | 'dueDate' | 'project';
   value: string;
+}
+
+export interface TaskReport {
+  totalTasks: number;
+  completedTasks: number;
+  pendingTasks: number;
+  overdueCount: number;
+  upcomingCount: number;
+  byAssignee: {
+    [assigneeId: string]: {
+      assigned: number;
+      completed: number;
+    };
+  };
+  byClient: {
+    [clientId: string]: {
+      total: number;
+      completed: number;
+      pending: number;
+    };
+  };
 }
