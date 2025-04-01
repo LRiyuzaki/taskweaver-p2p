@@ -267,7 +267,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}
@@ -298,7 +298,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">No Project</SelectItem>
+                    <SelectItem value="no-project">No Project</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
