@@ -47,7 +47,10 @@ export function AppSidebar() {
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3 ${isActive('/database') ? 'bg-accent' : ''}`}
+                  onClick={() => navigate('/database')}
+                >
                   <Database className="h-4 w-4" />
                   <span>Database</span>
                 </SidebarMenuButton>
