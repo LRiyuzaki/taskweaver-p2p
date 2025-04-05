@@ -1,495 +1,312 @@
+
 import React, { useState, useEffect } from 'react';
-import { Header } from "@/components/Header";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useTaskContext } from "@/contexts/TaskContext";
-import { useDatabaseContext } from "@/contexts/DatabaseContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Check, FileText, Users, Calendar, Plus, Clock, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
-import { ClientForm } from "@/components/ClientForm";
-import { TaskListView } from "@/components/TaskListView";
-import { TaskForm } from "@/components/TaskForm";
-import { toast } from "@/hooks/use-toast";
+import { useDatabaseContext } from '@/contexts/DatabaseContext';
+import { Table } from '@/contexts/DatabaseContext';
+import { v4 as uuidv4 } from 'uuid';
+import { Button } from '@/components/ui/button';
+import { Plus, Database, Users, CheckCircle2 } from 'lucide-react';
+import { ClientForm } from '@/components/ClientForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTaskContext } from '@/contexts/TaskContext';
+import { TaskListView } from '@/components/TaskListView';
 
 const ClientManagement = () => {
-  const { tasks, addTask, updateTask } = useTaskContext();
-  const { tables, createTable, addField, addRow, updateRow } = useDatabaseContext();
-  
-  const [clientDialogOpen, setClientDialogOpen] = useState(false);
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<any | null>(null);
-  
-  useEffect(() => {
-    const clientTable = tables.find(table => table.name === "Clients");
-    
-    if (!clientTable) {
-      createTable({ 
-        name: "Clients",
-        icon: "users",
-        color: "#4f46e5" 
-      });
-    }
-  }, [tables, createTable]);
-  
-  useEffect(() => {
-    const clientTable = tables.find(table => table.name === "Clients");
-    
-    if (clientTable) {
-      const requiredFields = [
-        { name: "Email", type: "email" as const },
-        { name: "Phone", type: "phone" as const },
-        { name: "Address", type: "text" as const },
-        { name: "Start Date", type: "date" as const },
-        { name: "GST Required", type: "checkbox" as const },
-        { name: "Income Tax Required", type: "checkbox" as const },
-        { name: "TDS Required", type: "checkbox" as const },
-        { name: "Account Audit Required", type: "checkbox" as const }
-      ];
-      
-      for (const field of requiredFields) {
-        const fieldExists = clientTable.fields.some(f => f.name === field.name);
-        if (!fieldExists) {
-          addField(clientTable.id, field);
-        }
-      }
-    }
-  }, [tables, addField]);
-  
-  const clientTable = tables.find(table => table.name === "Clients");
-  const clients = clientTable ? clientTable.fields.length > 0 ? clientTable.rows : [] : [];
-  
-  const getClientNameById = (clientId: string) => {
-    if (!clientTable) return "Unknown Client";
-    
-    const client = clientTable.rows.find(row => row.id === clientId);
-    if (!client) return "Unknown Client";
-    
-    const nameFieldId = clientTable.fields[0].id;
-    return client[nameFieldId] || "Unnamed Client";
-  };
-  
-  const getClientTasks = (clientId: string) => {
-    return tasks.filter(task => task.clientId === clientId);
-  };
+  const { tables, createTable, addField, addRow } = useDatabaseContext();
+  const { addTask } = useTaskContext();
+  const [clientTable, setClientTable] = useState<Table | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeClient, setActiveClient] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('clients');
 
-  const getClientTaskStats = (clientId: string) => {
-    const clientTasks = getClientTasks(clientId);
+  // Initialize client table if it doesn't exist
+  useEffect(() => {
+    const existingTable = tables.find(table => table.name === 'Clients');
     
-    return {
-      total: clientTasks.length,
-      pending: clientTasks.filter(t => t.status === 'todo').length,
-      inProgress: clientTasks.filter(t => t.status === 'inProgress').length,
-      completed: clientTasks.filter(t => t.status === 'done').length,
-      upcoming: clientTasks.filter(t => 
-        t.dueDate && t.dueDate > new Date() && t.status !== 'done'
-      ).length,
-      overdue: clientTasks.filter(t => 
-        t.dueDate && t.dueDate < new Date() && t.status !== 'done'
-      ).length
-    };
-  };
-  
-  const handleClientSubmit = (clientData: any) => {
+    if (existingTable) {
+      setClientTable(existingTable);
+    } else {
+      // Create client table
+      const tableId = uuidv4();
+      createTable({
+        name: 'Clients',
+        icon: 'users',
+        color: '#4f46e5',
+      });
+      
+      // Add fields to the client table
+      setTimeout(() => {
+        const newTable = tables.find(table => table.name === 'Clients');
+        if (newTable) {
+          addField(newTable.id, { name: 'Client Name', type: 'text', required: true });
+          addField(newTable.id, { name: 'Email', type: 'email' });
+          addField(newTable.id, { name: 'Company', type: 'text' });
+          addField(newTable.id, { name: 'Start Date', type: 'date', required: true });
+          addField(newTable.id, { name: 'GST Required', type: 'checkbox' });
+          addField(newTable.id, { name: 'Income Tax Required', type: 'checkbox' });
+          addField(newTable.id, { name: 'TDS Required', type: 'checkbox' });
+          addField(newTable.id, { name: 'Audit Required', type: 'checkbox' });
+          
+          setClientTable(newTable);
+        }
+      }, 500);
+    }
+  }, [tables, createTable, addField]);
+
+  const handleAddClient = (data: any) => {
     if (!clientTable) return;
     
-    addRow(clientTable.id, clientData);
-    setClientDialogOpen(false);
+    const clientId = uuidv4();
+    const currentDate = new Date();
     
-    const newClient = clientTable.rows[clientTable.rows.length - 1];
-    
-    const gstFieldId = clientTable.fields.find(f => f.name === "GST Required")?.id;
-    const incomeTaxFieldId = clientTable.fields.find(f => f.name === "Income Tax Required")?.id;
-    const tdsFieldId = clientTable.fields.find(f => f.name === "TDS Required")?.id;
-    const auditFieldId = clientTable.fields.find(f => f.name === "Account Audit Required")?.id;
-    
-    if (gstFieldId && newClient[gstFieldId]) {
-      addTask({
-        title: "GST Filing",
-        description: `Monthly GST filing for ${getClientNameById(newClient.id)}`,
-        status: "todo",
-        priority: "medium",
-        tags: ["GST", "Monthly"],
-        clientId: newClient.id,
-        recurrence: "monthly",
-        dueDate: new Date(new Date().setDate(15)),
-      });
-    }
-    
-    if (incomeTaxFieldId && newClient[incomeTaxFieldId]) {
-      addTask({
-        title: "Income Tax Filing",
-        description: `Yearly income tax filing for ${getClientNameById(newClient.id)}`,
-        status: "todo",
-        priority: "high",
-        tags: ["Income Tax", "Yearly"],
-        clientId: newClient.id,
-        recurrence: "yearly",
-        dueDate: new Date(new Date().getFullYear(), 6, 31),
-      });
-    }
-    
-    if (tdsFieldId && newClient[tdsFieldId]) {
-      addTask({
-        title: "TDS Filing",
-        description: `Quarterly TDS filing for ${getClientNameById(newClient.id)}`,
-        status: "todo",
-        priority: "medium",
-        tags: ["TDS", "Quarterly"],
-        clientId: newClient.id,
-        recurrence: "quarterly",
-        dueDate: new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 2, 7),
-      });
-    }
-    
-    if (auditFieldId && newClient[auditFieldId]) {
-      addTask({
-        title: "Account Audit",
-        description: `Yearly account audit for ${getClientNameById(newClient.id)}`,
-        status: "todo",
-        priority: "high",
-        tags: ["Audit", "Yearly"],
-        clientId: newClient.id,
-        recurrence: "yearly",
-        dueDate: new Date(new Date().getFullYear(), 8, 30),
-      });
-    }
-    
-    toast({
-      title: "Client Added",
-      description: "Client added successfully with initial tasks created."
+    // Add client to database
+    addRow(clientTable.id, {
+      id: clientId,
+      ...data,
+      createdAt: currentDate
     });
-  };
-  
-  const handleTaskSubmit = (taskData: any) => {
-    if (selectedClient) {
-      addTask({
-        ...taskData,
-        clientId: selectedClient.id
-      });
-      setTaskDialogOpen(false);
-    }
-  };
-  
-  if (!clientTable) {
-    return <div>Loading client management system...</div>;
-  }
-  
-  return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <main className="flex-1 overflow-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Client Management</h1>
-          <Button onClick={() => setClientDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Client
-          </Button>
-        </div>
+    
+    // Create tasks based on selected services
+    if (data['GST Required']) {
+      // Monthly GST filing task for the next 12 months
+      for (let i = 0; i < 12; i++) {
+        const dueDate = new Date();
+        dueDate.setMonth(currentDate.getMonth() + i + 1, 7); // Due on 7th of each month
         
-        <Tabs defaultValue="clients">
-          <TabsList className="mb-4">
-            <TabsTrigger value="clients">
-              <Users className="h-4 w-4 mr-2" />
-              Clients
-            </TabsTrigger>
-            <TabsTrigger value="tasks">
-              <FileText className="h-4 w-4 mr-2" />
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="dashboard">
-              <Calendar className="h-4 w-4 mr-2" />
-              Dashboard
-            </TabsTrigger>
-          </TabsList>
+        addTask({
+          title: `GST Filing for ${data['Client Name']}`,
+          description: `Monthly GST filing for ${data['Client Name']} for the month of ${dueDate.toLocaleString('default', { month: 'long' })}`,
+          status: 'todo',
+          priority: 'medium',
+          dueDate,
+          tags: ['GST', 'Monthly'],
+          clientId,
+          assignedTo: '',
+          recurrence: 'monthly',
+          recurrenceEndDate: undefined,
+        });
+      }
+    }
+    
+    if (data['Income Tax Required']) {
+      // Yearly income tax filing
+      const taxDueDate = new Date(currentDate.getFullYear(), 6, 31); // July 31st
+      if (taxDueDate < currentDate) {
+        taxDueDate.setFullYear(taxDueDate.getFullYear() + 1);
+      }
+      
+      addTask({
+        title: `Income Tax Filing for ${data['Client Name']}`,
+        description: `Annual income tax filing for ${data['Client Name']}`,
+        status: 'todo',
+        priority: 'high',
+        dueDate: taxDueDate,
+        tags: ['Income Tax', 'Yearly'],
+        clientId,
+        assignedTo: '',
+        recurrence: 'yearly',
+        recurrenceEndDate: undefined,
+      });
+    }
+    
+    if (data['TDS Required']) {
+      // Quarterly TDS filing
+      for (let i = 0; i < 4; i++) {
+        const dueDate = new Date();
+        dueDate.setMonth(Math.floor(dueDate.getMonth() / 3) * 3 + 3 * (i + 1), 7);
+        
+        addTask({
+          title: `TDS Filing for ${data['Client Name']}`,
+          description: `Quarterly TDS filing for ${data['Client Name']}`,
+          status: 'todo',
+          priority: 'medium',
+          dueDate,
+          tags: ['TDS', 'Quarterly'],
+          clientId,
+          assignedTo: '',
+          recurrence: 'quarterly',
+          recurrenceEndDate: undefined,
+        });
+      }
+    }
+    
+    if (data['Audit Required']) {
+      // Yearly audit
+      const auditDueDate = new Date(currentDate.getFullYear(), 8, 30); // September 30th
+      if (auditDueDate < currentDate) {
+        auditDueDate.setFullYear(auditDueDate.getFullYear() + 1);
+      }
+      
+      addTask({
+        title: `Annual Audit for ${data['Client Name']}`,
+        description: `Complete annual audit for ${data['Client Name']}`,
+        status: 'todo',
+        priority: 'high',
+        dueDate: auditDueDate,
+        tags: ['Audit', 'Yearly'],
+        clientId,
+        assignedTo: '',
+        recurrence: 'yearly',
+        recurrenceEndDate: undefined,
+      });
+    }
+    
+    setDialogOpen(false);
+  };
+
+  const getClientNameById = (clientId: string) => {
+    if (!clientTable) return 'Unknown Client';
+    
+    const client = clientTable.rows.find(row => row.id === clientId);
+    const nameFieldId = clientTable.fields.find(field => field.name === 'Client Name')?.id;
+    
+    return client && nameFieldId ? client[nameFieldId] || 'Unnamed Client' : 'Unknown Client';
+  };
+
+  const viewClientTasks = (clientId: string) => {
+    setActiveClient(clientId);
+    setActiveTab('tasks');
+  };
+
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-8">Client Management</h1>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="clients" className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            Clients
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center">
+            <CheckCircle2 className="mr-2 h-4 w-4" />
+            Tasks
+          </TabsTrigger>
+          <TabsTrigger value="database" className="flex items-center">
+            <Database className="mr-2 h-4 w-4" />
+            Database
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="clients">
+          <div className="flex justify-between mb-6">
+            <h2 className="text-2xl font-semibold">Client List</h2>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Client
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Add New Client</DialogTitle>
+                  <DialogDescription>
+                    Enter client details below. Required fields are marked with an asterisk (*).
+                  </DialogDescription>
+                </DialogHeader>
+                {clientTable && (
+                  <ClientForm 
+                    fields={clientTable.fields} 
+                    onSubmit={handleAddClient} 
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
           
-          <TabsContent value="clients">
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client Name</TableHead>
-                    <TableHead>Contact Info</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>Services</TableHead>
-                    <TableHead>Task Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clients.length > 0 ? (
-                    clients.map(client => {
-                      const nameFieldId = clientTable.fields[0].id;
-                      const emailFieldId = clientTable.fields.find(f => f.name === "Email")?.id;
-                      const startDateFieldId = clientTable.fields.find(f => f.name === "Start Date")?.id;
-                      const gstFieldId = clientTable.fields.find(f => f.name === "GST Required")?.id;
-                      const incomeTaxFieldId = clientTable.fields.find(f => f.name === "Income Tax Required")?.id;
-                      const tdsFieldId = clientTable.fields.find(f => f.name === "TDS Required")?.id;
-                      const auditFieldId = clientTable.fields.find(f => f.name === "Account Audit Required")?.id;
-                      
-                      const taskStats = getClientTaskStats(client.id);
-                      
-                      return (
-                        <TableRow key={client.id}>
-                          <TableCell className="font-medium">{client[nameFieldId]}</TableCell>
-                          <TableCell>{emailFieldId ? client[emailFieldId] : "N/A"}</TableCell>
-                          <TableCell>
-                            {startDateFieldId && client[startDateFieldId] 
-                              ? format(new Date(client[startDateFieldId]), "MMM d, yyyy") 
-                              : "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {gstFieldId && client[gstFieldId] && <Badge>GST</Badge>}
-                              {incomeTaxFieldId && client[incomeTaxFieldId] && <Badge>Income Tax</Badge>}
-                              {tdsFieldId && client[tdsFieldId] && <Badge>TDS</Badge>}
-                              {auditFieldId && client[auditFieldId] && <Badge>Audit</Badge>}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs">{taskStats.total} tasks</span>
-                              {taskStats.overdue > 0 && (
-                                <Badge variant="destructive" className="ml-2">
-                                  {taskStats.overdue} overdue
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedClient(client);
-                                  setTaskDialogOpen(true);
-                                }}
-                              >
-                                Add Task
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedClient(client);
-                                  const tabsElement = document.querySelector('[data-value="tasks"]') as HTMLElement;
-                                  if (tabsElement) tabsElement.click();
-                                }}
-                              >
-                                View Tasks
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        No clients yet. Add your first client.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="tasks">
-            {selectedClient ? (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">
-                    Tasks for {getClientNameById(selectedClient.id)}
-                  </h2>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setSelectedClient(null)}
-                  >
-                    View All Tasks
-                  </Button>
-                </div>
+          {clientTable && clientTable.rows.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {clientTable.rows.map(client => {
+                const nameFieldId = clientTable.fields.find(field => field.name === 'Client Name')?.id;
+                const emailFieldId = clientTable.fields.find(field => field.name === 'Email')?.id;
+                const companyFieldId = clientTable.fields.find(field => field.name === 'Company')?.id;
+                const gstFieldId = clientTable.fields.find(field => field.name === 'GST Required')?.id;
+                const taxFieldId = clientTable.fields.find(field => field.name === 'Income Tax Required')?.id;
+                const tdsFieldId = clientTable.fields.find(field => field.name === 'TDS Required')?.id;
+                const auditFieldId = clientTable.fields.find(field => field.name === 'Audit Required')?.id;
                 
-                <TaskListView 
-                  filterClient={selectedClient.id}
-                />
-              </div>
-            ) : (
-              <TaskListView />
+                const services = [
+                  gstFieldId && client[gstFieldId] ? 'GST' : null,
+                  taxFieldId && client[taxFieldId] ? 'Income Tax' : null,
+                  tdsFieldId && client[tdsFieldId] ? 'TDS' : null,
+                  auditFieldId && client[auditFieldId] ? 'Audit' : null,
+                ].filter(Boolean);
+                
+                return (
+                  <Card key={client.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <CardTitle>{nameFieldId ? client[nameFieldId] : 'Unnamed Client'}</CardTitle>
+                      <CardDescription>
+                        {companyFieldId && client[companyFieldId]}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {emailFieldId && (
+                        <p className="text-sm text-gray-500 mb-4">
+                          Email: {client[emailFieldId] || 'N/A'}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {services.map(service => (
+                          <span 
+                            key={service} 
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                          >
+                            {service}
+                          </span>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button variant="outline" className="w-full" onClick={() => viewClientTasks(client.id)}>
+                        View Tasks
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center p-12 border rounded-lg bg-gray-50">
+              {clientTable ? (
+                <p className="text-gray-500">No clients found. Add a client to get started.</p>
+              ) : (
+                <p className="text-gray-500">Loading client database...</p>
+              )}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="tasks">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">
+              {activeClient 
+                ? `Tasks for ${getClientNameById(activeClient)}`
+                : 'All Client Tasks'
+              }
+            </h2>
+            {activeClient && (
+              <Button variant="outline" onClick={() => setActiveClient(null)}>
+                View All Tasks
+              </Button>
             )}
-          </TabsContent>
-          
-          <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    <Check className="h-4 w-4 inline mr-2" />
-                    Completed Tasks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {tasks.filter(t => t.status === 'done').length}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    <Clock className="h-4 w-4 inline mr-2" />
-                    In Progress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {tasks.filter(t => t.status === 'inProgress').length}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    <AlertCircle className="h-4 w-4 inline mr-2" />
-                    Overdue Tasks
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-red-500">
-                    {tasks.filter(t => 
-                      t.dueDate && t.dueDate < new Date() && t.status !== 'done'
-                    ).length}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Deadlines</CardTitle>
-                  <CardDescription>Tasks due in the next 7 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {tasks
-                      .filter(t => 
-                        t.dueDate && 
-                        t.dueDate > new Date() && 
-                        t.dueDate < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) &&
-                        t.status !== 'done'
-                      )
-                      .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime())
-                      .slice(0, 5)
-                      .map(task => (
-                        <div key={task.id} className="flex justify-between items-center p-3 border rounded-md">
-                          <div>
-                            <h3 className="font-medium">{task.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {task.clientId ? getClientNameById(task.clientId) : 'No client'} • 
-                              Due {task.dueDate ? format(task.dueDate, "MMM d, yyyy") : 'No date'}
-                            </p>
-                          </div>
-                          <Badge className={
-                            task.priority === 'high' ? 'bg-red-500' : 
-                            task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                          }>
-                            {task.priority}
-                          </Badge>
-                        </div>
-                      ))}
-                    
-                    {tasks.filter(t => 
-                      t.dueDate && 
-                      t.dueDate > new Date() && 
-                      t.dueDate < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) &&
-                      t.status !== 'done'
-                    ).length === 0 && (
-                      <p className="text-center py-4 text-muted-foreground">No upcoming deadlines</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Client Status</CardTitle>
-                  <CardDescription>Overview of client task status</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {clients.slice(0, 5).map(client => {
-                      const stats = getClientTaskStats(client.id);
-                      const nameFieldId = clientTable.fields[0].id;
-                      
-                      return (
-                        <div key={client.id} className="p-3 border rounded-md">
-                          <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-medium">{client[nameFieldId]}</h3>
-                            <span className="text-xs">
-                              {stats.total} tasks • {stats.completed} completed
-                            </span>
-                          </div>
-                          
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div 
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ 
-                                width: stats.total > 0 
-                                  ? `${(stats.completed / stats.total) * 100}%` 
-                                  : '0%' 
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
-                    {clients.length === 0 && (
-                      <p className="text-center py-4 text-muted-foreground">No clients yet</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-      
-      <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Add New Client</DialogTitle>
-          </DialogHeader>
-          <ClientForm onSubmit={handleClientSubmit} fields={clientTable.fields} />
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedClient 
-                ? `Add Task for ${getClientNameById(selectedClient.id)}` 
-                : 'Add Task'}
-            </DialogTitle>
-          </DialogHeader>
-          <TaskForm onSubmit={handleTaskSubmit} />
-        </DialogContent>
-      </Dialog>
+          </div>
+          <TaskListView filterClient={activeClient} />
+        </TabsContent>
+        
+        <TabsContent value="database">
+          <h2 className="text-2xl font-semibold mb-6">Client Database</h2>
+          <p className="text-lg text-gray-600 mb-6">
+            View and manage the underlying database structure for client information.
+            You can modify fields, add relationships, and customize the schema as needed.
+          </p>
+          <Button variant="outline" onClick={() => window.location.href = '/database'}>
+            Go to Database Management
+          </Button>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

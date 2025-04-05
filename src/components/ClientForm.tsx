@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -143,7 +144,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.name}</FormLabel>
@@ -161,7 +162,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.name}</FormLabel>
@@ -185,7 +186,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.name}</FormLabel>
@@ -207,7 +208,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                 <FormControl>
@@ -231,7 +232,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>{field.name}</FormLabel>
@@ -274,7 +275,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit
           <FormField
             key={field.id}
             control={form.control}
-            name={field.id}
+            name={field.id as keyof FormValues}
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.name}</FormLabel>
