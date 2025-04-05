@@ -1,323 +1,299 @@
 
-import React from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { TableField } from '@/contexts/DatabaseContext';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import React, { useState, useEffect } from 'react';
+import { Client, ClientFormData } from '@/types/client';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+} from "@/components/ui/popover";
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 
 interface ClientFormProps {
-  client?: any;
-  fields: TableField[];
-  onSubmit: (data: any) => void;
+  client?: Client;
+  onSubmit: (data: ClientFormData) => void;
 }
 
-export const ClientForm: React.FC<ClientFormProps> = ({ client, fields, onSubmit }) => {
-  // Dynamically build form schema based on table fields
-  const formSchema = z.object(
-    fields.reduce((acc, field) => {
-      // Define validation based on field type
-      let validator;
-      
-      switch (field.type) {
-        case 'text':
-        case 'url':
-        case 'phone':
-          validator = field.required 
-            ? z.string().min(1, `${field.name} is required`) 
-            : z.string().optional();
-          break;
-        case 'email':
-          validator = field.required 
-            ? z.string().email(`Invalid email format`) 
-            : z.string().email(`Invalid email format`).optional();
-          break;
-        case 'number':
-        case 'currency':
-        case 'percent':
-          validator = field.required 
-            ? z.number().or(z.string().regex(/^\d+$/).transform(Number)) 
-            : z.number().or(z.string().regex(/^\d+$/).transform(Number)).optional();
-          break;
-        case 'checkbox':
-          validator = z.boolean().default(false);
-          break;
-        case 'date':
-          validator = field.required 
-            ? z.date() 
-            : z.date().optional();
-          break;
-        case 'select':
-          validator = field.required 
-            ? z.string().min(1, `${field.name} is required`) 
-            : z.string().optional();
-          break;
-        default:
-          validator = z.any();
-      }
-      
-      return {
-        ...acc,
-        [field.id]: validator
-      };
-    }, {})
-  );
+export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
+  const [formData, setFormData] = useState<ClientFormData>({
+    name: '',
+    email: '',
+    company: '',
+    contactPerson: '',
+    phone: '',
+    gstRequired: false,
+    incomeTaxRequired: false,
+    tdsRequired: false,
+    auditRequired: false,
+    entityType: undefined,
+    gstin: '',
+    pan: '',
+    address: '',
+    startDate: new Date(),
+  });
 
-  type FormValues = z.infer<typeof formSchema>;
-  
-  // Set default values based on client data or field defaults
-  const defaultValues: any = {};
-  
-  fields.forEach(field => {
-    if (client && client[field.id] !== undefined) {
-      if (field.type === 'date' && typeof client[field.id] === 'string') {
-        defaultValues[field.id] = new Date(client[field.id]);
-      } else {
-        defaultValues[field.id] = client[field.id];
-      }
-    } else if (field.default !== undefined) {
-      defaultValues[field.id] = field.default;
-    } else {
-      switch (field.type) {
-        case 'checkbox':
-          defaultValues[field.id] = false;
-          break;
-        case 'text':
-        case 'email':
-        case 'url':
-        case 'phone':
-        case 'select':
-          defaultValues[field.id] = '';
-          break;
-        case 'number':
-        case 'currency':
-        case 'percent':
-          defaultValues[field.id] = 0;
-          break;
-        // Other types would be undefined
-      }
+  // Initialize form with client data if provided
+  useEffect(() => {
+    if (client) {
+      setFormData({
+        name: client.name,
+        email: client.email,
+        company: client.company,
+        contactPerson: client.contactPerson || '',
+        phone: client.phone || '',
+        gstRequired: client.gstRequired,
+        incomeTaxRequired: client.incomeTaxRequired,
+        tdsRequired: client.tdsRequired,
+        auditRequired: client.auditRequired,
+        entityType: client.entityType,
+        gstin: client.gstin || '',
+        pan: client.pan || '',
+        address: client.address || '',
+        startDate: client.startDate || new Date(),
+      });
     }
-  });
-  
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues
-  });
-  
-  const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
+  }, [client]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
-  // Render form fields based on field type
-  const renderField = (field: TableField) => {
-    switch (field.type) {
-      case 'text':
-      case 'url':
-      case 'phone':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.name}</FormLabel>
-                <FormControl>
-                  <Input {...formField} placeholder={`Enter ${field.name.toLowerCase()}`} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-        
-      case 'email':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.name}</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...formField} 
-                    type="email" 
-                    placeholder={`Enter ${field.name.toLowerCase()}`} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-        
-      case 'number':
-      case 'currency':
-      case 'percent':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.name}</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...formField} 
-                    type="number" 
-                    placeholder={`Enter ${field.name.toLowerCase()}`} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-        
-      case 'checkbox':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={formField.value}
-                    onCheckedChange={formField.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    {field.name}
-                  </FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-        );
-        
-      case 'date':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>{field.name}</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !formField.value && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formField.value ? (
-                          format(formField.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formField.value}
-                      onSelect={formField.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-        
-      case 'select':
-        return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={field.id as keyof FormValues}
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.name}</FormLabel>
-                <Select
-                  onValueChange={formField.onChange}
-                  defaultValue={formField.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.name.toLowerCase()}`} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {field.options?.map(option => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-        
-      default:
-        return null;
-    }
+
+  const handleCheckboxChange = (name: keyof ClientFormData) => (checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
-  
+
+  const handleDateChange = (date: Date | undefined) => {
+    setFormData(prev => ({ ...prev, startDate: date || new Date() }));
+  };
+
+  const handleSelectChange = (name: keyof ClientFormData) => (value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fields.map(field => renderField(field))}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="name">Client Name <span className="text-destructive">*</span></Label>
+          <Input
+            id="name"
+            name="name"
+            placeholder="Full client name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
         </div>
         
-        <Button type="submit" className="w-full">
+        <div className="space-y-2">
+          <Label htmlFor="company">Company Name <span className="text-destructive">*</span></Label>
+          <Input
+            id="company"
+            name="company"
+            placeholder="Company or business name"
+            value={formData.company}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="contactPerson">Contact Person</Label>
+          <Input
+            id="contactPerson"
+            name="contactPerson"
+            placeholder="Primary contact person"
+            value={formData.contactPerson}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="contact@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            name="phone"
+            placeholder="Phone number"
+            value={formData.phone}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="startDate">Client Start Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full pl-3 text-left font-normal",
+                  !formData.startDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.startDate ? (
+                  format(formData.startDate, "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={formData.startDate}
+                onSelect={handleDateChange}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="entityType">Entity Type</Label>
+          <Select
+            value={formData.entityType}
+            onValueChange={handleSelectChange('entityType' as keyof ClientFormData)}
+          >
+            <SelectTrigger id="entityType">
+              <SelectValue placeholder="Select entity type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Individual">Individual</SelectItem>
+              <SelectItem value="Company">Company</SelectItem>
+              <SelectItem value="LLP">LLP</SelectItem>
+              <SelectItem value="Partnership">Partnership</SelectItem>
+              <SelectItem value="Trust">Trust</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="gstin">GSTIN</Label>
+          <Input
+            id="gstin"
+            name="gstin"
+            placeholder="GSTIN number"
+            value={formData.gstin}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="pan">PAN</Label>
+          <Input
+            id="pan"
+            name="pan"
+            placeholder="PAN number"
+            value={formData.pan}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="address">Address</Label>
+          <Textarea
+            id="address"
+            name="address"
+            placeholder="Client address"
+            value={formData.address}
+            onChange={handleChange}
+            rows={3}
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <Label>Compliance Requirements</Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-start space-x-3 space-y-0">
+            <Checkbox 
+              id="gst-required"
+              checked={formData.gstRequired}
+              onCheckedChange={handleCheckboxChange('gstRequired')}
+            />
+            <div>
+              <Label htmlFor="gst-required" className="font-normal">GST Registration</Label>
+              <p className="text-muted-foreground text-xs">Client requires GST compliance</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start space-x-3 space-y-0">
+            <Checkbox 
+              id="income-tax-required"
+              checked={formData.incomeTaxRequired}
+              onCheckedChange={handleCheckboxChange('incomeTaxRequired')}
+            />
+            <div>
+              <Label htmlFor="income-tax-required" className="font-normal">Income Tax Filing</Label>
+              <p className="text-muted-foreground text-xs">Client requires income tax filing</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start space-x-3 space-y-0">
+            <Checkbox 
+              id="tds-required"
+              checked={formData.tdsRequired}
+              onCheckedChange={handleCheckboxChange('tdsRequired')}
+            />
+            <div>
+              <Label htmlFor="tds-required" className="font-normal">TDS Filing</Label>
+              <p className="text-muted-foreground text-xs">Client requires TDS filing</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start space-x-3 space-y-0">
+            <Checkbox 
+              id="audit-required"
+              checked={formData.auditRequired}
+              onCheckedChange={handleCheckboxChange('auditRequired')}
+            />
+            <div>
+              <Label htmlFor="audit-required" className="font-normal">Statutory Audit</Label>
+              <p className="text-muted-foreground text-xs">Client requires statutory audit</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex justify-end">
+        <Button type="submit">
           {client ? 'Update Client' : 'Add Client'}
         </Button>
-      </form>
-    </Form>
+      </div>
+    </form>
   );
 };
