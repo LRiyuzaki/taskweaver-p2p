@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { TaskListView } from '@/components/TaskListView';
+import { ClientFormData } from '@/types/client';
 
 const ClientManagement = () => {
   const { tables, createTable, addField, addRow } = useDatabaseContext();
@@ -54,7 +55,7 @@ const ClientManagement = () => {
     }
   }, [tables, createTable, addField]);
 
-  const handleAddClient = (data: any) => {
+  const handleAddClient = (data: ClientFormData) => {
     if (!clientTable) return;
     
     const clientId = uuidv4();
@@ -68,15 +69,15 @@ const ClientManagement = () => {
     });
     
     // Create tasks based on selected services
-    if (data['GST Required']) {
+    if (data.gstRequired) {
       // Monthly GST filing task for the next 12 months
       for (let i = 0; i < 12; i++) {
         const dueDate = new Date();
         dueDate.setMonth(currentDate.getMonth() + i + 1, 7); // Due on 7th of each month
         
         addTask({
-          title: `GST Filing for ${data['Client Name']}`,
-          description: `Monthly GST filing for ${data['Client Name']} for the month of ${dueDate.toLocaleString('default', { month: 'long' })}`,
+          title: `GST Filing for ${data.name}`,
+          description: `Monthly GST filing for ${data.name} for the month of ${dueDate.toLocaleString('default', { month: 'long' })}`,
           status: 'todo',
           priority: 'medium',
           dueDate,
@@ -89,7 +90,7 @@ const ClientManagement = () => {
       }
     }
     
-    if (data['Income Tax Required']) {
+    if (data.incomeTaxRequired) {
       // Yearly income tax filing
       const taxDueDate = new Date(currentDate.getFullYear(), 6, 31); // July 31st
       if (taxDueDate < currentDate) {
@@ -97,8 +98,8 @@ const ClientManagement = () => {
       }
       
       addTask({
-        title: `Income Tax Filing for ${data['Client Name']}`,
-        description: `Annual income tax filing for ${data['Client Name']}`,
+        title: `Income Tax Filing for ${data.name}`,
+        description: `Annual income tax filing for ${data.name}`,
         status: 'todo',
         priority: 'high',
         dueDate: taxDueDate,
@@ -110,15 +111,15 @@ const ClientManagement = () => {
       });
     }
     
-    if (data['TDS Required']) {
+    if (data.tdsRequired) {
       // Quarterly TDS filing
       for (let i = 0; i < 4; i++) {
         const dueDate = new Date();
         dueDate.setMonth(Math.floor(dueDate.getMonth() / 3) * 3 + 3 * (i + 1), 7);
         
         addTask({
-          title: `TDS Filing for ${data['Client Name']}`,
-          description: `Quarterly TDS filing for ${data['Client Name']}`,
+          title: `TDS Filing for ${data.name}`,
+          description: `Quarterly TDS filing for ${data.name}`,
           status: 'todo',
           priority: 'medium',
           dueDate,
@@ -131,7 +132,7 @@ const ClientManagement = () => {
       }
     }
     
-    if (data['Audit Required']) {
+    if (data.auditRequired) {
       // Yearly audit
       const auditDueDate = new Date(currentDate.getFullYear(), 8, 30); // September 30th
       if (auditDueDate < currentDate) {
@@ -139,8 +140,8 @@ const ClientManagement = () => {
       }
       
       addTask({
-        title: `Annual Audit for ${data['Client Name']}`,
-        description: `Complete annual audit for ${data['Client Name']}`,
+        title: `Annual Audit for ${data.name}`,
+        description: `Complete annual audit for ${data.name}`,
         status: 'todo',
         priority: 'high',
         dueDate: auditDueDate,
@@ -206,12 +207,7 @@ const ClientManagement = () => {
                     Enter client details below. Required fields are marked with an asterisk (*).
                   </DialogDescription>
                 </DialogHeader>
-                {clientTable && (
-                  <ClientForm 
-                    fields={clientTable.fields} 
-                    onSubmit={handleAddClient} 
-                  />
-                )}
+                <ClientForm onSubmit={handleAddClient} />
               </DialogContent>
             </Dialog>
           </div>
