@@ -8,7 +8,7 @@ import { TaskProvider } from "@/contexts/TaskContext";
 import { DatabaseProvider } from "@/contexts/DatabaseContext";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { AppSidebar } from "@/components/AppSidebar";
-import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import AdvancedSettings from "./pages/AdvancedSettings";
 import Database from "./pages/Database";
@@ -31,7 +31,7 @@ const App = () => (
                   <AppSidebar />
                   <div className="flex-1 flex flex-col">
                     <Routes>
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Dashboard />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/advanced-settings" element={<AdvancedSettings />} />
                       <Route path="/database" element={<Database />} />
