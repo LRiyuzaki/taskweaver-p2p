@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,13 +19,14 @@ interface ClientDetailProps {
 }
 
 export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) => {
-  const { getClientById, updateClient, deleteClient } = useClientContext();
+  const { getClientById, updateClient, deleteClient, getAvailableServiceNames } = useClientContext();
   const { tasks } = useTaskContext();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const client = getClientById(clientId);
+  const availableServices = getAvailableServiceNames();
   
   if (!client) {
     return (
@@ -87,14 +87,16 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         <CardHeader className="pb-3">
           <div className="flex justify-between">
             <div>
-              <CardTitle className="text-2xl">{client.name}</CardTitle>
-              <CardDescription>{client.company}</CardDescription>
+              <CardTitle className="text-2xl">{client?.name}</CardTitle>
+              <CardDescription>{client?.company}</CardDescription>
             </div>
             <div className="flex space-x-1">
-              {client.gstRequired && <Badge>GST</Badge>}
-              {client.incomeTaxRequired && <Badge>Income Tax</Badge>}
-              {client.tdsRequired && <Badge>TDS</Badge>}
-              {client.auditRequired && <Badge>Audit</Badge>}
+              {client && Object.entries(client.requiredServices)
+                .filter(([_, isRequired]) => isRequired)
+                .map(([serviceName]) => (
+                  <Badge key={serviceName}>{serviceName}</Badge>
+                ))
+              }
             </div>
           </div>
         </CardHeader>
@@ -157,38 +159,16 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             <div>
               <h3 className="text-sm font-medium mb-2">Services</h3>
               <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  {client.gstRequired ? (
-                    <Check className="h-4 w-4 mr-2 text-green-600" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2 text-muted-foreground" />
-                  )}
-                  <span>GST Filing</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  {client.incomeTaxRequired ? (
-                    <Check className="h-4 w-4 mr-2 text-green-600" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2 text-muted-foreground" />
-                  )}
-                  <span>Income Tax Filing</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  {client.tdsRequired ? (
-                    <Check className="h-4 w-4 mr-2 text-green-600" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2 text-muted-foreground" />
-                  )}
-                  <span>TDS Filing</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  {client.auditRequired ? (
-                    <Check className="h-4 w-4 mr-2 text-green-600" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2 text-muted-foreground" />
-                  )}
-                  <span>Statutory Audit</span>
-                </div>
+                {client && availableServices.map(serviceName => (
+                  <div key={serviceName} className="flex items-center text-sm">
+                    {client.requiredServices[serviceName] ? (
+                      <Check className="h-4 w-4 mr-2 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 mr-2 text-muted-foreground" />
+                    )}
+                    <span>{serviceName}</span>
+                  </div>
+                ))}
               </div>
             </div>
             
@@ -293,7 +273,6 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         </TabsContent>
       </Tabs>
       
-      {/* Edit Client Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -306,7 +285,6 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

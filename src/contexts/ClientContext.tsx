@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Client, ClientFormData, ServiceType, ClientService } from '@/types/client';
@@ -18,6 +17,7 @@ interface ClientContextType {
   addClientService: (clientService: Omit<ClientService, 'id'>) => void;
   updateClientService: (clientId: string, serviceTypeId: string, clientService: Partial<ClientService>) => void;
   deleteClientService: (clientId: string, serviceTypeId: string) => void;
+  getAvailableServiceNames: () => string[];
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -62,17 +62,36 @@ const initialServiceTypes: ServiceType[] = [
   }
 ];
 
+// Core service categories that map to legacy fields
+const coreServices = ['GST', 'Income Tax', 'TDS', 'Audit'];
+
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [clients, setClients] = useState<Client[]>(() => {
     const savedClients = localStorage.getItem('accounting_clients');
     if (savedClients) {
       try {
         const parsedClients = JSON.parse(savedClients);
-        return parsedClients.map((client: any) => ({
-          ...client,
-          createdAt: new Date(client.createdAt),
-          startDate: client.startDate ? new Date(client.startDate) : undefined,
-        }));
+        return parsedClients.map((client: any) => {
+          // Handle migration from old format to new format
+          const requiredServices: Record<string, boolean> = client.requiredServices || {
+            'GST': client.gstRequired || false,
+            'Income Tax': client.incomeTaxRequired || false,
+            'TDS': client.tdsRequired || false,
+            'Audit': client.auditRequired || false
+          };
+          
+          return {
+            ...client,
+            requiredServices,
+            createdAt: new Date(client.createdAt),
+            startDate: client.startDate ? new Date(client.startDate) : undefined,
+            // Add getters for backward compatibility
+            get gstRequired() { return this.requiredServices['GST'] ?? false; },
+            get incomeTaxRequired() { return this.requiredServices['Income Tax'] ?? false; },
+            get tdsRequired() { return this.requiredServices['TDS'] ?? false; },
+            get auditRequired() { return this.requiredServices['Audit'] ?? false; }
+          };
+        });
       } catch (e) {
         console.error('Failed to parse saved clients', e);
         return [];
@@ -132,6 +151,11 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ...clientData,
       id: uuidv4(),
       createdAt: new Date(),
+      // Add getters for backward compatibility
+      get gstRequired() { return this.requiredServices['GST'] ?? false; },
+      get incomeTaxRequired() { return this.requiredServices['Income Tax'] ?? false; },
+      get tdsRequired() { return this.requiredServices['TDS'] ?? false; },
+      get auditRequired() { return this.requiredServices['Audit'] ?? false; }
     };
     
     setClients((prevClients) => [...prevClients, newClient]);
@@ -143,9 +167,36 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateClient = (id: string, clientUpdates: Partial<Client>) => {
     setClients((prevClients) => 
-      prevClients.map((client) => 
-        client.id === id ? { ...client, ...clientUpdates } : client
-      )
+      prevClients.map((client) => {
+        if (client.id === id) {
+          const updatedClient = { ...client, ...clientUpdates };
+          
+          // Ensure getters are preserved after update
+          if (!('gstRequired' in updatedClient)) {
+            Object.defineProperty(updatedClient, 'gstRequired', {
+              get() { return this.requiredServices['GST'] ?? false; }
+            });
+          }
+          if (!('incomeTaxRequired' in updatedClient)) {
+            Object.defineProperty(updatedClient, 'incomeTaxRequired', {
+              get() { return this.requiredServices['Income Tax'] ?? false; }
+            });
+          }
+          if (!('tdsRequired' in updatedClient)) {
+            Object.defineProperty(updatedClient, 'tdsRequired', {
+              get() { return this.requiredServices['TDS'] ?? false; }
+            });
+          }
+          if (!('auditRequired' in updatedClient)) {
+            Object.defineProperty(updatedClient, 'auditRequired', {
+              get() { return this.requiredServices['Audit'] ?? false; }
+            });
+          }
+          
+          return updatedClient;
+        }
+        return client;
+      })
     );
     toast({
       title: "Client Updated",
@@ -246,6 +297,22 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   };
 
+  // Function to get all available service names from service types
+  const getAvailableServiceNames = (): string[] => {
+    // Start with core services and then add any unique ones from service types
+    const serviceNames = [...coreServices];
+    
+    serviceTypes.forEach(serviceType => {
+      // Extract service category from the name if not already in the list
+      const category = serviceType.name.split(' ')[0]; // Simple extraction, can be improved
+      if (!serviceNames.includes(category)) {
+        serviceNames.push(category);
+      }
+    });
+    
+    return [...new Set(serviceNames)]; // Ensure uniqueness
+  };
+
   return (
     <ClientContext.Provider value={{ 
       clients, 
@@ -260,7 +327,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       deleteServiceType,
       addClientService,
       updateClientService,
-      deleteClientService
+      deleteClientService,
+      getAvailableServiceNames
     }}>
       {children}
     </ClientContext.Provider>

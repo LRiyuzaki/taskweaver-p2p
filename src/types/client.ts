@@ -1,4 +1,3 @@
-
 import { Task } from './task';
 
 export interface Client {
@@ -10,11 +9,8 @@ export interface Client {
   phone?: string;
   createdAt: Date;
   
-  // Tax information
-  gstRequired: boolean;
-  incomeTaxRequired: boolean;
-  tdsRequired: boolean;
-  auditRequired: boolean;
+  // Tax information - Dynamic service requirements will be stored here
+  requiredServices: Record<string, boolean>;
   
   // Entity information
   entityType?: 'Individual' | 'Company' | 'LLP' | 'Partnership' | 'Trust';
@@ -25,9 +21,26 @@ export interface Client {
   startDate?: Date;
   address?: string;
   tasks?: Task[];
+  
+  // Keep backward compatibility for existing code
+  get gstRequired(): boolean {
+    return this.requiredServices['GST'] ?? false;
+  }
+  
+  get incomeTaxRequired(): boolean {
+    return this.requiredServices['Income Tax'] ?? false;
+  }
+  
+  get tdsRequired(): boolean {
+    return this.requiredServices['TDS'] ?? false;
+  }
+  
+  get auditRequired(): boolean {
+    return this.requiredServices['Audit'] ?? false;
+  }
 }
 
-export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks'> {}
+export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks' | 'gstRequired' | 'incomeTaxRequired' | 'tdsRequired' | 'auditRequired'> {}
 
 export interface ServiceType {
   id: string;
