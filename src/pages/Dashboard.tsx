@@ -3,17 +3,20 @@ import React from 'react';
 import { Header } from "@/components/Header";
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { useTaskContext } from '@/contexts/TaskContext';
+import { useClientContext } from '@/contexts/ClientContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TaskListView } from '@/components/TaskListView';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, ClipboardList, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, ClipboardList, AlertCircle, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
 import { useNavigate } from 'react-router-dom';
+import { ClientList } from '@/components/ClientList';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
+  const { clients } = useClientContext();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const navigate = useNavigate();
   
@@ -43,6 +46,16 @@ const Dashboard = () => {
     .sort((a, b) => 
       a.dueDate && b.dueDate ? new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() : 0
     );
+  
+  // Get recent clients
+  const recentClients = [...clients]
+    .sort((a, b) => {
+      if (a.startDate && b.startDate) {
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      }
+      return 0;
+    })
+    .slice(0, 5);
   
   const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
@@ -74,6 +87,7 @@ const Dashboard = () => {
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
             </TabsList>
             
@@ -111,7 +125,7 @@ const Dashboard = () => {
                         ))}
                         
                         {upcomingDeadlines.length > 5 && (
-                          <Button variant="link" className="w-full">
+                          <Button variant="link" className="w-full" onClick={() => document.querySelector('[data-value="tasks"]')?.click()}>
                             View all ({upcomingDeadlines.length})
                           </Button>
                         )}
@@ -152,13 +166,52 @@ const Dashboard = () => {
                         ))}
                         
                         {overdueTasks.length > 5 && (
-                          <Button variant="link" className="w-full">
+                          <Button variant="link" className="w-full" onClick={() => document.querySelector('[data-value="tasks"]')?.click()}>
                             View all ({overdueTasks.length})
                           </Button>
                         )}
                       </div>
                     ) : (
                       <p className="text-center py-4 text-muted-foreground">No overdue tasks</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1 md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      Recent Clients
+                    </CardTitle>
+                    <CardDescription>Recently added or updated clients</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {recentClients.length > 0 ? (
+                      <div className="space-y-4">
+                        {recentClients.map(client => (
+                          <div key={client.id} className="flex justify-between items-center p-3 border rounded-md">
+                            <div>
+                              <h4 className="font-medium">{client.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {client.contactPerson || client.email}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate(`/client/${client.id}`)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                        
+                        <Button variant="link" className="w-full" onClick={() => navigate('/client-management')}>
+                          View all clients
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-center py-4 text-muted-foreground">No clients found</p>
                     )}
                   </CardContent>
                 </Card>
@@ -176,6 +229,24 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <TaskListView />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="clients" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    All Clients
+                  </CardTitle>
+                  <CardDescription>View and manage all clients</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ClientList 
+                    clients={clients}
+                    onClientClick={(id) => navigate(`/client/${id}`)}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

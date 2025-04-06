@@ -1,6 +1,17 @@
 
 import React from 'react';
-import { Home, PlusCircle, Calendar, Settings, Users, Tag, Database, Briefcase, ListFilter, MessageSquare } from 'lucide-react';
+import { 
+  Home, 
+  Settings, 
+  Database, 
+  Users, 
+  ClipboardList, 
+  Calendar, 
+  FileText, 
+  BarChart2,
+  MessageSquare,
+  Bell
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -33,7 +44,7 @@ export function AppSidebar() {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -48,6 +59,26 @@ export function AppSidebar() {
               
               <SidebarMenuItem>
                 <SidebarMenuButton 
+                  className={`flex items-center gap-3 ${isActive('/client-management') ? 'bg-accent' : ''}`}
+                  onClick={() => navigate('/client-management')}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Client Management</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3 ${isActive('/accounting') ? 'bg-accent' : ''}`}
+                  onClick={() => navigate('/accounting')}
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  <span>Practice Management</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
                   className={`flex items-center gap-3 ${isActive('/database') ? 'bg-accent' : ''}`}
                   onClick={() => navigate('/database')}
                 >
@@ -55,18 +86,49 @@ export function AppSidebar() {
                   <span>Database</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3`}
+                  onClick={() => navigate('/calendar')}
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Calendar</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               
               <SidebarMenuItem>
                 <SidebarMenuButton className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4" />
-                  <span>Calendar</span>
+                  <FileText className="h-4 w-4" />
+                  <span>Reports</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton className="flex items-center gap-3">
+                  <BarChart2 className="h-4 w-4" />
+                  <span>Analytics</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton className="flex items-center gap-3">
                   <MessageSquare className="h-4 w-4" />
-                  <span>Collaboration</span>
+                  <span>Communications</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton className="flex items-center gap-3">
+                  <Bell className="h-4 w-4" />
+                  <span>Notifications</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -74,51 +136,9 @@ export function AppSidebar() {
         </SidebarGroup>
         
         <SidebarGroup>
-          <SidebarGroupLabel>Clients</SidebarGroupLabel>
+          <SidebarGroupLabel>System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
-                  <Briefcase className="h-4 w-4" />
-                  <span>All Clients</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
-                  <ListFilter className="h-4 w-4" />
-                  <span>Categories</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
-                  <Tag className="h-4 w-4" />
-                  <span>Tags</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        
-        <SidebarGroup>
-          <SidebarGroupLabel>Team</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
-                  <Users className="h-4 w-4" />
-                  <span>Members</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
-                  <PlusCircle className="h-4 w-4" />
-                  <span>Invite</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   className={`flex items-center gap-3 ${isActive('/settings') ? 'bg-accent' : ''}`} 
@@ -126,6 +146,16 @@ export function AppSidebar() {
                 >
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3 ${isActive('/advanced-settings') ? 'bg-accent' : ''}`} 
+                  onClick={() => navigate('/advanced-settings')}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Advanced Settings</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

@@ -8,7 +8,8 @@ import {
   Plus, 
   FileTextIcon, 
   Briefcase,
-  ClipboardIcon
+  ClipboardIcon,
+  Search
 } from "lucide-react";
 import { useClientContext } from "@/contexts/ClientContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,12 +17,14 @@ import { ClientForm } from "@/components/ClientForm";
 import { ClientList } from "@/components/ClientList";
 import { ClientDetail } from "@/components/ClientDetail";
 import { ServicesManagement } from "@/components/ServicesManagement";
+import { Input } from "@/components/ui/input";
 
 const ClientManagementPage = () => {
   const { clients, serviceTypes, addClient } = useClientContext();
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleClientClick = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -35,6 +38,14 @@ const ClientManagementPage = () => {
   const handleBackToList = () => {
     setSelectedClientId(null);
   };
+
+  // Filter clients based on search term
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.contactPerson && client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="flex flex-col h-screen">
@@ -80,6 +91,20 @@ const ClientManagementPage = () => {
             </TabsList>
 
             <TabsContent value="clients" className="space-y-6">
+              {!selectedClientId && (
+                <div className="flex mb-4">
+                  <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search clients..." 
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               {selectedClientId ? (
                 <ClientDetail 
                   clientId={selectedClientId} 
@@ -87,7 +112,7 @@ const ClientManagementPage = () => {
                 />
               ) : (
                 <ClientList 
-                  clients={clients}
+                  clients={filteredClients}
                   onClientClick={handleClientClick}
                 />
               )}
