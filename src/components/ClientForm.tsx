@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
 
 interface ClientFormProps {
   client?: Client;
@@ -29,7 +31,7 @@ interface ClientFormProps {
 }
 
 export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
-  const { serviceTypes } = useClientContext();
+  const { getAvailableServiceNames } = useClientContext();
   
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -44,6 +46,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
     address: '',
     startDate: new Date(),
   });
+
+  // Get available service names
+  const availableServices = getAvailableServiceNames();
 
   // Initialize form with client data if provided
   useEffect(() => {
@@ -61,8 +66,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         address: client.address || '',
         startDate: client.startDate || new Date(),
       });
+    } else {
+      // Initialize requiredServices for new client
+      const initialRequiredServices: Record<string, boolean> = {};
+      availableServices.forEach(service => {
+        initialRequiredServices[service] = false;
+      });
+      
+      setFormData(prev => ({
+        ...prev,
+        requiredServices: initialRequiredServices
+      }));
     }
-  }, [client]);
+  }, [client, availableServices]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -75,6 +91,16 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
 
   const handleSelectChange = (name: keyof ClientFormData) => (value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleServiceChange = (serviceName: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      requiredServices: {
+        ...prev.requiredServices,
+        [serviceName]: checked
+      }
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -225,6 +251,31 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
             onChange={handleChange}
             rows={3}
           />
+        </div>
+      </div>
+      
+      <Separator className="my-4" />
+      
+      <div>
+        <Label className="text-base">Required Services</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
+          {availableServices.map(serviceName => (
+            <div key={serviceName} className="flex items-center space-x-2">
+              <Checkbox 
+                id={`service-${serviceName}`}
+                checked={formData.requiredServices[serviceName] || false}
+                onCheckedChange={(checked) => 
+                  handleServiceChange(serviceName, checked === true)
+                }
+              />
+              <Label 
+                htmlFor={`service-${serviceName}`}
+                className="font-normal cursor-pointer"
+              >
+                {serviceName}
+              </Label>
+            </div>
+          ))}
         </div>
       </div>
       

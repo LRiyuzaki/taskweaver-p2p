@@ -14,6 +14,7 @@ import { ClientTimeline } from '@/components/ClientTimeline';
 import { ClientDocuments } from '@/components/ClientDocuments';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { ClientServiceManager } from '@/components/ClientServiceManager';
 
 const ClientPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -155,6 +156,7 @@ const ClientPage = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="timeline">Activity Timeline</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
           </TabsList>
           
           <TabsContent value="timeline">
@@ -163,6 +165,10 @@ const ClientPage = () => {
           
           <TabsContent value="documents">
             <ClientDocuments clientId={clientId || ''} clientName={client.name} />
+          </TabsContent>
+          
+          <TabsContent value="services">
+            <ClientServiceManager clientId={clientId || ''} clientName={client.name} />
           </TabsContent>
         </Tabs>
         
