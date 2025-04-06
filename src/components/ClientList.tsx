@@ -16,13 +16,18 @@ import { useNavigate } from 'react-router-dom';
 
 interface ClientListProps {
   clients: Client[];
+  onClientClick?: (clientId: string) => void;
 }
 
-export const ClientList: React.FC<ClientListProps> = ({ clients }) => {
+export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }) => {
   const navigate = useNavigate();
 
   const handleClientClick = (clientId: string) => {
-    navigate(`/client/${clientId}`);
+    if (onClientClick) {
+      onClientClick(clientId);
+    } else {
+      navigate(`/client/${clientId}`);
+    }
   };
 
   return (
