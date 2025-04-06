@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -30,8 +29,7 @@ interface ClientFormProps {
 }
 
 export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
-  const { getAvailableServiceNames } = useClientContext();
-  const availableServices = getAvailableServiceNames();
+  const { serviceTypes } = useClientContext();
   
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -39,12 +37,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
     company: '',
     contactPerson: '',
     phone: '',
-    requiredServices: {
-      'GST': false,
-      'Income Tax': false,
-      'TDS': false,
-      'Audit': false
-    },
+    requiredServices: {},
     entityType: undefined,
     gstin: '',
     pan: '',
@@ -55,46 +48,25 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   // Initialize form with client data if provided
   useEffect(() => {
     if (client) {
-      // Create a copy of the client object to avoid modifying the original
-      const clientCopy = { ...client };
-
-      // Ensure requiredServices contains all available services
-      const requiredServices = { ...clientCopy.requiredServices };
-      availableServices.forEach(service => {
-        if (!(service in requiredServices)) {
-          requiredServices[service] = false;
-        }
-      });
-
       setFormData({
-        name: clientCopy.name,
-        email: clientCopy.email,
-        company: clientCopy.company,
-        contactPerson: clientCopy.contactPerson || '',
-        phone: clientCopy.phone || '',
-        requiredServices,
-        entityType: clientCopy.entityType,
-        gstin: clientCopy.gstin || '',
-        pan: clientCopy.pan || '',
-        address: clientCopy.address || '',
-        startDate: clientCopy.startDate || new Date(),
+        name: client.name,
+        email: client.email,
+        company: client.company,
+        contactPerson: client.contactPerson || '',
+        phone: client.phone || '',
+        requiredServices: { ...client.requiredServices },
+        entityType: client.entityType,
+        gstin: client.gstin || '',
+        pan: client.pan || '',
+        address: client.address || '',
+        startDate: client.startDate || new Date(),
       });
     }
-  }, [client, availableServices]);
+  }, [client]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleServiceCheckboxChange = (serviceName: string) => (checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      requiredServices: {
-        ...prev.requiredServices,
-        [serviceName]: checked
-      }
-    }));
   };
 
   const handleDateChange = (date: Date | undefined) => {
@@ -253,25 +225,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
             onChange={handleChange}
             rows={3}
           />
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <Label>Compliance Requirements</Label>
-        <div className="grid grid-cols-2 gap-4">
-          {availableServices.map((serviceName) => (
-            <div key={serviceName} className="flex items-start space-x-3 space-y-0">
-              <Checkbox 
-                id={`service-${serviceName}`}
-                checked={formData.requiredServices[serviceName] || false}
-                onCheckedChange={handleServiceCheckboxChange(serviceName)}
-              />
-              <div>
-                <Label htmlFor={`service-${serviceName}`} className="font-normal">{serviceName}</Label>
-                <p className="text-muted-foreground text-xs">Client requires {serviceName} compliance</p>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
       

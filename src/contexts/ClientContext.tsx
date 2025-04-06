@@ -1,7 +1,9 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Client, ClientFormData, ServiceType, ClientService } from '@/types/client';
 import { toast } from '@/hooks/use-toast';
+import { addMonths } from 'date-fns';
 
 interface ClientContextType {
   clients: Client[];
@@ -37,32 +39,29 @@ const initialServiceTypes: ServiceType[] = [
     name: 'Monthly GST Filing',
     description: 'Regular GST filing on a monthly basis',
     frequency: 'monthly',
-    requiresGST: true
   },
   {
     id: '2',
     name: 'Annual Income Tax Return',
     description: 'Filing of yearly income tax returns',
     frequency: 'annually',
-    requiresIncomeTax: true
   },
   {
     id: '3',
     name: 'TDS Filing',
     description: 'Tax Deducted at Source filing',
     frequency: 'quarterly',
-    requiresTDS: true
   },
   {
     id: '4',
-    name: 'Statutory Audit',
-    description: 'Annual statutory audit of financial statements',
+    name: 'DGFT Registration',
+    description: 'Directorate General of Foreign Trade Registration',
     frequency: 'annually',
-    requiresAudit: true
+    renewalPeriod: 12
   }
 ];
 
-// Core service categories that map to legacy fields
+// Core service categories
 const coreServices = ['GST', 'Income Tax', 'TDS', 'Audit'];
 
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,12 +83,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             ...client,
             requiredServices,
             createdAt: new Date(client.createdAt),
-            startDate: client.startDate ? new Date(client.startDate) : undefined,
-            // Add getters for backward compatibility
-            get gstRequired() { return this.requiredServices['GST'] ?? false; },
-            get incomeTaxRequired() { return this.requiredServices['Income Tax'] ?? false; },
-            get tdsRequired() { return this.requiredServices['TDS'] ?? false; },
-            get auditRequired() { return this.requiredServices['Audit'] ?? false; }
+            startDate: client.startDate ? new Date(client.startDate) : undefined
           };
         });
       } catch (e) {
@@ -122,6 +116,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           ...service,
           startDate: new Date(service.startDate),
           endDate: service.endDate ? new Date(service.endDate) : undefined,
+          nextRenewalDate: service.nextRenewalDate ? new Date(service.nextRenewalDate) : undefined,
         }));
       } catch (e) {
         console.error('Failed to parse saved client services', e);
@@ -151,11 +146,6 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ...clientData,
       id: uuidv4(),
       createdAt: new Date(),
-      // Add getters for backward compatibility
-      get gstRequired() { return this.requiredServices['GST'] ?? false; },
-      get incomeTaxRequired() { return this.requiredServices['Income Tax'] ?? false; },
-      get tdsRequired() { return this.requiredServices['TDS'] ?? false; },
-      get auditRequired() { return this.requiredServices['Audit'] ?? false; }
     };
     
     setClients((prevClients) => [...prevClients, newClient]);
@@ -170,29 +160,6 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevClients.map((client) => {
         if (client.id === id) {
           const updatedClient = { ...client, ...clientUpdates };
-          
-          // Ensure getters are preserved after update
-          if (!('gstRequired' in updatedClient)) {
-            Object.defineProperty(updatedClient, 'gstRequired', {
-              get() { return this.requiredServices['GST'] ?? false; }
-            });
-          }
-          if (!('incomeTaxRequired' in updatedClient)) {
-            Object.defineProperty(updatedClient, 'incomeTaxRequired', {
-              get() { return this.requiredServices['Income Tax'] ?? false; }
-            });
-          }
-          if (!('tdsRequired' in updatedClient)) {
-            Object.defineProperty(updatedClient, 'tdsRequired', {
-              get() { return this.requiredServices['TDS'] ?? false; }
-            });
-          }
-          if (!('auditRequired' in updatedClient)) {
-            Object.defineProperty(updatedClient, 'auditRequired', {
-              get() { return this.requiredServices['Audit'] ?? false; }
-            });
-          }
-          
           return updatedClient;
         }
         return client;
@@ -259,8 +226,45 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addClientService = (clientServiceData: Omit<ClientService, 'id'>) => {
     const newClientService: ClientService = {
       ...clientServiceData,
+      clientId: clientServiceData.clientId,
+      serviceTypeId: clientServiceData.serviceTypeId,
     };
+    
+    // Check if service already exists
+    const existingService = clientServices.find(
+      service => 
+        service.clientId === newClientService.clientId && 
+        service.serviceTypeId === newClientService.serviceTypeId
+    );
+    
+    if (existingService) {
+      // Update existing service
+      updateClientService(
+        newClientService.clientId, 
+        newClientService.serviceTypeId,
+        newClientService
+      );
+      return;
+    }
+    
     setClientServices((prevServices) => [...prevServices, newClientService]);
+    
+    // Update client's required services
+    const serviceType = serviceTypes.find(type => type.id === newClientService.serviceTypeId);
+    if (serviceType) {
+      const client = clients.find(client => client.id === newClientService.clientId);
+      if (client) {
+        // Extract service category from name
+        const serviceCategory = serviceType.name.split(' ')[0];
+        updateClient(client.id, {
+          requiredServices: {
+            ...client.requiredServices,
+            [serviceCategory]: true
+          }
+        });
+      }
+    }
+    
     toast({
       title: "Service Added to Client",
       description: "The service has been added to the client successfully."
