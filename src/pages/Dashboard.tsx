@@ -125,7 +125,14 @@ const Dashboard = () => {
                         ))}
                         
                         {upcomingDeadlines.length > 5 && (
-                          <Button variant="link" className="w-full" onClick={() => document.querySelector('[data-value="tasks"]')?.click()}>
+                          <Button 
+                            variant="link" 
+                            className="w-full" 
+                            onClick={() => {
+                              const tasksTab = document.querySelector('[data-value="tasks"]') as HTMLElement;
+                              if (tasksTab) tasksTab.click();
+                            }}
+                          >
                             View all ({upcomingDeadlines.length})
                           </Button>
                         )}
@@ -166,7 +173,14 @@ const Dashboard = () => {
                         ))}
                         
                         {overdueTasks.length > 5 && (
-                          <Button variant="link" className="w-full" onClick={() => document.querySelector('[data-value="tasks"]')?.click()}>
+                          <Button 
+                            variant="link" 
+                            className="w-full" 
+                            onClick={() => {
+                              const tasksTab = document.querySelector('[data-value="tasks"]') as HTMLElement;
+                              if (tasksTab) tasksTab.click();
+                            }}
+                          >
                             View all ({overdueTasks.length})
                           </Button>
                         )}
