@@ -12,13 +12,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Eye, Mail, Phone, Building } from "lucide-react";
 import { Client } from "@/types/client";
+import { useNavigate } from 'react-router-dom';
 
 interface ClientListProps {
   clients: Client[];
-  onClientClick: (clientId: string) => void;
 }
 
-export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }) => {
+export const ClientList: React.FC<ClientListProps> = ({ clients }) => {
+  const navigate = useNavigate();
+
+  const handleClientClick = (clientId: string) => {
+    navigate(`/client/${clientId}`);
+  };
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -79,7 +85,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   <TableCell>
                     <div 
                       className="flex items-center text-primary hover:text-primary/80 cursor-pointer"
-                      onClick={() => onClientClick(client.id)}
+                      onClick={() => handleClientClick(client.id)}
                     >
                       <Eye className="h-4 w-4 mr-1" /> 
                       View

@@ -14,6 +14,7 @@ import AdvancedSettings from "./pages/AdvancedSettings";
 import Database from "./pages/Database";
 import ClientManagement from "./pages/ClientManagement";
 import ClientManagementPage from "./pages/ClientManagementPage";
+import ClientPage from "./pages/ClientPage"; // Add this import
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -36,6 +37,7 @@ const App = () => (
                       <Route path="/advanced-settings" element={<AdvancedSettings />} />
                       <Route path="/database" element={<Database />} />
                       <Route path="/client-management" element={<ClientManagement />} />
+                      <Route path="/client/:clientId" element={<ClientPage />} /> {/* Add this route */}
                       <Route path="/accounting" element={<ClientManagementPage />} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />

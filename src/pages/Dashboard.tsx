@@ -10,10 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Plus, Calendar, ClipboardList, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
+  const navigate = useNavigate();
   
   // Get upcoming deadlines (due in the next 7 days)
   const today = new Date();
@@ -45,6 +47,14 @@ const Dashboard = () => {
   const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
     setIsTaskDialogOpen(false);
+  };
+  
+  const handleTaskView = (taskId: string) => {
+    // If the task has a clientId, navigate to that client's page
+    const task = tasks.find(t => t.id === taskId);
+    if (task && task.clientId) {
+      navigate(`/client/${task.clientId}`);
+    }
   };
   
   return (
@@ -90,7 +100,13 @@ const Dashboard = () => {
                                 {task.dueDate && new Date(task.dueDate).toLocaleDateString()}
                               </p>
                             </div>
-                            <Button variant="outline" size="sm">View</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleTaskView(task.id)}
+                            >
+                              View
+                            </Button>
                           </div>
                         ))}
                         
@@ -125,7 +141,13 @@ const Dashboard = () => {
                                 Due {task.dueDate && new Date(task.dueDate).toLocaleDateString()}
                               </p>
                             </div>
-                            <Button variant="outline" size="sm">View</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleTaskView(task.id)}
+                            >
+                              View
+                            </Button>
                           </div>
                         ))}
                         
