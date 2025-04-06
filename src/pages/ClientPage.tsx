@@ -138,30 +138,14 @@ const ClientPage = () => {
             <CardContent className="p-6">
               <h3 className="text-base font-medium mb-4">Services Required</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span>GST Filing</span>
-                  <Badge variant={client.gstRequired ? "default" : "outline"}>
-                    {client.gstRequired ? 'Required' : 'Not Required'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Income Tax Filing</span>
-                  <Badge variant={client.incomeTaxRequired ? "default" : "outline"}>
-                    {client.incomeTaxRequired ? 'Required' : 'Not Required'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>TDS Filing</span>
-                  <Badge variant={client.tdsRequired ? "default" : "outline"}>
-                    {client.tdsRequired ? 'Required' : 'Not Required'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Statutory Audit</span>
-                  <Badge variant={client.auditRequired ? "default" : "outline"}>
-                    {client.auditRequired ? 'Required' : 'Not Required'}
-                  </Badge>
-                </div>
+                {client.requiredServices && Object.entries(client.requiredServices).map(([serviceName, isRequired]) => (
+                  <div key={serviceName} className="flex items-center justify-between">
+                    <span>{serviceName}</span>
+                    <Badge variant={isRequired ? "default" : "outline"}>
+                      {isRequired ? 'Required' : 'Not Required'}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

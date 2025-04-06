@@ -73,18 +73,12 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {client.gstRequired && (
-                        <Badge variant="outline">GST</Badge>
-                      )}
-                      {client.incomeTaxRequired && (
-                        <Badge variant="outline">Income Tax</Badge>
-                      )}
-                      {client.tdsRequired && (
-                        <Badge variant="outline">TDS</Badge>
-                      )}
-                      {client.auditRequired && (
-                        <Badge variant="outline">Audit</Badge>
-                      )}
+                      {client.requiredServices && Object.entries(client.requiredServices)
+                        .filter(([_, isRequired]) => isRequired)
+                        .map(([serviceName]) => (
+                          <Badge key={serviceName} variant="outline">{serviceName}</Badge>
+                        ))
+                      }
                     </div>
                   </TableCell>
                   <TableCell>

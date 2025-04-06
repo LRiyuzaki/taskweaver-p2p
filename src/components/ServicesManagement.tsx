@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from '@/hooks/use-toast';
 
 export const ServicesManagement: React.FC = () => {
@@ -30,10 +29,7 @@ export const ServicesManagement: React.FC = () => {
     name: '',
     description: '',
     frequency: 'monthly',
-    requiresGST: false,
-    requiresIncomeTax: false,
-    requiresTDS: false,
-    requiresAudit: false
+    renewalPeriod: 12 // Default to 12 months
   });
 
   const resetFormData = () => {
@@ -41,10 +37,7 @@ export const ServicesManagement: React.FC = () => {
       name: '',
       description: '',
       frequency: 'monthly',
-      requiresGST: false,
-      requiresIncomeTax: false,
-      requiresTDS: false,
-      requiresAudit: false
+      renewalPeriod: 12
     });
   };
 
@@ -59,10 +52,7 @@ export const ServicesManagement: React.FC = () => {
       name: service.name,
       description: service.description,
       frequency: service.frequency,
-      requiresGST: service.requiresGST || false,
-      requiresIncomeTax: service.requiresIncomeTax || false,
-      requiresTDS: service.requiresTDS || false,
-      requiresAudit: service.requiresAudit || false
+      renewalPeriod: service.renewalPeriod
     });
     setIsEditDialogOpen(true);
   };
@@ -157,52 +147,14 @@ export const ServicesManagement: React.FC = () => {
         </div>
         
         <div className="space-y-2">
-          <Label>Compliance Requirements</Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="gst-required"
-                checked={formData.requiresGST}
-                onCheckedChange={(checked) => 
-                  setFormData({...formData, requiresGST: !!checked})
-                } 
-              />
-              <Label htmlFor="gst-required">GST</Label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="income-tax-required"
-                checked={formData.requiresIncomeTax}
-                onCheckedChange={(checked) => 
-                  setFormData({...formData, requiresIncomeTax: !!checked})
-                } 
-              />
-              <Label htmlFor="income-tax-required">Income Tax</Label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="tds-required"
-                checked={formData.requiresTDS}
-                onCheckedChange={(checked) => 
-                  setFormData({...formData, requiresTDS: !!checked})
-                } 
-              />
-              <Label htmlFor="tds-required">TDS</Label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="audit-required"
-                checked={formData.requiresAudit}
-                onCheckedChange={(checked) => 
-                  setFormData({...formData, requiresAudit: !!checked})
-                } 
-              />
-              <Label htmlFor="audit-required">Audit</Label>
-            </div>
-          </div>
+          <Label htmlFor="renewal-period">Renewal Period (months)</Label>
+          <Input 
+            id="renewal-period"
+            type="number"
+            value={formData.renewalPeriod || ''}
+            onChange={(e) => setFormData({...formData, renewalPeriod: parseInt(e.target.value) || undefined})}
+            placeholder="e.g., 12 for annual renewals"
+          />
         </div>
       </div>
     </div>
@@ -262,12 +214,11 @@ export const ServicesManagement: React.FC = () => {
                     {service.description}
                   </p>
                   
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {service.requiresGST && <Badge variant="outline">GST</Badge>}
-                    {service.requiresIncomeTax && <Badge variant="outline">Income Tax</Badge>}
-                    {service.requiresTDS && <Badge variant="outline">TDS</Badge>}
-                    {service.requiresAudit && <Badge variant="outline">Audit</Badge>}
-                  </div>
+                  {service.renewalPeriod && (
+                    <div className="flex items-center mt-2 text-sm">
+                      <span>Renewal: {service.renewalPeriod} {service.renewalPeriod === 1 ? 'month' : 'months'}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -325,12 +276,11 @@ export const ServicesManagement: React.FC = () => {
                       {service.description}
                     </p>
                     
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {service.requiresGST && <Badge variant="outline">GST</Badge>}
-                      {service.requiresIncomeTax && <Badge variant="outline">Income Tax</Badge>}
-                      {service.requiresTDS && <Badge variant="outline">TDS</Badge>}
-                      {service.requiresAudit && <Badge variant="outline">Audit</Badge>}
-                    </div>
+                    {service.renewalPeriod && (
+                      <div className="flex items-center mt-2 text-sm">
+                        <span>Renewal: {service.renewalPeriod} {service.renewalPeriod === 1 ? 'month' : 'months'}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -379,12 +329,11 @@ export const ServicesManagement: React.FC = () => {
                       {service.description}
                     </p>
                     
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {service.requiresGST && <Badge variant="outline">GST</Badge>}
-                      {service.requiresIncomeTax && <Badge variant="outline">Income Tax</Badge>}
-                      {service.requiresTDS && <Badge variant="outline">TDS</Badge>}
-                      {service.requiresAudit && <Badge variant="outline">Audit</Badge>}
-                    </div>
+                    {service.renewalPeriod && (
+                      <div className="flex items-center mt-2 text-sm">
+                        <span>Renewal: {service.renewalPeriod} {service.renewalPeriod === 1 ? 'month' : 'months'}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -433,12 +382,11 @@ export const ServicesManagement: React.FC = () => {
                       {service.description}
                     </p>
                     
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {service.requiresGST && <Badge variant="outline">GST</Badge>}
-                      {service.requiresIncomeTax && <Badge variant="outline">Income Tax</Badge>}
-                      {service.requiresTDS && <Badge variant="outline">TDS</Badge>}
-                      {service.requiresAudit && <Badge variant="outline">Audit</Badge>}
-                    </div>
+                    {service.renewalPeriod && (
+                      <div className="flex items-center mt-2 text-sm">
+                        <span>Renewal: {service.renewalPeriod} {service.renewalPeriod === 1 ? 'month' : 'months'}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
