@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,15 +22,12 @@ export const ServiceRenewalsDashboard: React.FC = () => {
   const [timeFrame, setTimeFrame] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   
-  // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<any | null>(null);
   const [editReminderDays, setEditReminderDays] = useState<number>(30);
   
-  // Get current date
   const today = new Date();
   
-  // Calculate cutoff dates
   const cutoffDate = useMemo(() => {
     switch (timeFrame) {
       case '7days':
@@ -41,15 +37,13 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       case '90days':
         return addDays(today, 90);
       default:
-        return addDays(today, 365); // Show up to a year for 'all'
+        return addDays(today, 365);
     }
   }, [timeFrame, today]);
   
-  // Filter and process services
   const filteredServices = useMemo(() => {
     return clientServices
       .filter(service => {
-        // Skip services without end/renewal dates
         if (!service.endDate) return false;
         
         const endDate = new Date(service.endDate);
@@ -57,7 +51,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         const isUpcoming = isBefore(endDate, cutoffDate) && isAfter(endDate, today);
         const isCompleted = service.status === 'completed';
         
-        // Apply status filter
         switch (statusFilter) {
           case 'upcoming':
             return isUpcoming;
@@ -66,17 +59,13 @@ export const ServiceRenewalsDashboard: React.FC = () => {
           case 'completed':
             return isCompleted;
           default:
-            // For 'all', show both upcoming and overdue
             return isBefore(endDate, cutoffDate) || isOverdue;
         }
       })
       .map(service => {
-        // Get service type
         const serviceType = serviceTypes.find(type => type.id === service.serviceTypeId);
-        // Get client
         const client = clients.find(client => client.id === service.clientId);
         
-        // Calculate days until due
         const endDate = new Date(service.endDate!);
         const daysUntilDue = differenceInDays(endDate, today);
         
@@ -88,10 +77,9 @@ export const ServiceRenewalsDashboard: React.FC = () => {
           status: daysUntilDue < 0 ? 'overdue' : 'upcoming'
         };
       })
-      .sort((a, b) => a.daysUntilDue - b.daysUntilDue); // Sort by days until due
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
   }, [clientServices, serviceTypes, clients, cutoffDate, statusFilter, today]);
   
-  // Count statistics
   const overdueCount = filteredServices.filter(s => s.daysUntilDue < 0).length;
   const upcomingCount = filteredServices.filter(s => s.daysUntilDue >= 0).length;
   
@@ -108,24 +96,17 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       reminderDays: editReminderDays
     });
     
-    toast({
-      title: "Service Updated",
-      description: `Reminder period updated for ${editingService.serviceTypeName}`
-    });
+    toast.success(`Reminder period updated for ${editingService.serviceTypeName}`);
     
     setIsEditModalOpen(false);
   };
   
   const processRenewal = (service: any) => {
-    // Mark the service as completed
     updateClientService(service.clientId, service.serviceTypeId, {
       status: 'completed'
     });
     
-    toast({
-      title: "Renewal Processed",
-      description: `Successfully processed renewal for ${service.serviceTypeName}`
-    });
+    toast.success(`Successfully processed renewal for ${service.serviceTypeName}`);
   };
   
   return (
@@ -269,7 +250,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         </div>
       )}
       
-      {/* Edit Reminder Dialog */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -312,7 +292,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
   );
 };
 
-// Helper function for classNames conditional
 function cn(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }

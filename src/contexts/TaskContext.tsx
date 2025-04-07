@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority, Project, RecurrenceType } from '@/types/task';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,18 +28,16 @@ export const useTaskContext = () => {
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>(() => {
-    // Load tasks from localStorage if available
     const savedTasks = localStorage.getItem('tasks');
     if (savedTasks) {
       try {
         const parsedTasks = JSON.parse(savedTasks);
-        // Convert string dates back to Date objects
         return parsedTasks.map((task: any) => ({
           ...task,
           createdAt: new Date(task.createdAt),
           dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
           recurrenceEndDate: task.recurrenceEndDate ? new Date(task.recurrenceEndDate) : undefined,
-          recurrence: task.recurrence || 'none', // Default to none if not specified
+          recurrence: task.recurrence || 'none',
         }));
       } catch (e) {
         console.error('Failed to parse saved tasks', e);
@@ -51,12 +48,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
-    // Load projects from localStorage if available
     const savedProjects = localStorage.getItem('projects');
     if (savedProjects) {
       try {
         const parsedProjects = JSON.parse(savedProjects);
-        // Convert string dates back to Date objects
         return parsedProjects.map((project: any) => ({
           ...project,
           createdAt: new Date(project.createdAt),
@@ -69,17 +64,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
 
-  // Save tasks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  // Save projects to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('projects', JSON.stringify(projects));
   }, [projects]);
 
-  // Function to calculate next due date based on recurrence type
   const calculateNextDueDate = (dueDate: Date, recurrenceType: RecurrenceType): Date => {
     switch (recurrenceType) {
       case 'daily':
@@ -99,7 +91,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Create recurring task instances
   const createRecurringTaskInstance = (completedTask: Task) => {
     if (
       completedTask.recurrence !== 'none' && 
@@ -108,7 +99,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ) {
       const nextDueDate = calculateNextDueDate(completedTask.dueDate, completedTask.recurrence);
       
-      // If we've passed the recurrence end date, don't create a new instance
       if (completedTask.recurrenceEndDate && nextDueDate > completedTask.recurrenceEndDate) {
         return;
       }
@@ -143,9 +133,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (task.id === id) {
           const updatedTask = { ...task, ...taskData };
           
-          // Handle status change for recurring tasks
           if (task.status !== 'done' && updatedTask.status === 'done' && updatedTask.recurrence !== 'none') {
-            // Schedule creation of next recurring instance
             setTimeout(() => createRecurringTaskInstance(updatedTask), 0);
           }
           
@@ -168,9 +156,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (task.id === taskId) {
           const updatedTask = { ...task, status: newStatus };
           
-          // Check if the task is being moved to 'done' and has recurrence
           if (task.status !== 'done' && newStatus === 'done' && task.recurrence !== 'none') {
-            // Schedule creation of next recurring instance
             setTimeout(() => createRecurringTaskInstance(updatedTask), 0);
           }
           
@@ -199,7 +185,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
     
-    // If project name is updated, update all tasks with this project
     if (projectData.name) {
       setTasks((prevTasks) => 
         prevTasks.map((task) => 
@@ -212,10 +197,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteProject = (id: string) => {
-    // Remove project
     setProjects((prevProjects) => prevProjects.filter((project) => project.id !== id));
     
-    // Set all tasks with this project to have no project
     setTasks((prevTasks) => 
       prevTasks.map((task) => 
         task.projectId === id ? { ...task, projectId: undefined, projectName: undefined } : task

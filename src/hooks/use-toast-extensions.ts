@@ -1,11 +1,11 @@
 
 import { toast as baseToast } from "@/hooks/use-toast";
-import { ToastProps } from "@/components/ui/toast";
+import type { ToastProps } from "@/components/ui/toast";
 
 // Extend the toast function with common patterns
 export const toast = {
-  // Base toast function
-  ...baseToast,
+  // Base toast function for direct calling
+  default: (props: ToastProps) => baseToast(props),
   
   // Success toast
   success: (message: string) => {

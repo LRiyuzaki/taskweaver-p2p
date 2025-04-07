@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -44,25 +43,19 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
   const [editingService, setEditingService] = useState<ClientService | null>(null);
   const [editReminderDays, setEditReminderDays] = useState<number>(30);
   
-  // Filter services for this client
   const clientActiveServices = clientServices.filter(
     service => service.clientId === clientId && service.status !== 'completed'
   );
 
   const handleAddService = () => {
     if (!selectedServiceId) {
-      toast({
-        title: "Error",
-        description: "Please select a service",
-        variant: "destructive"
-      });
+      toast.error("Please select a service");
       return;
     }
     
     const selectedServiceType = serviceTypes.find(type => type.id === selectedServiceId);
     if (!selectedServiceType) return;
     
-    // Calculate end date based on service frequency
     const getEndDate = () => {
       switch (selectedServiceType.frequency) {
         case 'monthly':
@@ -72,42 +65,35 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
         case 'annually':
           return addMonths(startDate, 12);
         default:
-          return undefined; // One-time service doesn't have end date
+          return undefined;
       }
     };
     
     const endDate = getEndDate();
     
-    // Create client service record
     const newClientService: Omit<ClientService, 'id'> = {
       clientId,
       serviceTypeId: selectedServiceId,
       serviceTypeName: selectedServiceType.name,
       startDate,
       endDate,
-      nextRenewalDate: endDate, // Initial renewal is the same as end date
+      nextRenewalDate: endDate,
       status: 'active',
       reminderDays
     };
     
     addClientService(newClientService);
     
-    // Create task for initial service and renewal reminders
     createServiceTasks(newClientService, selectedServiceType, clientName);
     
-    // Reset form
     setSelectedServiceId('');
     setStartDate(new Date());
     setReminderDays(30);
     
-    toast({
-      title: "Service Added",
-      description: `${selectedServiceType.name} has been added to ${clientName}`
-    });
+    toast.success(`${selectedServiceType.name} has been added to ${clientName}`);
   };
   
   const createServiceTasks = (service: Omit<ClientService, 'id'>, serviceType: any, clientName: string) => {
-    // Initial service task
     addTask({
       title: `${serviceType.name} for ${clientName}`,
       description: `Complete ${serviceType.name} for ${clientName}`,
@@ -117,17 +103,14 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
       tags: [serviceType.name, 'Initial'],
       clientId,
       assignedTo: '',
-      recurrence: 'none', // Initial task is one-time
+      recurrence: 'none',
       recurrenceEndDate: undefined,
     });
     
-    // If service has an end date, create ONLY a renewal task (no separate reminder)
     if (service.endDate && service.reminderDays) {
-      // Calculate actual reminder date based on end date and reminder days
       const reminderDate = new Date(service.endDate);
       reminderDate.setDate(reminderDate.getDate() - service.reminderDays);
       
-      // Create only one task - the renewal reminder task
       addTask({
         title: `Renewal: ${serviceType.name} for ${clientName}`,
         description: `Prepare for renewal of ${serviceType.name} for ${clientName}. Due in ${service.reminderDays} days before expiry.`,
@@ -147,10 +130,7 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
   const handleCancelService = (serviceTypeId: string, serviceTypeName: string) => {
     if (window.confirm(`Are you sure you want to cancel ${serviceTypeName}?`)) {
       updateClientService(clientId, serviceTypeId, { status: 'inactive' });
-      toast({
-        title: "Service Cancelled",
-        description: `${serviceTypeName} has been cancelled`
-      });
+      toast.success(`${serviceTypeName} has been cancelled`);
     }
   };
   
@@ -167,10 +147,7 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
       reminderDays: editReminderDays
     });
     
-    toast({
-      title: "Service Updated",
-      description: `Reminder days updated for ${editingService.serviceTypeName}`
-    });
+    toast.success(`Reminder days updated for ${editingService.serviceTypeName}`);
     
     setIsEditModalOpen(false);
   };
@@ -321,7 +298,6 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
         )}
       </div>
       
-      {/* Edit Service Dialog */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
