@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority, Project, RecurrenceType } from '@/types/task';
 import { v4 as uuidv4 } from 'uuid';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast-extensions';
 import { addDays, addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
 
 interface TaskContextType {
