@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Plus, X, User, Repeat } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, X, User, Repeat, Check, List, ClipboardList, GitMerge } from 'lucide-react';
 import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
+import { SubTask } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -33,6 +35,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card } from "@/components/ui/card";
 
 // Simulate team members data (in a real app, this would come from your API/context)
 const teamMembers = [
@@ -53,6 +58,7 @@ const formSchema = z.object({
   projectId: z.string().optional(),
   recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
   recurrenceEndDate: z.date().optional(),
+  templateId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,7 +71,10 @@ interface TaskFormProps {
 
 export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSubmit }) => {
   const [tagInput, setTagInput] = useState('');
-  const { projects } = useTaskContext();
+  const [subtasks, setSubtasks] = useState<Partial<SubTask>[]>([]);
+  const [subtaskInput, setSubtaskInput] = useState('');
+  const [useTemplate, setUseTemplate] = useState(false);
+  const { projects, templates, subtasks: existingSubtasks } = useTaskContext();
   const { clients } = useClientContext();
   
   const form = useForm<FormValues>({
@@ -82,8 +91,29 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       projectId: task?.projectId || '',
       recurrence: task?.recurrence || 'none',
       recurrenceEndDate: task?.recurrenceEndDate,
+      templateId: '',
     },
   });
+
+  // Load existing subtasks if editing
+  useEffect(() => {
+    if (task?.id) {
+      const taskSubtasks = existingSubtasks
+        .filter(st => st.taskId === task.id)
+        .sort((a, b) => a.order - b.order)
+        .map(st => ({
+          id: st.id,
+          title: st.title,
+          description: st.description,
+          completed: st.completed,
+          order: st.order,
+          assignedTo: st.assignedTo,
+          assigneeName: st.assigneeName
+        }));
+      
+      setSubtasks(taskSubtasks);
+    }
+  }, [task?.id, existingSubtasks]);
 
   // Show client in form when editing task with clientId
   useEffect(() => {
@@ -95,6 +125,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
   // Set additional conditions for recurrence end date visibility
   const showRecurrenceEndDate = form.watch('recurrence') !== 'none';
   const selectedClientId = form.watch('clientId');
+  const selectedTemplateId = form.watch('templateId');
   
   // Get selected client details
   const selectedClient = selectedClientId ? 
@@ -119,7 +150,51 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     );
   };
 
-  const handleSubmitWithAssigneeName = (values: FormValues) => {
+  const handleTemplateChange = (templateId: string) => {
+    if (!templateId || templateId === 'no-template') {
+      return;
+    }
+    
+    const template = templates.find(t => t.id === templateId);
+    if (template && template.subtasks) {
+      setSubtasks(template.subtasks.map((st, index) => ({
+        title: st.title,
+        description: st.description,
+        completed: false,
+        order: index,
+        assignedTo: st.assignedTo,
+        assigneeName: st.assigneeName
+      })));
+    }
+  };
+
+  const handleAddSubtask = () => {
+    if (subtaskInput.trim()) {
+      setSubtasks([
+        ...subtasks, 
+        { 
+          title: subtaskInput.trim(), 
+          completed: false, 
+          order: subtasks.length 
+        }
+      ]);
+      setSubtaskInput('');
+    }
+  };
+
+  const handleRemoveSubtask = (index: number) => {
+    setSubtasks(subtasks.filter((_, i) => i !== index));
+  };
+
+  const handleToggleSubtaskComplete = (index: number) => {
+    setSubtasks(
+      subtasks.map((st, i) => 
+        i === index ? { ...st, completed: !st.completed } : st
+      )
+    );
+  };
+
+  const handleSubmitWithSubtasks = (values: FormValues) => {
     const submitValues = { ...values } as any;
     
     // Add the assignee name if an assignee is selected
@@ -147,12 +222,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       }
     }
     
+    // Pass the subtasks along with the task data
+    submitValues.subtasks = subtasks;
+    
     onSubmit(submitValues);
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmitWithAssigneeName)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmitWithSubtasks)} className="space-y-4">
         <FormField
           control={form.control}
           name="title"
@@ -176,6 +254,42 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
               <FormControl>
                 <Textarea placeholder="Add details..." {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Template selection */}
+        <FormField
+          control={form.control}
+          name="templateId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <GitMerge className="h-4 w-4" />
+                Use Template
+              </FormLabel>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  handleTemplateChange(value);
+                }}
+                value={field.value || 'no-template'}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="no-template">No Template</SelectItem>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.subtasks.length} steps)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -309,7 +423,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
                       selected={field.value}
                       onSelect={field.onChange}
                       initialFocus
-                      className="pointer-events-auto"
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -453,8 +567,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date()
+                      }
                       initialFocus
-                      className="pointer-events-auto"
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -514,6 +631,85 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
             </FormItem>
           )}
         />
+
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="subtasks">
+            <AccordionTrigger className="font-medium text-sm">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Task Steps/Subtasks {subtasks.length > 0 && `(${subtasks.length})`}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Add a subtask"
+                    value={subtaskInput}
+                    onChange={(e) => setSubtaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSubtask();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button"
+                    size="sm" 
+                    onClick={handleAddSubtask}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                
+                {subtasks.length > 0 ? (
+                  <div className="space-y-2">
+                    {subtasks.map((subtask, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
+                        <Checkbox 
+                          checked={subtask.completed}
+                          onCheckedChange={() => handleToggleSubtaskComplete(index)}
+                        />
+                        <div className="flex-1">
+                          <p className={cn(
+                            "text-sm font-medium",
+                            subtask.completed && "line-through text-muted-foreground"
+                          )}>
+                            {subtask.title}
+                          </p>
+                          {subtask.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {subtask.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button 
+                          type="button"
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleRemoveSubtask(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    No subtasks added yet
+                  </p>
+                )}
+                
+                <div className="text-xs text-muted-foreground">
+                  Add steps to track the progress of this task. Each step can be marked as completed individually.
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button type="submit" className="w-full">
           {task ? 'Update Task' : 'Create Task'}

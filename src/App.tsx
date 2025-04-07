@@ -11,6 +11,8 @@ import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
 import HelpPage from '@/pages/HelpPage';
 import Index from '@/pages/Index';
+import TaskTemplatesPage from '@/pages/TaskTemplatesPage';
+import BulkTaskCreationPage from '@/pages/BulkTaskCreationPage';
 
 import './App.css';
 
@@ -23,6 +25,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/tasks" element={<Index />} />
+              <Route path="/task-templates" element={<TaskTemplatesPage />} />
+              <Route path="/bulk-tasks" element={<BulkTaskCreationPage />} />
               <Route path="/client-management" element={<ClientManagementPage />} />
               <Route path="/client/:clientId" element={<ClientPage />} />
               <Route path="/settings" element={<Settings />} />

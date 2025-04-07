@@ -32,6 +32,7 @@ export interface ServiceType {
   description: string;
   frequency: 'one-time' | 'monthly' | 'quarterly' | 'annually';
   renewalPeriod?: number; // Period in months
+  taskTemplate?: SubTask[]; // Default subtasks for this service type
 }
 
 export interface ClientService {
@@ -44,6 +45,7 @@ export interface ClientService {
   status: 'active' | 'inactive' | 'completed';
   reminderDays?: number; // Days before due date to start reminder
   reminderType?: 'days' | 'months' | 'specificDate';
+  reminderDate?: Date; // Specific date for reminder when using 'specificDate' type
 }
 
 export interface ServiceRenewal {
@@ -54,4 +56,22 @@ export interface ServiceRenewal {
   completedDate?: Date;
   status: 'pending' | 'completed' | 'overdue';
   notes?: string;
+}
+
+export interface SubTask {
+  id: string;
+  taskId: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  order: number;
+  assignedTo?: string;
+  assigneeName?: string;
+}
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  subtasks: SubTask[];
 }

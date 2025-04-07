@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -27,7 +28,7 @@ import {
 
 export const ServiceRenewalsDashboard: React.FC = () => {
   const { clientServices, serviceTypes, clients, updateClientService, deleteClientService } = useClientContext();
-  const { tasks, deleteTask } = useTaskContext();
+  const { tasks, addTask, deleteTask } = useTaskContext();
   const [timeFrame, setTimeFrame] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   
@@ -132,45 +133,80 @@ export const ServiceRenewalsDashboard: React.FC = () => {
     }
   };
   
+  const createReminderTask = (service: any, reminderDate: Date) => {
+    // Create reminder task for this service
+    const serviceType = serviceTypes.find(type => type.id === service.serviceTypeId);
+    if (serviceType) {
+      const taskId = addTask({
+        title: `Reminder: ${serviceType.name} renewal for ${service.clientName}`,
+        description: `This service is due for renewal on ${format(new Date(service.endDate), "PPP")}`,
+        status: 'todo',
+        priority: 'medium',
+        dueDate: reminderDate,
+        clientId: service.clientId,
+        clientName: service.clientName,
+        tags: ['Reminder', serviceType.name],
+      });
+      
+      return taskId;
+    }
+    return null;
+  };
+  
   const saveReminderChanges = () => {
     if (!editingService) return;
     
     const finalReminderDays = getEditReminderDays();
     
-    updateClientService(editingService.clientId, editingService.serviceTypeId, {
+    // Update the service with new reminder settings
+    const updatedService = {
       reminderDays: finalReminderDays,
       reminderType: editReminderType
-    });
+    };
+    
+    if (editReminderType === 'specificDate' && editReminderDate) {
+      updatedService.reminderDate = editReminderDate;
+    }
+    
+    updateClientService(editingService.clientId, editingService.serviceTypeId, updatedService);
     
     if (editingService.endDate) {
-      const reminderDate = new Date(editingService.endDate);
-      reminderDate.setDate(reminderDate.getDate() - finalReminderDays);
+      // Calculate the reminder date
+      let reminderDate: Date;
+      if (editReminderType === 'specificDate' && editReminderDate) {
+        reminderDate = editReminderDate;
+      } else {
+        reminderDate = new Date(editingService.endDate);
+        reminderDate.setDate(reminderDate.getDate() - finalReminderDays);
+      }
       
+      // Find and delete existing reminder tasks
       const reminderTasks = tasks.filter(
         task => task.clientId === editingService.clientId && 
-               task.tags.includes('Reminder') &&
+               task.tags && task.tags.includes('Reminder') &&
                task.tags.includes(editingService.serviceTypeName || '')
       );
       
       reminderTasks.forEach(task => {
         if (task.id) {
           deleteTask(task.id);
-          
-          const addTask = (task: any) => {
-          };
         }
       });
+      
+      // Create a new reminder task with the updated date
+      if (reminderDate >= new Date()) {
+        createReminderTask(editingService, reminderDate);
+      }
     }
     
     toast.success(`Reminder period updated for ${editingService.serviceTypeName}`);
-    
     setIsEditModalOpen(false);
   };
 
   const handleCancelService = (service: any) => {
     if (window.confirm(`Are you sure you want to cancel the ${service.serviceTypeName} service for ${service.clientName}?`)) {
       const relatedTasks = tasks.filter(
-        task => task.clientId === service.clientId && task.tags.includes(
+        task => task.clientId === service.clientId && task.tags && task.tags.includes(
           serviceTypes.find(s => s.id === service.serviceTypeId)?.name || ''
         )
       );
@@ -279,9 +315,13 @@ export const ServiceRenewalsDashboard: React.FC = () => {
                     <p className="text-muted-foreground">Client: {service.clientName}</p>
                     <div className="mt-1 text-sm">
                       <span className="text-muted-foreground">Reminder: </span>
-                      {service.reminderType === 'months' 
-                        ? `${Math.round((service.reminderDays || 30) / 30)} months before due` 
-                        : `${service.reminderDays || 30} days before due`}
+                      {service.reminderType === 'specificDate' && service.reminderDate ? (
+                        `On ${format(new Date(service.reminderDate), "MMM d, yyyy")}`
+                      ) : service.reminderType === 'months' ? (
+                        `${Math.round((service.reminderDays || 30) / 30)} months before due`
+                      ) : (
+                        `${service.reminderDays || 30} days before due`
+                      )}
                     </div>
                   </div>
                   
