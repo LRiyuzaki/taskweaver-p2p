@@ -1,4 +1,3 @@
-
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -9,10 +8,7 @@ export interface Client {
   email: string;
   company: string;
   createdAt: Date;
-  gstRequired?: boolean;
-  incomeTaxRequired?: boolean;
-  tdsRequired?: boolean;
-  auditRequired?: boolean;
+  requiredServices: Record<string, boolean>;
   startDate?: Date;
 }
 
@@ -44,6 +40,7 @@ export interface Task {
   createdAt: Date;
   tags: string[];
   clientId?: string;
+  clientName?: string; // Store client name for easier display
   assignedTo?: string;
   assigneeName?: string; // Store the name for easier display
   projectId?: string;

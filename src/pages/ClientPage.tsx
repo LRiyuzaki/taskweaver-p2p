@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "@/components/Header";
@@ -60,6 +59,16 @@ const ClientPage = () => {
     deleteClient(clientId || '');
     navigate('/client-management');
   };
+
+  const getActiveServices = () => {
+    if (!client.requiredServices) return [];
+    
+    return Object.entries(client.requiredServices)
+      .filter(([_, isRequired]) => isRequired)
+      .map(([serviceName]) => serviceName);
+  };
+  
+  const activeServices = getActiveServices();
 
   return (
     <div className="flex flex-col h-screen">
@@ -139,14 +148,16 @@ const ClientPage = () => {
             <CardContent className="p-6">
               <h3 className="text-base font-medium mb-4">Services Required</h3>
               <div className="space-y-3">
-                {client.requiredServices && Object.entries(client.requiredServices).map(([serviceName, isRequired]) => (
-                  <div key={serviceName} className="flex items-center justify-between">
-                    <span>{serviceName}</span>
-                    <Badge variant={isRequired ? "default" : "outline"}>
-                      {isRequired ? 'Required' : 'Not Required'}
-                    </Badge>
-                  </div>
-                ))}
+                {activeServices.length > 0 ? (
+                  activeServices.map(serviceName => (
+                    <div key={serviceName} className="flex items-center justify-between">
+                      <span>{serviceName}</span>
+                      <Badge>Required</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm">No services selected for this client.</p>
+                )}
               </div>
             </CardContent>
           </Card>

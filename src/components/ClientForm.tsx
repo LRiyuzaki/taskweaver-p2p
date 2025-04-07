@@ -94,6 +94,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   };
 
   const handleServiceChange = (serviceName: string, checked: boolean) => {
+    console.log(`Service ${serviceName} changed to ${checked}`); // Debug log
     setFormData(prev => ({
       ...prev,
       requiredServices: {
@@ -105,6 +106,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log("Submitting form data:", formData); // Debug log
     onSubmit(formData);
   };
 
@@ -257,8 +259,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
       <Separator className="my-4" />
       
       <div>
-        <Label className="text-base">Required Services</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
+        <Label className="text-base font-medium">Required Services</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
           {availableServices.map(serviceName => (
             <div key={serviceName} className="flex items-center space-x-2">
               <Checkbox 

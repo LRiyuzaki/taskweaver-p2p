@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -33,6 +32,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useTaskContext } from '@/contexts/TaskContext';
+import { useClientContext } from '@/contexts/ClientContext';
 
 // Simulate team members data (in a real app, this would come from your API/context)
 const teamMembers = [
@@ -49,6 +49,7 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   tags: z.array(z.string()).optional(),
   assignedTo: z.string().optional(),
+  clientId: z.string().optional(),
   projectId: z.string().optional(),
   recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
   recurrenceEndDate: z.date().optional(),
@@ -58,12 +59,14 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
   task?: Task;
+  initialClientId?: string;
   onSubmit: (values: Omit<Task, 'id' | 'createdAt'>) => void;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
+export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSubmit }) => {
   const [tagInput, setTagInput] = useState('');
   const { projects } = useTaskContext();
+  const { clients } = useClientContext();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -75,14 +78,27 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
       dueDate: task?.dueDate,
       tags: task?.tags || [],
       assignedTo: task?.assignedTo || '',
+      clientId: task?.clientId || initialClientId || '',
       projectId: task?.projectId || '',
       recurrence: task?.recurrence || 'none',
       recurrenceEndDate: task?.recurrenceEndDate,
     },
   });
 
+  // Show client in form when editing task with clientId
+  useEffect(() => {
+    if (initialClientId) {
+      form.setValue('clientId', initialClientId);
+    }
+  }, [initialClientId, form]);
+
   // Set additional conditions for recurrence end date visibility
   const showRecurrenceEndDate = form.watch('recurrence') !== 'none';
+  const selectedClientId = form.watch('clientId');
+  
+  // Get selected client details
+  const selectedClient = selectedClientId ? 
+    clients.find(client => client.id === selectedClientId) : null;
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
@@ -122,6 +138,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
       }
     }
     
+    // Add client name if client is selected
+    if (values.clientId && values.clientId !== 'no-client') {
+      const client = clients.find(c => c.id === values.clientId);
+      if (client) {
+        // Store client name for easy display without having to look it up again
+        submitValues.clientName = client.name;
+      }
+    }
+    
     onSubmit(submitValues);
   };
 
@@ -152,6 +177,48 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit }) => {
                 <Textarea placeholder="Add details..." {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Client selection field */}
+        <FormField
+          control={form.control}
+          name="clientId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Associated Client</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || ''}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="no-client">No Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name} ({client.company})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+              
+              {/* Show selected client information if available */}
+              {selectedClient && (
+                <div className="mt-2 p-2 bg-muted/40 rounded-md">
+                  <p className="text-sm">
+                    <span className="font-medium">Selected Client:</span> {selectedClient.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedClient.email} • {selectedClient.phone || "No phone"}
+                  </p>
+                </div>
+              )}
             </FormItem>
           )}
         />
