@@ -4,7 +4,7 @@ import { useClientContext } from '@/contexts/ClientContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, AlertTriangle, CheckCircle, Filter } from 'lucide-react';
+import { CalendarClock, AlertTriangle, CheckCircle, Edit, Filter } from 'lucide-react';
 import { format, isAfter, isBefore, addDays, differenceInDays } from 'date-fns';
 import { 
   Select,
@@ -14,11 +14,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast-extensions";
 
 export const ServiceRenewalsDashboard: React.FC = () => {
-  const { clientServices, serviceTypes, clients } = useClientContext();
+  const { clientServices, serviceTypes, clients, updateClientService } = useClientContext();
   const [timeFrame, setTimeFrame] = useState<'7days' | '30days' | '90days' | 'all'>('30days');
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any | null>(null);
+  const [editReminderDays, setEditReminderDays] = useState<number>(30);
   
   // Get current date
   const today = new Date();
@@ -86,6 +94,39 @@ export const ServiceRenewalsDashboard: React.FC = () => {
   // Count statistics
   const overdueCount = filteredServices.filter(s => s.daysUntilDue < 0).length;
   const upcomingCount = filteredServices.filter(s => s.daysUntilDue >= 0).length;
+  
+  const handleEditService = (service: any) => {
+    setEditingService(service);
+    setEditReminderDays(service.reminderDays || 30);
+    setIsEditModalOpen(true);
+  };
+  
+  const saveReminderChanges = () => {
+    if (!editingService) return;
+    
+    updateClientService(editingService.clientId, editingService.serviceTypeId, {
+      reminderDays: editReminderDays
+    });
+    
+    toast({
+      title: "Service Updated",
+      description: `Reminder period updated for ${editingService.serviceTypeName}`
+    });
+    
+    setIsEditModalOpen(false);
+  };
+  
+  const processRenewal = (service: any) => {
+    // Mark the service as completed
+    updateClientService(service.clientId, service.serviceTypeId, {
+      status: 'completed'
+    });
+    
+    toast({
+      title: "Renewal Processed",
+      description: `Successfully processed renewal for ${service.serviceTypeName}`
+    });
+  };
   
   return (
     <div className="space-y-6">
@@ -171,12 +212,16 @@ export const ServiceRenewalsDashboard: React.FC = () => {
                   <div>
                     <h3 className="font-medium text-lg">{service.serviceTypeName}</h3>
                     <p className="text-muted-foreground">Client: {service.clientName}</p>
+                    <div className="mt-1 text-sm">
+                      <span className="text-muted-foreground">Reminder: </span>
+                      {service.reminderDays || 30} days before due
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      Due: {format(new Date(service.endDate!), "MMM d, yyyy")}
+                      Due: {format(new Date(service.endDate), "MMM d, yyyy")}
                     </span>
                     
                     <Badge variant={service.daysUntilDue < 0 ? "destructive" : "outline"}>
@@ -186,8 +231,21 @@ export const ServiceRenewalsDashboard: React.FC = () => {
                     </Badge>
                   </div>
                   
-                  <div className="w-full md:w-auto flex justify-end mt-2 md:mt-0">
-                    <Button size="sm" variant={service.daysUntilDue < 0 ? "destructive" : "outline"}>
+                  <div className="w-full md:w-auto flex flex-wrap gap-2 justify-end mt-2 md:mt-0">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEditService(service)}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Reminder
+                    </Button>
+                    
+                    <Button 
+                      size="sm" 
+                      variant={service.daysUntilDue < 0 ? "destructive" : "outline"}
+                      onClick={() => processRenewal(service)}
+                    >
                       {service.daysUntilDue < 0 ? (
                         <AlertTriangle className="mr-2 h-4 w-4" />
                       ) : (
@@ -210,6 +268,46 @@ export const ServiceRenewalsDashboard: React.FC = () => {
           </p>
         </div>
       )}
+      
+      {/* Edit Reminder Dialog */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Reminder Period</DialogTitle>
+            <DialogDescription>
+              {editingService && (
+                <>Update the reminder days for {editingService.serviceTypeName} for client {editingService.clientName}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editReminderDays">Reminder Days Before Due</Label>
+              <Input
+                id="editReminderDays"
+                type="number"
+                value={editReminderDays}
+                onChange={(e) => setEditReminderDays(parseInt(e.target.value) || 30)}
+                min={1}
+                max={365}
+              />
+              <p className="text-sm text-muted-foreground">
+                Tasks will be created {editReminderDays} days before the service is due for renewal.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveReminderChanges}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
