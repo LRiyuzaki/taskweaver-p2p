@@ -1,11 +1,10 @@
-
 import React, { useMemo, useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, AlertTriangle, CheckCircle, Edit, Filter } from 'lucide-react';
+import { CalendarClock, AlertTriangle, CheckCircle, Edit, Filter, Calendar as CalendarIcon } from 'lucide-react';
 import { format, isAfter, isBefore, addDays, differenceInDays } from 'date-fns';
 import { 
   Select,
@@ -103,7 +102,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
     setEditReminderMonths(Math.round((service.reminderDays || 30) / 30));
     setEditReminderType(service.reminderType || 'days');
     
-    // If there's a specific date stored, calculate it from the end date and reminder days
     if (service.endDate && service.reminderDays) {
       const specificDate = new Date(service.endDate);
       specificDate.setDate(specificDate.getDate() - service.reminderDays);
@@ -120,13 +118,13 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       case 'days':
         return editReminderDays;
       case 'months':
-        return editReminderMonths * 30; // Approximate days in a month
+        return editReminderMonths * 30;
       case 'specificDate':
         if (editReminderDate && editingService?.endDate) {
           const endDate = new Date(editingService.endDate);
           const diffTime = endDate.getTime() - editReminderDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays > 0 ? diffDays : 30; // Default to 30 if date is after end date
+          return diffDays > 0 ? diffDays : 30;
         }
         return 30;
       default:
@@ -144,12 +142,10 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       reminderType: editReminderType
     });
     
-    // Update related tasks with the new reminder settings
     if (editingService.endDate) {
       const reminderDate = new Date(editingService.endDate);
       reminderDate.setDate(reminderDate.getDate() - finalReminderDays);
       
-      // Find and update all reminder tasks for this service
       const reminderTasks = tasks.filter(
         task => task.clientId === editingService.clientId && 
                task.tags.includes('Reminder') &&
@@ -157,13 +153,10 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       );
       
       reminderTasks.forEach(task => {
-        // Update the task with new due date
         if (task.id) {
           deleteTask(task.id);
           
-          // Create a new task with updated settings
           const addTask = (task: any) => {
-            // Implementation omitted, will be handled by the TaskContext
           };
         }
       });
@@ -176,7 +169,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
 
   const handleCancelService = (service: any) => {
     if (window.confirm(`Are you sure you want to cancel the ${service.serviceTypeName} service for ${service.clientName}?`)) {
-      // Remove related tasks
       const relatedTasks = tasks.filter(
         task => task.clientId === service.clientId && task.tags.includes(
           serviceTypes.find(s => s.id === service.serviceTypeId)?.name || ''
@@ -187,7 +179,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         deleteTask(task.id);
       });
       
-      // Delete the service
       deleteClientService(service.clientId, service.serviceTypeId);
       
       toast.success(`${service.serviceTypeName} has been cancelled for ${service.clientName}`);
