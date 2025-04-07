@@ -266,9 +266,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
               <Checkbox 
                 id={`service-${serviceName}`}
                 checked={formData.requiredServices[serviceName] || false}
-                onCheckedChange={(checked) => 
-                  handleServiceChange(serviceName, checked === true)
-                }
+                onCheckedChange={(checked) => {
+                  handleServiceChange(serviceName, checked === true);
+                }}
               />
               <Label 
                 htmlFor={`service-${serviceName}`}

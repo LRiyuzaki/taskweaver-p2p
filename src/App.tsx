@@ -1,58 +1,38 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { TaskProvider } from "@/contexts/TaskContext";
-import { DatabaseProvider } from "@/contexts/DatabaseContext";
-import { ClientProvider } from "@/contexts/ClientContext";
-import { AppSidebar } from "@/components/AppSidebar";
-import Dashboard from "./pages/Dashboard";
-import Settings from "./pages/Settings";
-import AdvancedSettings from "./pages/AdvancedSettings";
-import Database from "./pages/Database";
-import ClientManagement from "./pages/ClientManagement";
-import ClientManagementPage from "./pages/ClientManagementPage";
-import ClientPage from "./pages/ClientPage";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { ClientProvider } from '@/contexts/ClientContext';
+import { TaskProvider } from '@/contexts/TaskContext';
+import { ThemeProvider } from '@/components/theme-provider';
+import Dashboard from '@/pages/Dashboard';
+import ClientManagementPage from '@/pages/ClientManagementPage';
+import ClientPage from '@/pages/ClientPage';
+import Settings from '@/pages/Settings';
+import NotFound from '@/pages/NotFound';
+import HelpPage from '@/pages/HelpPage';
 
-// Create a new QueryClient instance
-const queryClient = new QueryClient();
+import './App.css';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <TooltipProvider>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <ClientProvider>
         <TaskProvider>
-          <DatabaseProvider>
-            <ClientProvider>
-              <SidebarProvider>
-                <div className="flex min-h-screen w-full">
-                  <AppSidebar />
-                  <div className="flex-1 flex flex-col">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/advanced-settings" element={<AdvancedSettings />} />
-                      <Route path="/database" element={<Database />} />
-                      <Route path="/client-management" element={<ClientManagement />} />
-                      <Route path="/client/:clientId" element={<ClientPage />} />
-                      <Route path="/accounting" element={<ClientManagementPage />} />
-                      <Route path="/calendar" element={<NotFound />} /> {/* Placeholder for Calendar */}
-                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                    <Toaster />
-                  </div>
-                </div>
-              </SidebarProvider>
-            </ClientProvider>
-          </DatabaseProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/client-management" element={<ClientManagementPage />} />
+              <Route path="/client/:clientId" element={<ClientPage />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<HelpPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Router>
         </TaskProvider>
-      </TooltipProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+      </ClientProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;

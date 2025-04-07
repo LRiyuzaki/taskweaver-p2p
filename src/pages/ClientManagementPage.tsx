@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ import { ClientList } from "@/components/ClientList";
 import { ClientDetail } from "@/components/ClientDetail";
 import { ServicesManagement } from "@/components/ServicesManagement";
 import { Input } from "@/components/ui/input";
+import { toast } from '@/components/ui/use-toast';
 
 const ClientManagementPage = () => {
   const { clients, serviceTypes, addClient } = useClientContext();
@@ -31,8 +32,21 @@ const ClientManagementPage = () => {
   };
 
   const handleAddClientSubmit = (formData: any) => {
-    addClient(formData);
-    setIsAddClientDialogOpen(false);
+    try {
+      addClient(formData);
+      setIsAddClientDialogOpen(false);
+      toast({
+        title: "Client Created",
+        description: `${formData.name} has been added successfully.`,
+      });
+    } catch (error) {
+      console.error("Error adding client:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem creating the client. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBackToList = () => {
