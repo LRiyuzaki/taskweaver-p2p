@@ -18,7 +18,7 @@ import { ClientList } from "@/components/ClientList";
 import { ClientDetail } from "@/components/ClientDetail";
 import { ServicesManagement } from "@/components/ServicesManagement";
 import { Input } from "@/components/ui/input";
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const ClientManagementPage = () => {
   const { clients, serviceTypes, addClient } = useClientContext();
