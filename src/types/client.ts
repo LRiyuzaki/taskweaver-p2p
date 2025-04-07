@@ -43,6 +43,7 @@ export interface ClientService {
   nextRenewalDate?: Date;
   status: 'active' | 'inactive' | 'completed';
   reminderDays?: number; // Days before due date to start reminder
+  reminderType?: 'days' | 'months' | 'specificDate';
 }
 
 export interface ServiceRenewal {

@@ -4,14 +4,10 @@ import { NavLink } from 'react-router-dom';
 import { 
   Home, 
   Settings, 
-  Database, 
-  UserCircle,
-  BarChart2,
   Calendar,
   ClipboardList,
   Users,
-  FileText,
-  MoreHorizontal
+  HelpCircle
 } from 'lucide-react';
 
 interface SidebarLinkProps {
@@ -48,10 +44,10 @@ export const AppSidebarLinks = () => {
   return (
     <div className="space-y-1 py-2">
       <SidebarLink to="/" icon={Home} label="Dashboard" end />
-      <SidebarLink to="/accounting" icon={ClipboardList} label="Practice Management" />
-      <SidebarLink to="/client-management" icon={Users} label="Client Database" />
-      <SidebarLink to="/database" icon={Database} label="Database" />
+      <SidebarLink to="/tasks" icon={ClipboardList} label="Tasks" />
+      <SidebarLink to="/client-management" icon={Users} label="Clients" />
       <SidebarLink to="/settings" icon={Settings} label="Settings" />
+      <SidebarLink to="/help" icon={HelpCircle} label="Help" />
     </div>
   );
 };

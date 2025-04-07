@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { TaskForm } from '@/components/TaskForm';
 import { useNavigate } from 'react-router-dom';
 import { ClientList } from '@/components/ClientList';
+import { TaskCalendarView } from '@/components/TaskCalendarView';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
@@ -266,17 +267,7 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="calendar" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Calendar View</CardTitle>
-                  <CardDescription>View tasks and deadlines on a calendar</CardDescription>
-                </CardHeader>
-                <CardContent className="min-h-[500px]">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Calendar view coming soon...</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <TaskCalendarView />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProvider } from '@/contexts/ClientContext';
 import { TaskProvider } from '@/contexts/TaskContext';
@@ -10,6 +10,7 @@ import ClientPage from '@/pages/ClientPage';
 import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
 import HelpPage from '@/pages/HelpPage';
+import Index from '@/pages/Index';
 
 import './App.css';
 
@@ -21,10 +22,14 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/tasks" element={<Index />} />
               <Route path="/client-management" element={<ClientManagementPage />} />
               <Route path="/client/:clientId" element={<ClientPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<HelpPage />} />
+              {/* Old routes redirect */}
+              <Route path="/accounting" element={<Navigate to="/tasks" replace />} />
+              <Route path="/database" element={<Navigate to="/client-management" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

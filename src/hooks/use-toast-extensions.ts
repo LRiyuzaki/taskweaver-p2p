@@ -2,13 +2,20 @@
 import { toast as baseToast } from "@/hooks/use-toast";
 import type { ToastProps } from "@/components/ui/toast";
 
+// Define the type for the toast function result
+type ToastResult = {
+  id: string;
+  dismiss: () => void;
+  update: (props: any) => void;
+};
+
 // Extend the toast function with common patterns
 export const toast = {
   // Base toast function for direct calling
-  default: (props: ToastProps) => baseToast(props),
+  default: (props: ToastProps): ToastResult => baseToast(props),
   
   // Success toast
-  success: (message: string) => {
+  success: (message: string): ToastResult => {
     return baseToast({
       title: "Success",
       description: message,
@@ -18,7 +25,7 @@ export const toast = {
   },
   
   // Error toast
-  error: (message: string) => {
+  error: (message: string): ToastResult => {
     return baseToast({
       title: "Error",
       description: message,
@@ -27,7 +34,7 @@ export const toast = {
   },
   
   // Warning toast
-  warning: (message: string) => {
+  warning: (message: string): ToastResult => {
     return baseToast({
       title: "Warning",
       description: message,
@@ -36,7 +43,7 @@ export const toast = {
   },
   
   // Info toast
-  info: (message: string) => {
+  info: (message: string): ToastResult => {
     return baseToast({
       title: "Info",
       description: message,
