@@ -13,7 +13,6 @@ import TaskTemplatesPage from './pages/TaskTemplatesPage';
 import ReportsPage from './pages/ReportsPage';
 import HelpPage from './pages/HelpPage';
 import Database from './pages/Database';
-import TaskColumn from './pages/TaskColumn';
 import Settings from './pages/Settings';
 import BulkTaskCreationPage from './pages/BulkTaskCreationPage';
 import ClientManagement from './pages/ClientManagement';
@@ -67,7 +66,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: '/task-column',
-    element: <TaskColumn />,
+    element: <TasksPage />, /* Redirecting to TasksPage instead of non-existent TaskColumn */
   },
   {
     path: '/settings',

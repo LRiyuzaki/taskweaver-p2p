@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from '@/components/TaskCard';
@@ -64,7 +63,8 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   const handleTaskFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
     addTask({
       ...formData,
-      status // Force the status to match this column
+      status, // Force the status to match this column
+      recurrence: formData.recurrence || 'none',
     });
     setIsAddTaskDialogOpen(false);
     toast.success(`Task added to ${title}`);
@@ -131,7 +131,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
             <h3 className="font-medium text-sm uppercase tracking-wide">{title}</h3>
             <Badge variant={
               status === 'todo' ? "outline" :
-              status === 'inProgress' ? "secondary" : "success"
+              status === 'inProgress' ? "secondary" : "default"
             }>{processedTasks.length}</Badge>
           </div>
           
@@ -278,7 +278,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
           </DialogHeader>
           <TaskForm 
             onSubmit={handleTaskFormSubmit}
-            initialValues={{ status }}
+            defaultStatus={status}
           />
         </DialogContent>
       </Dialog>

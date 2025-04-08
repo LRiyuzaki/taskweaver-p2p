@@ -13,54 +13,71 @@ import {
   PlusSquare,
   FileBarChart2,
 } from "lucide-react";
-import { Link } from "@/components/ui/sidebar";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export default function AppSidebarLinks() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isActive = (path: string) => location.pathname === path;
+
+  const LinkItem = ({ to, icon, children }: { to: string, icon: React.ReactNode, children: React.ReactNode }) => (
+    <Button
+      variant={isActive(to) ? "secondary" : "ghost"}
+      className="w-full justify-start"
+      onClick={() => navigate(to)}
+    >
+      {icon}
+      <span className="ml-2">{children}</span>
+    </Button>
+  );
+
   return (
     <>
-      <Link to="/" icon={<Home />}>
+      <LinkItem to="/" icon={<Home className="h-4 w-4" />}>
         Home
-      </Link>
+      </LinkItem>
 
-      <Link to="/dashboard" icon={<LayoutDashboard />}>
+      <LinkItem to="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>
         Dashboard
-      </Link>
+      </LinkItem>
 
-      <Link to="/tasks" icon={<ClipboardList />}>
+      <LinkItem to="/tasks" icon={<ClipboardList className="h-4 w-4" />}>
         Tasks
-      </Link>
+      </LinkItem>
 
-      <Link to="/task-templates" icon={<PlusSquare />}>
+      <LinkItem to="/task-templates" icon={<PlusSquare className="h-4 w-4" />}>
         Templates
-      </Link>
+      </LinkItem>
 
-      <Link to="/bulk-task-creation" icon={<FileText />}>
+      <LinkItem to="/bulk-task-creation" icon={<FileText className="h-4 w-4" />}>
         Bulk Creation
-      </Link>
+      </LinkItem>
 
-      <Link to="/client-management" icon={<Users />}>
+      <LinkItem to="/client-management" icon={<Users className="h-4 w-4" />}>
         Clients
-      </Link>
+      </LinkItem>
 
-      <Link to="/task-column" icon={<BarChart2 />}>
+      <LinkItem to="/task-column" icon={<BarChart2 className="h-4 w-4" />}>
         Task Board
-      </Link>
+      </LinkItem>
 
-      <Link to="/reports-list" icon={<FileBarChart2 />}>
+      <LinkItem to="/reports-list" icon={<FileBarChart2 className="h-4 w-4" />}>
         Reports
-      </Link>
+      </LinkItem>
 
-      <Link to="/database" icon={<Database />}>
+      <LinkItem to="/database" icon={<Database className="h-4 w-4" />}>
         Database
-      </Link>
+      </LinkItem>
 
-      <Link to="/settings" icon={<Settings />}>
+      <LinkItem to="/settings" icon={<Settings className="h-4 w-4" />}>
         Settings
-      </Link>
+      </LinkItem>
 
-      <Link to="/help" icon={<HelpCircle />}>
+      <LinkItem to="/help" icon={<HelpCircle className="h-4 w-4" />}>
         Help
-      </Link>
+      </LinkItem>
     </>
   );
 }

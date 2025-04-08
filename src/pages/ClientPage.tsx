@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "@/components/Header";
@@ -12,7 +11,7 @@ import { useTaskContext } from '@/contexts/TaskContext';
 import { ClientForm } from '@/components/ClientForm';
 import { ClientTimeline } from '@/components/ClientTimeline';
 import { ClientDocuments } from '@/components/ClientDocuments';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 import { ClientServiceManager } from '@/components/ClientServiceManager';
 import type { ReactNode } from 'react';
@@ -90,6 +89,7 @@ const ClientPage = () => {
       tags: ['Follow-up', 'Client'],
       clientId: clientId || '',
       assignedTo: '',
+      recurrence: 'none'
     });
     
     setIsReminderDialogOpen(false);
@@ -97,7 +97,6 @@ const ClientPage = () => {
   };
 
   const handleExportClientData = () => {
-    // Simulate export functionality
     toast.success("Client data exported successfully");
   };
 
@@ -305,7 +304,7 @@ const ClientPage = () => {
                             </Badge>
                             <Badge variant={
                               task.status === 'todo' ? "outline" :
-                              task.status === 'inProgress' ? "secondary" : "success"
+                              task.status === 'inProgress' ? "secondary" : "default"
                             }>
                               {task.status === 'todo' ? 'To Do' :
                                 task.status === 'inProgress' ? 'In Progress' : 'Complete'}
