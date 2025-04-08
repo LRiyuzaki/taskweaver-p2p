@@ -56,18 +56,19 @@ const formSchema = z.object({
   clientId: z.string().optional(),
   projectId: z.string().optional(),
   recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
-  recurrenceEndDate: z.date().optional()
-    .refine(
-      (date) => {
-        if (!date) return true;
-        const recurrence = form?.getValues('recurrence');
-        const dueDate = form?.getValues('dueDate');
-        if (recurrence === 'none' || !dueDate) return true;
-        return date > dueDate;
-      },
-      'End date must be after the due date'
-    ),
+  recurrenceEndDate: z.date().optional(),
   templateId: z.string().optional(),
+}).refine((data) => {
+  // Validate recurrence end date is after due date if both are provided
+  if (data.recurrenceEndDate && data.dueDate) {
+    if (data.recurrence !== 'none') {
+      return data.recurrenceEndDate > data.dueDate;
+    }
+  }
+  return true;
+}, {
+  message: "End date must be after the due date",
+  path: ["recurrenceEndDate"]
 }).refine((data) => {
   // Require due date if recurrence is set
   if (data.recurrence !== 'none' && !data.dueDate) {
@@ -245,7 +246,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       }
     }
     
-    // Handle task submission
+    // Handle task submission - call the onSubmit prop with the values
     const taskId = onSubmit(submitValues);
     
     // Add subtasks if any exist
