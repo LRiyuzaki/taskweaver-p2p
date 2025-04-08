@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";
@@ -51,33 +52,25 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
     
     // Determine variant based on progress if not explicitly set
     const determinedVariant = variant || (
-      percentage === 100 ? "success" :
-      percentage >= 70 ? "warning" :
-      percentage > 0 ? "default" : 
-      "danger"
+      percentage === 100 ? "success" : 
+      percentage >= 50 ? "warning" : 
+      "default"
     );
-
+    
     return (
-      <ProgressPrimitive.Root
-        ref={ref}
-        className={cn(progressVariants({ variant: determinedVariant }), className)}
-        {...props}
-      >
-        <ProgressPrimitive.Indicator
-          className={cn(
-            indicatorVariants({ variant: determinedVariant }),
-            "transition-transform duration-300 ease-in-out"
-          )}
-          style={{ transform: `translateX(-${100 - percentage}%)` }}
-        />
+      <div ref={ref} className={cn("relative", className)} {...props}>
+        <div className={cn(progressVariants({ variant: determinedVariant }))}>
+          <div
+            className={cn(indicatorVariants({ variant: determinedVariant }))}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
         {showValue && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xs font-medium">
-              {Math.round(percentage)}%
-            </span>
-          </div>
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-white">
+            {Math.round(percentage)}%
+          </span>
         )}
-      </ProgressPrimitive.Root>
+      </div>
     );
   }
 );

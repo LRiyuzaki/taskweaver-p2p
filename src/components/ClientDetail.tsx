@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { ClientServicesTab } from './ClientServicesTab';
 import { ProgressBar } from './ui/progress-bar';
+import { cn } from '@/lib/utils';
 
 interface ClientDetailProps {
   clientId: string;

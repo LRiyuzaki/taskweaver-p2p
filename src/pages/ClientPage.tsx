@@ -15,6 +15,16 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ClientServiceManager } from '@/components/ClientServiceManager';
 
+const formatAddress = (address: any): ReactNode => {
+  if (!address) return null;
+  
+  if (typeof address === 'string') {
+    return <span>{address}</span>;
+  }
+  
+  return <span>{address.registered}</span>;
+};
+
 const ClientPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
@@ -137,7 +147,7 @@ const ClientPage = () => {
                 {client.address && (
                   <div className="col-span-2">
                     <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
-                    <p className="text-base whitespace-pre-line">{client.address}</p>
+                    {formatAddress(client.address)}
                   </div>
                 )}
               </div>

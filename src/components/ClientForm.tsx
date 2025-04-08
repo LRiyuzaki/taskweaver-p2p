@@ -29,6 +29,14 @@ interface ClientFormProps {
   onSubmit: (data: ClientFormData) => void;
 }
 
+// Function to ensure address is in the correct format
+const formatAddress = (address: string | { registered: string; business?: string }) => {
+  if (typeof address === 'string') {
+    return { registered: address, business: '' };
+  }
+  return address;
+};
+
 export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   const { getAvailableServiceNames } = useClientContext();
   
@@ -80,7 +88,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         entityType: client.entityType,
         gstin: client.gstin || '',
         pan: client.pan || '',
-        address: client.address || '',
+        address: formatAddress(client.address || { registered: '', business: '' }),
         startDate: client.startDate ? new Date(client.startDate) : new Date(),
       });
     } else {

@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Client, Note, Document, Service, ClientService, ServiceType, SubTask } from '@/types/client';
 import { Task, RecurrenceType, TaskStatus, TaskPriority, Project } from '@/types/task';
@@ -339,7 +338,7 @@ export const generateServiceTypes = (): ServiceType[] => {
       name: 'Trademark Registration',
       description: 'Trademark registration service',
       frequency: 'one-time',
-      category: 'ipr',
+      category: 'registration',
       renewalPeriod: 120, // 10 years in months
       applicableEntities: ['Individual', 'Proprietorship', 'Company', 'LLP', 'Partnership'],
       taskTemplate: []
@@ -412,4 +411,26 @@ export const generateSeedData = () => {
     serviceTypes,
     clientServices
   };
+};
+
+// Add the missing initializeWithSeedData function
+export const initializeWithSeedData = () => {
+  // Check if data already exists in localStorage
+  const hasData = localStorage.getItem('app-data-initialized');
+  
+  if (!hasData) {
+    console.log('Initializing app with seed data...');
+    const seedData = generateSeedData();
+    
+    // Store the seed data in localStorage
+    localStorage.setItem('clients', JSON.stringify(seedData.clients));
+    localStorage.setItem('projects', JSON.stringify(seedData.projects));
+    localStorage.setItem('tasks', JSON.stringify(seedData.tasks));
+    localStorage.setItem('subtasks', JSON.stringify(seedData.subtasks));
+    localStorage.setItem('serviceTypes', JSON.stringify(seedData.serviceTypes));
+    localStorage.setItem('clientServices', JSON.stringify(seedData.clientServices));
+    
+    // Mark as initialized
+    localStorage.setItem('app-data-initialized', 'true');
+  }
 };

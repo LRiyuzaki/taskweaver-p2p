@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,9 @@ export const ServiceRenewalForm: React.FC = () => {
       description: values.description || "",
       frequency: values.frequency,
       renewalPeriod: values.renewalPeriod,
-    });
+      category: 'registration', // Add default category
+      taskTemplate: []
+    } as any);
     
     form.reset();
     

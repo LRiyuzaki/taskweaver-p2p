@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Task, TaskStatus } from '@/types/task';
-import TaskCard from './TaskCard';
+import { TaskCard } from './TaskCard'; // Fixed import statement
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 

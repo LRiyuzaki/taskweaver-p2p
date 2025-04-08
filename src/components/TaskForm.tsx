@@ -92,7 +92,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
   const [subtasks, setSubtasks] = useState<Partial<SubTask>[]>([]);
   const [subtaskInput, setSubtaskInput] = useState('');
   const [useTemplate, setUseTemplate] = useState(false);
-  const { projects, templates, subtasks: existingSubtasks } = useTaskContext();
+  const { projects, templates, subtasks: existingSubtasks, addSubtask } = useTaskContext();
   const { clients } = useClientContext();
   
   const form = useForm<FormValues>({
@@ -249,13 +249,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     const taskId = onSubmit(submitValues);
     
     // Add subtasks if any exist
-    if (subtasks.length > 0) {
+    if (subtasks.length > 0 && addSubtask) {
       subtasks.forEach((subtask, index) => {
         addSubtask({
           taskId,
-          title: subtask.title,
+          title: subtask.title || '',
           description: subtask.description,
-          completed: false,
+          completed: subtask.completed || false,
           order: index,
           assignedTo: subtask.assignedTo,
           assigneeName: subtask.assigneeName

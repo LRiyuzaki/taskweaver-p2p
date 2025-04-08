@@ -68,6 +68,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit }) =
       description: values.description,
       color: values.color,
       icon: values.icon,
+      status: 'active', // Add default status
     });
   };
 

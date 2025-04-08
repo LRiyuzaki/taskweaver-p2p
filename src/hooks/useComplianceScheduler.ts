@@ -106,7 +106,7 @@ export const useComplianceScheduler = () => {
             priority: 'high',
             dueDate,
             tags: ['Income Tax', 'Compliance', 'Annual'],
-            recurrence: 'annually'
+            recurrence: 'yearly' // Changed from "annually" to "yearly"
           });
         }
       }
@@ -165,7 +165,7 @@ export const useComplianceScheduler = () => {
             priority: 'high',
             dueDate: aocDueDate,
             tags: ['ROC', 'Compliance', 'Annual'],
-            recurrence: 'annually'
+            recurrence: 'yearly' // Changed from "annually" to "yearly"
           });
         }
       }

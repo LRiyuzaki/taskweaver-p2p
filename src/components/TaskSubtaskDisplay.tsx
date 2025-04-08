@@ -4,7 +4,7 @@ import { Task } from '@/types/task';
 import { SubTask } from '@/types/client';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { cn } from '@/lib/utils';
 
 interface TaskSubtaskDisplayProps {
@@ -35,14 +35,11 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({ task, sh
         <span>Progress: {progress}%</span>
       </div>
       
-      <Progress 
+      <ProgressBar 
         value={progress} 
-        className={cn(
-          "h-1.5",
-          progress === 100 ? "bg-green-100" : 
-          progress > 0 ? "bg-blue-100" : ""
-        )}
-        variant={progress === 100 ? "success" : "default"}
+        className="h-1.5"
+        variant={progress === 100 ? "success" : 
+               progress > 0 ? "default" : "default"}
       />
       
       {/* Only show subtasks when showAll is true or there are few subtasks */}
