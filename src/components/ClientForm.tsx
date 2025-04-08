@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Client, ClientFormData } from '@/types/client';
 import { useClientContext } from '@/contexts/ClientContext';

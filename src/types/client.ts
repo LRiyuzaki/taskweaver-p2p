@@ -9,9 +9,15 @@ export interface Client {
   contactPerson?: string;
   phone?: string;
   createdAt: Date;
+  active: boolean;
   
   // Service requirements will be stored here
   requiredServices: Record<string, boolean>;
+  
+  // Collections
+  services: Service[];
+  notes: Note[];
+  documents: Document[];
   
   // Entity information
   entityType?: 'Individual' | 'Company' | 'LLP' | 'Partnership' | 'Trust';
@@ -24,7 +30,35 @@ export interface Client {
   tasks?: Task[];
 }
 
-export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks'> {}
+export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks' | 'active' | 'services' | 'notes' | 'documents'> {}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  startDate?: Date;
+  endDate?: Date;
+  renewalDate?: Date;
+  status?: 'active' | 'inactive' | 'completed';
+}
+
+export interface Note {
+  id: string;
+  content: string;
+  createdAt: Date;
+  createdBy?: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize?: number;
+  uploadedAt: Date;
+  uploadedBy?: string;
+  description?: string;
+}
 
 export interface ServiceType {
   id: string;

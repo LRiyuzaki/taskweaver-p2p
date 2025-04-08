@@ -1,25 +1,52 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Client, Service, Note, Document } from '@/types/client';
-import { useTaskContext } from '@/contexts/TaskContext';
+import { Client, ClientFormData, Service, Note, Document, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 import { toast } from '@/hooks/use-toast-extensions';
 
 interface ClientContextType {
   clients: Client[];
-  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
+  addClient: (client: Omit<Client, 'id' | 'createdAt' | 'active' | 'services' | 'notes' | 'documents'>) => void;
   updateClient: (id: string, client: Partial<Client>) => void;
   deleteClient: (id: string) => void;
   toggleClientActive: (id: string) => void;
+  getClientById: (id: string) => Client | undefined;
+  
+  // Services for a specific client
   addService: (clientId: string, service: Omit<Service, 'id'>) => string;
   updateService: (clientId: string, serviceId: string, service: Partial<Service>) => void;
   deleteService: (clientId: string, serviceId: string) => void;
+  
+  // Notes for clients
   addNote: (clientId: string, note: Omit<Note, 'id' | 'createdAt'>) => void;
   updateNote: (clientId: string, noteId: string, note: Partial<Note>) => void;
   deleteNote: (clientId: string, noteId: string) => void;
+  
+  // Documents for clients
   addDocument: (clientId: string, document: Omit<Document, 'id' | 'uploadedAt'>) => void;
   updateDocument: (clientId: string, documentId: string, document: Partial<Document>) => void;
   deleteDocument: (clientId: string, documentId: string) => void;
+  
+  // Service Types (templates for services)
+  serviceTypes: ServiceType[];
+  addServiceType: (serviceType: Omit<ServiceType, 'id'>) => void;
+  updateServiceType: (id: string, serviceType: Partial<ServiceType>) => void;
+  deleteServiceType: (id: string) => void;
+  
+  // Client Services (specific instances of service types for clients)
+  clientServices: ClientService[];
+  addClientService: (clientService: Omit<ClientService, 'id'>) => void;
+  updateClientService: (clientId: string, serviceTypeId: string, clientService: Partial<ClientService>) => void;
+  deleteClientService: (clientId: string, serviceTypeId: string) => void;
+  
+  // Service Renewals
+  serviceRenewals: ServiceRenewal[];
+  addServiceRenewal: (serviceRenewal: Omit<ServiceRenewal, 'id'>) => void;
+  updateServiceRenewal: (id: string, serviceRenewal: Partial<ServiceRenewal>) => void;
+  deleteServiceRenewal: (id: string) => void;
+  
+  // Helper functions
+  getAvailableServiceNames: () => string[];
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -31,6 +58,9 @@ export const useClientContext = () => {
   }
   return context;
 };
+
+// Create a separate context for accessing TaskContext to avoid circular dependencies
+export const TaskContextAccessor = React.createContext<any>(null);
 
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize clients from localStorage
@@ -65,25 +95,108 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     return [];
   });
+  
+  // Initialize service types
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(() => {
+    const savedServiceTypes = localStorage.getItem('serviceTypes');
+    if (savedServiceTypes) {
+      try {
+        return JSON.parse(savedServiceTypes);
+      } catch (e) {
+        console.error('Failed to parse saved service types', e);
+        return [];
+      }
+    }
+    return [
+      { id: uuidv4(), name: 'GST Filing', description: 'Monthly GST return filing', frequency: 'monthly', renewalPeriod: 1 },
+      { id: uuidv4(), name: 'Income Tax Filing', description: 'Annual income tax return filing', frequency: 'annually', renewalPeriod: 12 },
+      { id: uuidv4(), name: 'Bookkeeping', description: 'Monthly bookkeeping services', frequency: 'monthly', renewalPeriod: 1 },
+      { id: uuidv4(), name: 'Audit', description: 'Annual audit services', frequency: 'annually', renewalPeriod: 12 },
+      { id: uuidv4(), name: 'TDS Filing', description: 'Quarterly TDS return filing', frequency: 'quarterly', renewalPeriod: 3 },
+    ];
+  });
+  
+  // Initialize client services
+  const [clientServices, setClientServices] = useState<ClientService[]>(() => {
+    const savedClientServices = localStorage.getItem('clientServices');
+    if (savedClientServices) {
+      try {
+        const parsedServices = JSON.parse(savedClientServices);
+        return parsedServices.map((service: any) => ({
+          ...service,
+          startDate: service.startDate ? new Date(service.startDate) : undefined,
+          endDate: service.endDate ? new Date(service.endDate) : undefined,
+          nextRenewalDate: service.nextRenewalDate ? new Date(service.nextRenewalDate) : undefined,
+          reminderDate: service.reminderDate ? new Date(service.reminderDate) : undefined,
+        }));
+      } catch (e) {
+        console.error('Failed to parse saved client services', e);
+        return [];
+      }
+    }
+    return [];
+  });
+  
+  // Initialize service renewals
+  const [serviceRenewals, setServiceRenewals] = useState<ServiceRenewal[]>(() => {
+    const savedRenewals = localStorage.getItem('serviceRenewals');
+    if (savedRenewals) {
+      try {
+        const parsedRenewals = JSON.parse(savedRenewals);
+        return parsedRenewals.map((renewal: any) => ({
+          ...renewal,
+          dueDate: renewal.dueDate ? new Date(renewal.dueDate) : undefined,
+          completedDate: renewal.completedDate ? new Date(renewal.completedDate) : undefined,
+        }));
+      } catch (e) {
+        console.error('Failed to parse saved service renewals', e);
+        return [];
+      }
+    }
+    return [];
+  });
 
   // Save clients to localStorage when they change
   useEffect(() => {
     localStorage.setItem('clients', JSON.stringify(clients));
   }, [clients]);
+  
+  // Save service types to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('serviceTypes', JSON.stringify(serviceTypes));
+  }, [serviceTypes]);
+  
+  // Save client services to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('clientServices', JSON.stringify(clientServices));
+  }, [clientServices]);
+  
+  // Save service renewals to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('serviceRenewals', JSON.stringify(serviceRenewals));
+  }, [serviceRenewals]);
 
-  // Get the deleteClientTasks function from TaskContext, but make it optional
-  // to prevent circular dependency issues during initialization
-  const taskContext = React.useContext(useTaskContext()._context || {});
-  const deleteClientTasks = taskContext?.deleteClientTasks;
+  // Use TaskContext safely to get the deleteClientTasks function
+  const taskContextAccessor = React.useContext(TaskContextAccessor);
+  
+  // Helper function to get a client by ID
+  const getClientById = (id: string): Client | undefined => {
+    return clients.find(client => client.id === id);
+  };
+  
+  // Helper function to get all available service names
+  const getAvailableServiceNames = (): string[] => {
+    return serviceTypes.map(serviceType => serviceType.name);
+  };
 
-  const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
+  const addClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'active' | 'services' | 'notes' | 'documents'>) => {
     const newClient: Client = {
       ...clientData,
       id: uuidv4(),
       createdAt: new Date(),
-      services: clientData.services || [],
-      notes: clientData.notes || [],
-      documents: clientData.documents || [],
+      services: [],
+      notes: [],
+      documents: [],
       active: true,
     };
     setClients((prevClients) => [...prevClients, newClient]);
@@ -100,9 +213,9 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deleteClient = (id: string) => {
-    // If deleteClientTasks is available, use it to delete associated tasks
-    if (deleteClientTasks) {
-      deleteClientTasks(id);
+    // If taskContextAccessor is available, delete associated tasks
+    if (taskContextAccessor?.deleteClientTasks) {
+      taskContextAccessor.deleteClientTasks(id);
     }
     
     setClients((prevClients) => prevClients.filter((client) => client.id !== id));
@@ -280,6 +393,84 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
     toast.success("Document deleted successfully");
   };
+  
+  // Service Type management
+  const addServiceType = (serviceTypeData: Omit<ServiceType, 'id'>) => {
+    const newServiceType: ServiceType = {
+      ...serviceTypeData,
+      id: uuidv4()
+    };
+    setServiceTypes(prev => [...prev, newServiceType]);
+    toast.success(`Service type "${newServiceType.name}" added successfully`);
+  };
+  
+  const updateServiceType = (id: string, serviceTypeData: Partial<ServiceType>) => {
+    setServiceTypes(prev => 
+      prev.map(serviceType => 
+        serviceType.id === id ? { ...serviceType, ...serviceTypeData } : serviceType
+      )
+    );
+    toast.success("Service type updated successfully");
+  };
+  
+  const deleteServiceType = (id: string) => {
+    setServiceTypes(prev => prev.filter(serviceType => serviceType.id !== id));
+    toast.success("Service type deleted successfully");
+  };
+  
+  // Client Service management
+  const addClientService = (clientServiceData: Omit<ClientService, 'id'>) => {
+    const serviceType = serviceTypes.find(st => st.id === clientServiceData.serviceTypeId);
+    const newClientService: ClientService = {
+      ...clientServiceData,
+      serviceTypeName: serviceType?.name
+    };
+    
+    setClientServices(prev => [...prev, newClientService]);
+    toast.success("Client service added successfully");
+  };
+  
+  const updateClientService = (clientId: string, serviceTypeId: string, clientServiceData: Partial<ClientService>) => {
+    setClientServices(prev => 
+      prev.map(cs => 
+        cs.clientId === clientId && cs.serviceTypeId === serviceTypeId 
+          ? { ...cs, ...clientServiceData } 
+          : cs
+      )
+    );
+    toast.success("Client service updated successfully");
+  };
+  
+  const deleteClientService = (clientId: string, serviceTypeId: string) => {
+    setClientServices(prev => 
+      prev.filter(cs => !(cs.clientId === clientId && cs.serviceTypeId === serviceTypeId))
+    );
+    toast.success("Client service deleted successfully");
+  };
+  
+  // Service Renewal management
+  const addServiceRenewal = (serviceRenewalData: Omit<ServiceRenewal, 'id'>) => {
+    const newRenewal: ServiceRenewal = {
+      ...serviceRenewalData,
+      id: uuidv4()
+    };
+    setServiceRenewals(prev => [...prev, newRenewal]);
+    toast.success("Service renewal added successfully");
+  };
+  
+  const updateServiceRenewal = (id: string, serviceRenewalData: Partial<ServiceRenewal>) => {
+    setServiceRenewals(prev => 
+      prev.map(renewal => 
+        renewal.id === id ? { ...renewal, ...serviceRenewalData } : renewal
+      )
+    );
+    toast.success("Service renewal updated successfully");
+  };
+  
+  const deleteServiceRenewal = (id: string) => {
+    setServiceRenewals(prev => prev.filter(renewal => renewal.id !== id));
+    toast.success("Service renewal deleted successfully");
+  };
 
   return (
     <ClientContext.Provider
@@ -289,6 +480,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateClient,
         deleteClient,
         toggleClientActive,
+        getClientById,
         addService,
         updateService,
         deleteService,
@@ -298,6 +490,19 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addDocument,
         updateDocument,
         deleteDocument,
+        serviceTypes,
+        addServiceType,
+        updateServiceType,
+        deleteServiceType,
+        clientServices,
+        addClientService,
+        updateClientService,
+        deleteClientService,
+        serviceRenewals,
+        addServiceRenewal,
+        updateServiceRenewal,
+        deleteServiceRenewal,
+        getAvailableServiceNames,
       }}
     >
       {children}

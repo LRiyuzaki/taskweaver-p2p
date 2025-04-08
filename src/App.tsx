@@ -1,8 +1,8 @@
 
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { ClientProvider } from '@/contexts/ClientContext';
-import { TaskProvider } from '@/contexts/TaskContext';  
+import { ClientProvider, TaskContextAccessor } from '@/contexts/ClientContext';
+import { TaskProvider, useTaskContext } from '@/contexts/TaskContext';  
 import { ThemeProvider } from '@/components/theme-provider';
 import Dashboard from '@/pages/Dashboard';
 import ClientManagementPage from '@/pages/ClientManagementPage';
@@ -14,14 +14,34 @@ import Index from '@/pages/Index';
 import TaskTemplatesPage from '@/pages/TaskTemplatesPage';
 import BulkTaskCreationPage from '@/pages/BulkTaskCreationPage';
 import ReportsPage from '@/pages/ReportsPage';
+import { useEffect } from 'react';
+import { initializeWithSeedData } from '@/utils/seedData';
 
 import './App.css';
+
+// Wrapper component to provide TaskContext to ClientProvider
+const AppProviders = ({ children }: { children: React.ReactNode }) => {
+  const taskContext = useTaskContext();
+  
+  // Initialize with seed data if needed
+  useEffect(() => {
+    initializeWithSeedData();
+  }, []);
+  
+  return (
+    <TaskContextAccessor.Provider value={taskContext}>
+      <ClientProvider>
+        {children}
+      </ClientProvider>
+    </TaskContextAccessor.Provider>
+  );
+};
 
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <TaskProvider>
-        <ClientProvider>
+        <AppProviders>
           <Router>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -40,7 +60,7 @@ function App() {
             </Routes>
             <Toaster />
           </Router>
-        </ClientProvider>
+        </AppProviders>
       </TaskProvider>
     </ThemeProvider>
   );

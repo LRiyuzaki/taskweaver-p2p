@@ -19,9 +19,10 @@ import { ClientDetail } from "@/components/ClientDetail";
 import { ServicesManagement } from "@/components/ServicesManagement";
 import { Input } from "@/components/ui/input";
 import { toast } from '@/hooks/use-toast';
+import { SeedDataButton } from "@/components/SeedDataButton";
 
 const ClientManagementPage = () => {
-  const { clients, serviceTypes, addClient } = useClientContext();
+  const { clients, addClient } = useClientContext();
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -71,10 +72,13 @@ const ClientManagementPage = () => {
               <UsersIcon className="mr-2 h-8 w-8" /> 
               Client Management
             </h1>
-            <Button onClick={() => setIsAddClientDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Client
-            </Button>
+            <div className="flex items-center space-x-2">
+              <SeedDataButton />
+              <Button onClick={() => setIsAddClientDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Client
+              </Button>
+            </div>
           </div>
 
           <Tabs 
