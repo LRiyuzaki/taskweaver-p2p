@@ -7,13 +7,28 @@ import { toast } from '@/hooks/use-toast';
 
 export const SeedDataButton = () => {
   const handleSeedData = () => {
-    generateSeedData();
-    toast({
-      title: "Test Data Generated",
-      description: "Sample clients, services, and tasks have been created successfully.",
-    });
-    // Reload the page to show the new data
-    window.location.reload();
+    try {
+      const result = generateSeedData();
+      
+      if (result) {
+        toast({
+          title: "Test Data Generated",
+          description: `Sample data created: ${result.clients.length} clients, ${result.tasks.length} tasks, ${result.serviceTypes.length} service types`,
+        });
+        
+        // Reload the page to show the new data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error generating seed data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate test data. Please check the console for details.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (

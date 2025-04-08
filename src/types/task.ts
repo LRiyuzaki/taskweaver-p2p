@@ -1,3 +1,4 @@
+
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -30,6 +31,15 @@ export interface Project {
   icon?: string;
 }
 
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  order: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -49,14 +59,7 @@ export interface Task {
   recurrenceEndDate?: Date;
   completedDate?: Date;
   reminderDate?: Date;
-  subtasks?: Array<{
-    id: string;
-    taskId: string;
-    title: string;
-    description: string;
-    completed: boolean;
-    order: number;
-  }>;
+  subtasks?: Subtask[];
 }
 
 export interface TaskColumn {

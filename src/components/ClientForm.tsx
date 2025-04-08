@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Client, ClientFormData } from '@/types/client';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -55,15 +56,15 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
       setFormData({
         name: client.name,
         email: client.email,
-        company: client.company,
+        company: client.company || '',
         contactPerson: client.contactPerson || '',
         phone: client.phone || '',
-        requiredServices: { ...client.requiredServices },
+        requiredServices: { ...client.requiredServices } || {},
         entityType: client.entityType,
         gstin: client.gstin || '',
         pan: client.pan || '',
         address: client.address || '',
-        startDate: client.startDate || new Date(),
+        startDate: client.startDate ? new Date(client.startDate) : new Date(),
       });
     } else {
       // Initialize requiredServices for new client
@@ -88,12 +89,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
     setFormData(prev => ({ ...prev, startDate: date || new Date() }));
   };
 
-  const handleSelectChange = (name: keyof ClientFormData) => (value: string) => {
+  const handleSelectChange = (name: string) => (value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleServiceChange = (serviceName: string, checked: boolean) => {
-    console.log(`Service ${serviceName} changed to ${checked}`); // Debug log
     setFormData(prev => ({
       ...prev,
       requiredServices: {
@@ -105,7 +105,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Submitting form data:", formData); // Debug log
     onSubmit(formData);
   };
 
@@ -205,7 +204,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
           <Label htmlFor="entityType">Entity Type</Label>
           <Select
             value={formData.entityType}
-            onValueChange={handleSelectChange('entityType' as keyof ClientFormData)}
+            onValueChange={handleSelectChange('entityType')}
           >
             <SelectTrigger id="entityType">
               <SelectValue placeholder="Select entity type" />

@@ -1,3 +1,4 @@
+
 import { RouterProvider } from 'react-router-dom'
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
@@ -7,9 +8,16 @@ import { ClientProvider } from './contexts/ClientContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatabaseProvider } from './contexts/DatabaseContext';
 import { P2PProvider } from './contexts/P2PContext';
+import { useEffect } from 'react';
+import { initializeWithSeedData } from './utils/seedData';
 
 function App() {
   const queryClient = new QueryClient();
+  
+  // Initialize app with seed data if needed
+  useEffect(() => {
+    initializeWithSeedData();
+  }, []);
   
   return (
     <QueryClientProvider client={queryClient}>

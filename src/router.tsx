@@ -10,10 +10,15 @@ import Settings from './pages/Settings';
 import HelpPage from './pages/HelpPage';
 import Database from './pages/Database';
 import NotFound from './pages/NotFound';
+import Index from './pages/Index'; // Add import for Index page
 
 export const router = createBrowserRouter([
   {
     path: '/',
+    element: <Index />,
+  },
+  {
+    path: '/dashboard',
     element: <Dashboard />,
   },
   {
