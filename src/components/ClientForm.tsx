@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Client, ClientFormData } from '@/types/client';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -59,7 +58,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         company: client.company || '',
         contactPerson: client.contactPerson || '',
         phone: client.phone || '',
-        requiredServices: { ...client.requiredServices } || {},
+        requiredServices: { ...client.requiredServices },
         entityType: client.entityType,
         gstin: client.gstin || '',
         pan: client.pan || '',
