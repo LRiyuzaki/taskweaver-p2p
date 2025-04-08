@@ -49,6 +49,14 @@ export interface Task {
   recurrenceEndDate?: Date;
   completedDate?: Date;
   reminderDate?: Date;
+  subtasks?: Array<{
+    id: string;
+    taskId: string;
+    title: string;
+    description: string;
+    completed: boolean;
+    order: number;
+  }>;
 }
 
 export interface TaskColumn {

@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Client, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
@@ -265,6 +264,7 @@ export const generateSeedData = () => {
       clientName: clients[0].name,
       tags: ['GST', 'Monthly'],
       recurrence: 'monthly' as RecurrenceType,
+      createdAt: new Date(),
       subtasks: [
         { id: uuidv4(), taskId: '', title: 'Collect invoices', description: '', completed: true, order: 0 },
         { id: uuidv4(), taskId: '', title: 'Reconcile data', description: '', completed: false, order: 1 },
@@ -282,6 +282,7 @@ export const generateSeedData = () => {
       clientName: clients[1].name,
       tags: ['Tax', 'Planning'],
       recurrence: 'none' as RecurrenceType,
+      createdAt: new Date(),
       subtasks: []
     },
     {
@@ -293,9 +294,10 @@ export const generateSeedData = () => {
       dueDate: new Date(2023, 5, 30),
       clientId: clients[0].id,
       clientName: clients[0].name,
-      completedAt: new Date(2023, 5, 28),
+      completedDate: new Date(2023, 5, 28),
       tags: ['Bookkeeping', 'Monthly'],
       recurrence: 'monthly' as RecurrenceType,
+      createdAt: new Date(),
       subtasks: []
     }
   ];
