@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -45,55 +46,17 @@ export const SidebarLink: React.FC<SidebarLinkProps> = ({
   );
 };
 
-const links = [
-  {
-    title: "Dashboard",
-    href: "/",
-    icon: <LayoutDashboard className="h-4 w-4" />,
-  },
-  {
-    title: "Tasks",
-    href: "/tasks",
-    icon: <Check className="h-4 w-4" />,
-  },
-  {
-    title: "Client Management",
-    href: "/client-management",
-    icon: <Users className="h-4 w-4" />,
-  },
-  {
-    title: "Task Templates",
-    href: "/task-templates",
-    icon: <ClipboardList className="h-4 w-4" />,
-  },
-  {
-    title: "Bulk Task Creation",
-    href: "/bulk-tasks",
-    icon: <ListChecks className="h-4 w-4" />,
-  },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: <BarChart className="h-4 w-4" />,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: <Settings className="h-4 w-4" />,
-  },
-  {
-    title: "Help",
-    href: "/help",
-    icon: <HelpCircle className="h-4 w-4" />,
-  },
-];
-
 export const AppSidebarLinks = () => {
   return (
     <div className="space-y-1 py-2">
-      {links.map((link) => (
-        <SidebarLink key={link.title} to={link.href} icon={link.icon} label={link.title} />
-      ))}
+      <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" end />
+      <SidebarLink to="/tasks" icon={Check} label="Tasks" />
+      <SidebarLink to="/client-management" icon={Users} label="Client Management" />
+      <SidebarLink to="/task-templates" icon={ClipboardList} label="Task Templates" />
+      <SidebarLink to="/bulk-tasks" icon={ListChecks} label="Bulk Task Creation" />
+      <SidebarLink to="/reports" icon={BarChart} label="Reports" />
+      <SidebarLink to="/settings" icon={Settings} label="Settings" />
+      <SidebarLink to="/help" icon={HelpCircle} label="Help" />
     </div>
   );
 };

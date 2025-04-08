@@ -21,6 +21,8 @@ interface ClientContextType {
   addServiceRenewal: (serviceRenewal: Omit<ServiceRenewal, 'id'>) => string;
   updateServiceRenewal: (id: string, serviceRenewal: Partial<ServiceRenewal>) => void;
   deleteServiceRenewal: (id: string) => void;
+  getClientById: (id: string) => Client | undefined;
+  getAvailableServiceNames: () => string[];
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -140,7 +142,6 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deleteClient = (id: string) => {
-    // Call the TaskContext to delete associated tasks
     if (taskContext) {
       taskContext.deleteClientTasks(id);
     }
@@ -174,7 +175,6 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addClientService = (clientServiceData: Omit<ClientService, 'id'>) => {
     const newClientService: ClientService = {
       ...clientServiceData,
-      // id: uuidv4(), // No id needed
     };
     setClientServices((prev) => [...prev, newClientService]);
     toast.success(`Service "${clientServiceData.serviceTypeName}" was added to client`);
@@ -221,6 +221,14 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toast.success('Service renewal deleted successfully');
   };
 
+  const getClientById = (id: string): Client | undefined => {
+    return clients.find(client => client.id === id);
+  };
+
+  const getAvailableServiceNames = (): string[] => {
+    return serviceTypes.map(type => type.name);
+  };
+
   return (
     <ClientContext.Provider
       value={{
@@ -240,6 +248,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addServiceRenewal,
         updateServiceRenewal,
         deleteServiceRenewal,
+        getClientById,
+        getAvailableServiceNames
       }}
     >
       {children}

@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProvider } from '@/contexts/ClientContext';
-import { TaskProvider } from '@/contexts/TaskProvider';
+import { TaskProvider } from '@/contexts/TaskContext';  // Fixed import path
 import { ThemeProvider } from '@/components/theme-provider';
 import Dashboard from '@/pages/Dashboard';
 import ClientManagementPage from '@/pages/ClientManagementPage';
