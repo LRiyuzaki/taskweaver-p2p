@@ -247,20 +247,22 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     }
     
     // Handle task submission - call the onSubmit prop with the values
-    const taskId = onSubmit(submitValues);
+    onSubmit(submitValues);
     
     // Add subtasks if any exist
     if (subtasks.length > 0 && addSubtask) {
       subtasks.forEach((subtask, index) => {
-        addSubtask({
-          taskId,
-          title: subtask.title || '',
-          description: subtask.description,
-          completed: subtask.completed || false,
-          order: index,
-          assignedTo: subtask.assignedTo,
-          assigneeName: subtask.assigneeName
-        });
+        if (subtask.title) {  // Make sure we have a title before adding
+          addSubtask({
+            taskId: task?.id || '', // This will be replaced with the actual new task ID by the context
+            title: subtask.title,
+            description: subtask.description,
+            completed: subtask.completed || false,
+            order: index,
+            assignedTo: subtask.assignedTo,
+            assigneeName: subtask.assigneeName
+          });
+        }
       });
     }
   };
