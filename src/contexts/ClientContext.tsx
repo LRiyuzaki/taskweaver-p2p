@@ -1,28 +1,25 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Client, ClientFormData, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 import { v4 as uuidv4 } from 'uuid';
+import { Client, Service, Note, Document } from '@/types/client';
+import { useTaskContext } from '@/contexts/TaskContext';
 import { toast } from '@/hooks/use-toast-extensions';
-import { useTaskContext } from './TaskContext';
 
 interface ClientContextType {
   clients: Client[];
-  serviceTypes: ServiceType[];
-  clientServices: ClientService[];
-  serviceRenewals: ServiceRenewal[];
-  addClient: (client: ClientFormData) => string;
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
   updateClient: (id: string, client: Partial<Client>) => void;
   deleteClient: (id: string) => void;
-  addServiceType: (serviceType: Omit<ServiceType, 'id'>) => string;
-  updateServiceType: (id: string, serviceType: Partial<ServiceType>) => void;
-  deleteServiceType: (id: string) => void;
-  addClientService: (clientService: Omit<ClientService, 'id'>) => void;
-  updateClientService: (clientId: string, serviceTypeId: string, clientService: Partial<ClientService>) => void;
-  deleteClientService: (clientId: string, serviceTypeId: string) => void;
-  addServiceRenewal: (serviceRenewal: Omit<ServiceRenewal, 'id'>) => string;
-  updateServiceRenewal: (id: string, serviceRenewal: Partial<ServiceRenewal>) => void;
-  deleteServiceRenewal: (id: string) => void;
-  getClientById: (id: string) => Client | undefined;
-  getAvailableServiceNames: () => string[];
+  toggleClientActive: (id: string) => void;
+  addService: (clientId: string, service: Omit<Service, 'id'>) => string;
+  updateService: (clientId: string, serviceId: string, service: Partial<Service>) => void;
+  deleteService: (clientId: string, serviceId: string) => void;
+  addNote: (clientId: string, note: Omit<Note, 'id' | 'createdAt'>) => void;
+  updateNote: (clientId: string, noteId: string, note: Partial<Note>) => void;
+  deleteNote: (clientId: string, noteId: string) => void;
+  addDocument: (clientId: string, document: Omit<Document, 'id' | 'uploadedAt'>) => void;
+  updateDocument: (clientId: string, documentId: string, document: Partial<Document>) => void;
+  deleteDocument: (clientId: string, documentId: string) => void;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -36,6 +33,7 @@ export const useClientContext = () => {
 };
 
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialize clients from localStorage
   const [clients, setClients] = useState<Client[]>(() => {
     const savedClients = localStorage.getItem('clients');
     if (savedClients) {
@@ -45,6 +43,20 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           ...client,
           createdAt: new Date(client.createdAt),
           startDate: client.startDate ? new Date(client.startDate) : undefined,
+          services: (client.services || []).map((service: any) => ({
+            ...service,
+            startDate: service.startDate ? new Date(service.startDate) : undefined,
+            endDate: service.endDate ? new Date(service.endDate) : undefined,
+            renewalDate: service.renewalDate ? new Date(service.renewalDate) : undefined,
+          })),
+          notes: (client.notes || []).map((note: any) => ({
+            ...note,
+            createdAt: new Date(note.createdAt),
+          })),
+          documents: (client.documents || []).map((doc: any) => ({
+            ...doc,
+            uploadedAt: new Date(doc.uploadedAt),
+          })),
         }));
       } catch (e) {
         console.error('Failed to parse saved clients', e);
@@ -54,202 +66,238 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return [];
   });
 
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(() => {
-    const savedServiceTypes = localStorage.getItem('serviceTypes');
-    if (savedServiceTypes) {
-      try {
-        return JSON.parse(savedServiceTypes);
-      } catch (e) {
-        console.error('Failed to parse saved service types', e);
-        return [];
-      }
-    }
-    return [];
-  });
-
-  const [clientServices, setClientServices] = useState<ClientService[]>(() => {
-    const savedClientServices = localStorage.getItem('clientServices');
-    if (savedClientServices) {
-      try {
-        const parsedServices = JSON.parse(savedClientServices);
-        return parsedServices.map((service: any) => ({
-          ...service,
-          startDate: new Date(service.startDate),
-          endDate: service.endDate ? new Date(service.endDate) : undefined,
-          nextRenewalDate: service.nextRenewalDate ? new Date(service.nextRenewalDate) : undefined,
-          reminderDate: service.reminderDate ? new Date(service.reminderDate) : undefined,
-        }));
-      } catch (e) {
-        console.error('Failed to parse saved client services', e);
-        return [];
-      }
-    }
-    return [];
-  });
-
-  const [serviceRenewals, setServiceRenewals] = useState<ServiceRenewal[]>(() => {
-    const savedServiceRenewals = localStorage.getItem('serviceRenewals');
-    if (savedServiceRenewals) {
-      try {
-        const parsedRenewals = JSON.parse(savedServiceRenewals);
-        return parsedRenewals.map((renewal: any) => ({
-          ...renewal,
-          dueDate: new Date(renewal.dueDate),
-          completedDate: renewal.completedDate ? new Date(renewal.completedDate) : undefined,
-        }));
-      } catch (e) {
-        console.error('Failed to parse saved service renewals', e);
-        return [];
-      }
-    }
-    return [];
-  });
-
+  // Save clients to localStorage when they change
   useEffect(() => {
     localStorage.setItem('clients', JSON.stringify(clients));
   }, [clients]);
 
-  useEffect(() => {
-    localStorage.setItem('serviceTypes', JSON.stringify(serviceTypes));
-  }, [serviceTypes]);
+  // Get the deleteClientTasks function from TaskContext, but make it optional
+  // to prevent circular dependency issues during initialization
+  const taskContext = React.useContext(useTaskContext()._context || {});
+  const deleteClientTasks = taskContext?.deleteClientTasks;
 
-  useEffect(() => {
-    localStorage.setItem('clientServices', JSON.stringify(clientServices));
-  }, [clientServices]);
-
-  useEffect(() => {
-    localStorage.setItem('serviceRenewals', JSON.stringify(serviceRenewals));
-  }, [serviceRenewals]);
-  
-  const taskContext = useTaskContext();
-
-  const addClient = (clientData: ClientFormData) => {
+  const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
     const newClient: Client = {
       ...clientData,
       id: uuidv4(),
       createdAt: new Date(),
+      services: clientData.services || [],
+      notes: clientData.notes || [],
+      documents: clientData.documents || [],
+      active: true,
     };
-    setClients((prev) => [...prev, newClient]);
-    toast.success(`Client "${newClient.name}" was created successfully`);
-    return newClient.id;
+    setClients((prevClients) => [...prevClients, newClient]);
+    toast.success(`Client "${newClient.name}" was added successfully`);
   };
 
   const updateClient = (id: string, clientData: Partial<Client>) => {
-    setClients((prev) =>
-      prev.map((client) => (client.id === id ? { ...client, ...clientData } : client))
+    setClients((prevClients) =>
+      prevClients.map((client) =>
+        client.id === id ? { ...client, ...clientData } : client
+      )
     );
-    toast.success('Client updated successfully');
+    toast.success("Client updated successfully");
   };
 
   const deleteClient = (id: string) => {
-    if (taskContext) {
-      taskContext.deleteClientTasks(id);
+    // If deleteClientTasks is available, use it to delete associated tasks
+    if (deleteClientTasks) {
+      deleteClientTasks(id);
     }
     
-    setClients(prev => prev.filter(client => client.id !== id));
+    setClients((prevClients) => prevClients.filter((client) => client.id !== id));
     toast.success("Client deleted successfully");
   };
 
-  const addServiceType = (serviceTypeData: Omit<ServiceType, 'id'>) => {
-    const newServiceType: ServiceType = {
-      ...serviceTypeData,
-      id: uuidv4(),
-    };
-    setServiceTypes((prev) => [...prev, newServiceType]);
-    toast.success(`Service type "${newServiceType.name}" was created successfully`);
-    return newServiceType.id;
-  };
-
-  const updateServiceType = (id: string, serviceTypeData: Partial<ServiceType>) => {
-    setServiceTypes((prev) =>
-      prev.map((serviceType) => (serviceType.id === id ? { ...serviceType, ...serviceTypeData } : serviceType))
+  const toggleClientActive = (id: string) => {
+    setClients((prevClients) =>
+      prevClients.map((client) =>
+        client.id === id ? { ...client, active: !client.active } : client
+      )
     );
-    toast.success('Service type updated successfully');
   };
 
-  const deleteServiceType = (id: string) => {
-    setServiceTypes((prev) => prev.filter((serviceType) => serviceType.id !== id));
-    toast.success('Service type deleted successfully');
-  };
-
-  const addClientService = (clientServiceData: Omit<ClientService, 'id'>) => {
-    const newClientService: ClientService = {
-      ...clientServiceData,
-    };
-    setClientServices((prev) => [...prev, newClientService]);
-    toast.success(`Service "${clientServiceData.serviceTypeName}" was added to client`);
-  };
-
-  const updateClientService = (clientId: string, serviceTypeId: string, clientServiceData: Partial<ClientService>) => {
-    setClientServices((prev) =>
-      prev.map((service) => {
-        if (service.clientId === clientId && service.serviceTypeId === serviceTypeId) {
-          return { ...service, ...clientServiceData };
+  // Service management
+  const addService = (clientId: string, serviceData: Omit<Service, 'id'>) => {
+    const serviceId = uuidv4();
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            services: [
+              ...(client.services || []),
+              {
+                ...serviceData,
+                id: serviceId,
+              },
+            ],
+          };
         }
-        return service;
+        return client;
       })
     );
-    toast.success('Client service updated successfully');
+    toast.success(`Service "${serviceData.name}" was added successfully`);
+    return serviceId;
   };
 
-  const deleteClientService = (clientId: string, serviceTypeId: string) => {
-    setClientServices((prev) =>
-      prev.filter((service) => !(service.clientId === clientId && service.serviceTypeId === serviceTypeId))
+  const updateService = (clientId: string, serviceId: string, serviceData: Partial<Service>) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            services: (client.services || []).map((service) =>
+              service.id === serviceId ? { ...service, ...serviceData } : service
+            ),
+          };
+        }
+        return client;
+      })
     );
-    toast.success('Client service deleted successfully');
+    toast.success("Service updated successfully");
   };
 
-  const addServiceRenewal = (serviceRenewalData: Omit<ServiceRenewal, 'id'>) => {
-    const newServiceRenewal: ServiceRenewal = {
-      ...serviceRenewalData,
+  const deleteService = (clientId: string, serviceId: string) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            services: (client.services || []).filter((service) => service.id !== serviceId),
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Service deleted successfully");
+  };
+
+  // Notes management
+  const addNote = (clientId: string, noteData: Omit<Note, 'id' | 'createdAt'>) => {
+    const newNote = {
+      ...noteData,
       id: uuidv4(),
+      createdAt: new Date(),
     };
-    setServiceRenewals((prev) => [...prev, newServiceRenewal]);
-    toast.success('Service renewal added successfully');
-    return newServiceRenewal.id;
-  };
-
-  const updateServiceRenewal = (id: string, serviceRenewalData: Partial<ServiceRenewal>) => {
-    setServiceRenewals((prev) =>
-      prev.map((renewal) => (renewal.id === id ? { ...renewal, ...serviceRenewalData } : renewal))
+    
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            notes: [...(client.notes || []), newNote],
+          };
+        }
+        return client;
+      })
     );
-    toast.success('Service renewal updated successfully');
+    toast.success("Note added successfully");
   };
 
-  const deleteServiceRenewal = (id: string) => {
-    setServiceRenewals((prev) => prev.filter((renewal) => renewal.id !== id));
-    toast.success('Service renewal deleted successfully');
+  const updateNote = (clientId: string, noteId: string, noteData: Partial<Note>) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            notes: (client.notes || []).map((note) =>
+              note.id === noteId ? { ...note, ...noteData } : note
+            ),
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Note updated successfully");
   };
 
-  const getClientById = (id: string): Client | undefined => {
-    return clients.find(client => client.id === id);
+  const deleteNote = (clientId: string, noteId: string) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            notes: (client.notes || []).filter((note) => note.id !== noteId),
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Note deleted successfully");
   };
 
-  const getAvailableServiceNames = (): string[] => {
-    return serviceTypes.map(type => type.name);
+  // Document management
+  const addDocument = (clientId: string, documentData: Omit<Document, 'id' | 'uploadedAt'>) => {
+    const newDocument = {
+      ...documentData,
+      id: uuidv4(),
+      uploadedAt: new Date(),
+    };
+    
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            documents: [...(client.documents || []), newDocument],
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Document added successfully");
+  };
+
+  const updateDocument = (clientId: string, documentId: string, documentData: Partial<Document>) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            documents: (client.documents || []).map((doc) =>
+              doc.id === documentId ? { ...doc, ...documentData } : doc
+            ),
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Document updated successfully");
+  };
+
+  const deleteDocument = (clientId: string, documentId: string) => {
+    setClients((prevClients) =>
+      prevClients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            documents: (client.documents || []).filter((doc) => doc.id !== documentId),
+          };
+        }
+        return client;
+      })
+    );
+    toast.success("Document deleted successfully");
   };
 
   return (
     <ClientContext.Provider
       value={{
         clients,
-        serviceTypes,
-        clientServices,
-        serviceRenewals,
         addClient,
         updateClient,
         deleteClient,
-        addServiceType,
-        updateServiceType,
-        deleteServiceType,
-        addClientService,
-        updateClientService,
-        deleteClientService,
-        addServiceRenewal,
-        updateServiceRenewal,
-        deleteServiceRenewal,
-        getClientById,
-        getAvailableServiceNames
+        toggleClientActive,
+        addService,
+        updateService,
+        deleteService,
+        addNote,
+        updateNote,
+        deleteNote,
+        addDocument,
+        updateDocument,
+        deleteDocument,
       }}
     >
       {children}
