@@ -1,18 +1,27 @@
+
 import React, { useState } from 'react';
 import { Task } from '@/types/task';
-import { SubTask } from '@/types/client';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, Trash2, CalendarClock, User, Tag, CheckCircle2 } from 'lucide-react';
+import { CalendarClock, User, Tag, CheckCircle2, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
 import { toast } from '@/hooks/use-toast-extensions';
 import { cn } from '@/lib/utils';
+import { TaskSubtaskDisplay } from './TaskSubtaskDisplay';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface TaskDetailsProps {
   task: Task;
@@ -21,36 +30,21 @@ interface TaskDetailsProps {
 
 const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { updateTask, deleteTask, subtasks, updateSubtask, getTaskProgress } = useTaskContext();
-  
-  const taskSubtasks = subtasks
-    .filter(st => st.taskId === task.id)
-    .sort((a, b) => a.order - b.order);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { updateTask, deleteTask, getTaskProgress } = useTaskContext();
   
   const progressPercentage = getTaskProgress(task.id);
-  
-  const handleSubtaskToggle = (subtaskId: string, isCompleted: boolean) => {
-    updateSubtask(subtaskId, { completed: isCompleted });
-    
-    // Progress will be automatically updated by getTaskProgress in TaskContext
-    const progress = getTaskProgress(task.id);
-    
-    // If the task has recurrence and all subtasks are complete
-    if (progress === 100 && task.recurrence !== 'none') {
-      toast.success('All steps completed! A new recurring task will be created.');
-    }
-  };
   
   const handleEditTask = (updatedTask: Omit<Task, 'id' | 'createdAt'>) => {
     updateTask(task.id, updatedTask);
     setIsEditModalOpen(false);
+    toast.success('Task updated successfully');
   };
   
   const handleDeleteTask = () => {
-    if (window.confirm(`Are you sure you want to delete the task "${task.title}"?`)) {
-      deleteTask(task.id);
-      if (onClose) onClose();
-    }
+    deleteTask(task.id);
+    if (onClose) onClose();
+    toast.success('Task deleted successfully');
   };
   
   const getPriorityColor = (priority: string) => {
@@ -86,10 +80,10 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
-                <Pencil className="h-4 w-4 mr-1" />
+                <Edit2 className="h-4 w-4 mr-1" />
                 Edit
               </Button>
-              <Button variant="destructive" size="sm" onClick={handleDeleteTask}>
+              <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 Delete
               </Button>
@@ -109,6 +103,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
             {task.projectName && (
               <Badge variant="outline">
                 Project: {task.projectName}
+              </Badge>
+            )}
+            
+            {task.recurrence !== 'none' && (
+              <Badge variant="outline" className="bg-purple-100">
+                {task.recurrence.charAt(0).toUpperCase() + task.recurrence.slice(1)} Recurring
               </Badge>
             )}
           </div>
@@ -165,55 +165,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               </h3>
             </div>
             
-            <Progress value={progressPercentage} className={cn(
-              "h-2",
-              progressPercentage === 100 ? "bg-green-100" : 
-              progressPercentage > 0 ? "bg-blue-100" : ""
-            )} />
-            
-            <div className="space-y-2 mt-4">
-              {taskSubtasks.length > 0 ? (
-                <div className="divide-y">
-                  {taskSubtasks.map(subtask => (
-                    <div key={subtask.id} className="flex items-start gap-3 py-2">
-                      <Checkbox 
-                        checked={subtask.completed} 
-                        onCheckedChange={(checked) => 
-                          handleSubtaskToggle(subtask.id, checked === true)
-                        }
-                        className={cn(
-                          "mt-1",
-                          subtask.completed && "bg-green-500 text-white"
-                        )}
-                      />
-                      <div className="flex-1">
-                        <p className={cn(
-                          "text-sm font-medium",
-                          subtask.completed && "line-through text-muted-foreground"
-                        )}>
-                          {subtask.title}
-                        </p>
-                        {subtask.description && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {subtask.description}
-                          </p>
-                        )}
-                        {subtask.assigneeName && (
-                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {subtask.assigneeName}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No subtasks for this task
-                </p>
-              )}
-            </div>
+            <TaskSubtaskDisplay task={task} showAll={true} editable={true} />
           </div>
         </CardContent>
         
@@ -232,6 +184,26 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           <TaskForm task={task} onSubmit={handleEditTask} />
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{task.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteTask} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
