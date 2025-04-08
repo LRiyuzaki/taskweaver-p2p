@@ -2,8 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PeerInfo, SyncStatus, SyncOptions, IPFSNode, SyncedDocument } from '@/types/p2p';
 import { toast } from '@/hooks/use-toast';
-import { Client } from '@/types/client';
-import { Task } from '@/types/task';
 
 interface P2PContextType {
   // IPFS Node status
@@ -83,7 +81,7 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [syncKey]);
   
   // Initialize IPFS node
-  const initializeIPFS = async () => {
+  const initializeIPFS = async (): Promise<void> => {
     try {
       // In a real implementation, this would initialize an IPFS node
       // For now, we'll simulate this with a timeout
@@ -98,8 +96,6 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "IPFS Node Started",
         description: "P2P synchronization is now enabled.",
       });
-      
-      return true;
     } catch (error) {
       console.error('Failed to initialize IPFS node:', error);
       setIpfsNode({ id: 'simulated-ipfs-node', status: 'offline' });
@@ -109,13 +105,11 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "IPFS Error",
         description: "Failed to start the P2P node.",
       });
-      
-      return false;
     }
   };
   
   // Disconnect IPFS node
-  const disconnectIPFS = async () => {
+  const disconnectIPFS = async (): Promise<void> => {
     try {
       // In a real implementation, this would properly shutdown the IPFS node
       setIpfsNode(prev => prev ? { ...prev, status: 'offline' } : null);
@@ -126,8 +120,6 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "IPFS Node Stopped",
         description: "P2P synchronization is now disabled.",
       });
-      
-      return true;
     } catch (error) {
       console.error('Failed to disconnect IPFS node:', error);
       
@@ -136,13 +128,11 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "IPFS Error",
         description: "Failed to stop the P2P node.",
       });
-      
-      return false;
     }
   };
   
   // Connect to a peer
-  const connectToPeer = async (peerId: string) => {
+  const connectToPeer = async (peerId: string): Promise<void> => {
     if (!ipfsNode || ipfsNode.status !== 'online') {
       await initializeIPFS();
     }
@@ -164,8 +154,6 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "Peer Connected",
         description: `Successfully connected to peer ${peerId.substring(0, 8)}...`,
       });
-      
-      return true;
     } catch (error) {
       console.error(`Failed to connect to peer ${peerId}:`, error);
       
@@ -174,24 +162,19 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "Connection Failed",
         description: `Could not connect to peer ${peerId.substring(0, 8)}...`,
       });
-      
-      return false;
     }
   };
   
   // Disconnect from a peer
-  const disconnectFromPeer = async (peerId: string) => {
+  const disconnectFromPeer = async (peerId: string): Promise<void> => {
     try {
       // In a real implementation, this would disconnect from an actual peer
       setPeers(prev => prev.map(p => 
         p.id === peerId ? { ...p, status: 'disconnected' } : p
       ));
       setSyncStatus(prev => ({ ...prev, peersConnected: Math.max(0, prev.peersConnected - 1) }));
-      
-      return true;
     } catch (error) {
       console.error(`Failed to disconnect from peer ${peerId}:`, error);
-      return false;
     }
   };
   
@@ -202,14 +185,14 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   // Synchronize data with peers
-  const syncData = async () => {
+  const syncData = async (): Promise<void> => {
     if (!ipfsNode || ipfsNode.status !== 'online' || peers.filter(p => p.status === 'connected').length === 0) {
       toast({
         variant: "destructive",
         title: "Sync Failed",
         description: "No active peers to synchronize with.",
       });
-      return false;
+      return;
     }
     
     try {
@@ -229,8 +212,6 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "Sync Complete",
         description: "All data synchronized with connected peers.",
       });
-      
-      return true;
     } catch (error) {
       console.error('Failed to sync data:', error);
       
@@ -245,8 +226,6 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: "Sync Failed",
         description: "Could not synchronize data with peers.",
       });
-      
-      return false;
     }
   };
   
@@ -282,7 +261,7 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   // Start local network discovery for peers
-  const startLocalDiscovery = async () => {
+  const startLocalDiscovery = async (): Promise<void> => {
     if (!ipfsNode || ipfsNode.status !== 'online') {
       await initializeIPFS();
     }
@@ -318,23 +297,18 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           description: `Found ${localPeers.length} peers on your local network.`,
         });
       }, 3000);
-      
-      return true;
     } catch (error) {
       console.error('Failed to start local discovery:', error);
-      return false;
     }
   };
   
   // Stop local network discovery for peers
-  const stopLocalDiscovery = async () => {
+  const stopLocalDiscovery = async (): Promise<void> => {
     try {
       // In a real implementation, this would stop local peer discovery
       console.log('Stopping local peer discovery...');
-      return true;
     } catch (error) {
       console.error('Failed to stop local discovery:', error);
-      return false;
     }
   };
   
