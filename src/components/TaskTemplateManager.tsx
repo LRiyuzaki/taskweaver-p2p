@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TaskTemplate, SubTask } from '@/types/client';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -5,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Plus, X, Edit, Trash2, Copy, MoveUp, MoveDown } from 'lucide-react';
@@ -78,11 +78,10 @@ export const TaskTemplateManager: React.FC = () => {
       return;
     }
     
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
     const newSubtasks = [...subtasks];
     const temp = newSubtasks[index];
-    newSubtasks[index] = newSubtasks[newIndex];
-    newSubtasks[newIndex] = temp;
+    newSubtasks[index] = newSubtasks[index + (direction === 'up' ? -1 : 1)];
+    newSubtasks[index + (direction === 'up' ? -1 : 1)] = temp;
     
     newSubtasks.forEach((st, i) => {
       st.order = i;

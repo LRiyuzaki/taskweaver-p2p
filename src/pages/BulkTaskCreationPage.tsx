@@ -29,6 +29,9 @@ const BulkTaskCreationPage = () => {
   const [showTasksPreview, setShowTasksPreview] = useState(false);
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [viewingTaskId, setViewingTaskId] = useState('');
+  const [taskTitles, setTaskTitles] = useState(['']);
+  const [selectedPriority, setSelectedPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [selectedDueDate, setSelectedDueDate] = useState<Date | undefined>(undefined);
 
   const handleBulkTasksFromLines = () => {
     if (!taskList.trim()) {
@@ -126,6 +129,73 @@ const BulkTaskCreationPage = () => {
     setViewingTaskId(taskId);
   };
   
+  const handleAddTasks = () => {
+    if (!selectedClient || !selectedDueDate) {
+      toast.error('Please select a client and due date');
+      return;
+    }
+    
+    const client = clients.find(c => c.id === selectedClient);
+    if (!client) {
+      toast.error('Invalid client selected');
+      return;
+    }
+
+    const tasksToAdd = taskTitles
+      .filter(title => title.trim())
+      .map(title => ({
+        title: title,
+        description: '',
+        status: 'todo' as TaskStatus,
+        priority: selectedPriority,
+        dueDate: selectedDueDate,
+        clientId: selectedClient,
+        clientName: client.name,
+        tags: [],        // Add required tags array
+        recurrence: 'none' as RecurrenceType // Add required recurrence property
+      }));
+
+    if (tasksToAdd.length === 0) {
+      toast.error('No valid task titles entered');
+      return;
+    }
+
+    addBulkTasks(tasksToAdd);
+    toast.success(`${tasksToAdd.length} tasks created successfully`);
+    
+    // Reset form
+    setTaskTitles(['']);
+    setSelectedClient('');
+    setSelectedPriority('medium');
+    setSelectedDueDate(undefined);
+  };
+
+  const handleAddRow = () => {
+    if (!selectedClient) {
+      toast.error('Please select a client first');
+      return;
+    }
+    
+    const client = clients.find(c => c.id === selectedClient);
+    if (!client) {
+      toast.error('Invalid client selected');
+      return;
+    }
+
+    const newTask = {
+      title: '',
+      status: 'todo' as TaskStatus,
+      priority: selectedPriority as TaskPriority,
+      clientId: selectedClient,
+      clientName: client.name,
+      dueDate: selectedDueDate || new Date(),
+      tags: [],  // Add required tags array
+      recurrence: 'none' as RecurrenceType // Add required recurrence property
+    };
+    
+    setTaskTitles([...taskTitles, newTask.title]);
+  };
+
   const createdTasks = tasks.filter(task => createdTaskIds.includes(task.id));
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority, Project, RecurrenceType } from '@/types/task';
 import { SubTask, TaskTemplate } from '@/types/client';
@@ -27,6 +26,11 @@ interface TaskContextType {
   deleteTaskTemplate: (id: string) => void;
   addBulkTasks: (tasks: Omit<Task, 'id' | 'createdAt'>[]) => void;
   createTaskFromTemplate: (templateId: string, baseTask: Omit<Task, 'id' | 'createdAt'>) => string;
+  deleteClientTasks: (clientId: string) => void;
+  getTasksByMonth: (year: number, month: number) => Task[];
+  getTasksByProject: (projectId: string) => Task[];
+  getTasksByClient: (clientId: string) => Task[];
+  getActivityLogs: () => Array<{date: Date, action: string, details: string}>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -38,6 +42,13 @@ export const useTaskContext = () => {
   }
   return context;
 };
+
+interface ActivityLog {
+  id: string;
+  date: Date;
+  action: string;
+  details: string;
+}
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -103,6 +114,23 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
 
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
+    const savedLogs = localStorage.getItem('activityLogs');
+    if (savedLogs) {
+      try {
+        const parsedLogs = JSON.parse(savedLogs);
+        return parsedLogs.map((log: any) => ({
+          ...log,
+          date: new Date(log.date)
+        }));
+      } catch (e) {
+        console.error('Failed to parse saved activity logs', e);
+        return [];
+      }
+    }
+    return [];
+  });
+
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
@@ -118,6 +146,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('taskTemplates', JSON.stringify(templates));
   }, [templates]);
+
+  useEffect(() => {
+    localStorage.setItem('activityLogs', JSON.stringify(activityLogs));
+  }, [activityLogs]);
 
   const calculateNextDueDate = (dueDate: Date, recurrenceType: RecurrenceType): Date => {
     switch (recurrenceType) {
@@ -161,7 +193,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newTaskId = newTask.id;
       setTasks((prevTasks) => [...prevTasks, newTask]);
       
-      // Duplicate subtasks for recurring task
       const taskSubtasks = subtasks.filter(st => st.taskId === completedTask.id);
       if (taskSubtasks.length > 0) {
         const newSubtasks = taskSubtasks.map(st => ({
@@ -188,15 +219,19 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setTasks((prevTasks) => [...prevTasks, newTask]);
     toast.success(`"${newTask.title}" was added successfully${newTask.assigneeName ? ` and assigned to ${newTask.assigneeName}` : ''}`);
+    logActivity('Task Added', `Task "${newTask.title}" was created${newTask.assigneeName ? ` and assigned to ${newTask.assigneeName}` : ''}`);
     
     return newTaskId;
   };
 
   const updateTask = (id: string, taskData: Partial<Task>) => {
+    let updatedTaskTitle = '';
+    
     setTasks((prevTasks) => 
       prevTasks.map((task) => {
         if (task.id === id) {
           const updatedTask = { ...task, ...taskData };
+          updatedTaskTitle = updatedTask.title;
           
           if (task.status !== 'done' && updatedTask.status === 'done' && updatedTask.recurrence !== 'none') {
             setTimeout(() => createRecurringTaskInstance(updatedTask), 0);
@@ -207,23 +242,32 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return task;
       })
     );
+    
     toast.success("Task updated successfully");
+    logActivity('Task Updated', `Task "${updatedTaskTitle}" was updated`);
   };
 
   const deleteTask = (id: string) => {
-    // Delete all subtasks for this task
+    const taskToDelete = tasks.find(task => task.id === id);
+    
     setSubtasks(prev => prev.filter(st => st.taskId !== id));
     
-    // Delete the task itself
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-    toast.success("Task deleted successfully");
+    
+    if (taskToDelete) {
+      toast.success("Task deleted successfully");
+      logActivity('Task Deleted', `Task "${taskToDelete.title}" was deleted`);
+    }
   };
 
   const moveTask = (taskId: string, newStatus: TaskStatus) => {
+    let movedTaskTitle = '';
+    
     setTasks((prevTasks) => 
       prevTasks.map((task) => {
         if (task.id === taskId) {
           const updatedTask = { ...task, status: newStatus };
+          movedTaskTitle = task.title;
           
           if (task.status !== 'done' && newStatus === 'done' && task.recurrence !== 'none') {
             setTimeout(() => createRecurringTaskInstance(updatedTask), 0);
@@ -234,6 +278,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return task;
       })
     );
+    
+    if (movedTaskTitle) {
+      logActivity('Task Status Changed', `Task "${movedTaskTitle}" was moved to ${newStatus}`);
+    }
   };
 
   const addProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
@@ -245,13 +293,20 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setProjects((prevProjects) => [...prevProjects, newProject]);
     toast.success(`Project "${newProject.name}" was created successfully`);
+    logActivity('Project Created', `Project "${newProject.name}" was created`);
   };
 
   const updateProject = (id: string, projectData: Partial<Project>) => {
+    let updatedProjectName = '';
+    
     setProjects((prevProjects) => 
-      prevProjects.map((project) => 
-        project.id === id ? { ...project, ...projectData } : project
-      )
+      prevProjects.map((project) => {
+        if (project.id === id) {
+          updatedProjectName = projectData.name || project.name;
+          return { ...project, ...projectData };
+        }
+        return project;
+      })
     );
     
     if (projectData.name) {
@@ -263,9 +318,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     toast.success("Project updated successfully");
+    if (updatedProjectName) {
+      logActivity('Project Updated', `Project "${updatedProjectName}" was updated`);
+    }
   };
 
   const deleteProject = (id: string) => {
+    const projectToDelete = projects.find(project => project.id === id);
+    
     setProjects((prevProjects) => prevProjects.filter((project) => project.id !== id));
     
     setTasks((prevTasks) => 
@@ -274,10 +334,27 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
     
-    toast.success("Project deleted successfully");
+    if (projectToDelete) {
+      toast.success("Project deleted successfully");
+      logActivity('Project Deleted', `Project "${projectToDelete.name}" was deleted`);
+    }
   };
 
-  // New functions for subtasks
+  const deleteClientTasks = (clientId: string) => {
+    const clientTasks = tasks.filter(task => task.clientId === clientId);
+    
+    if (clientTasks.length > 0) {
+      clientTasks.forEach(task => {
+        setSubtasks(prev => prev.filter(st => st.taskId !== task.id));
+      });
+      
+      setTasks(prevTasks => prevTasks.filter(task => task.clientId !== clientId));
+      
+      toast.success(`Deleted ${clientTasks.length} tasks associated with this client`);
+      logActivity('Client Tasks Deleted', `${clientTasks.length} tasks were deleted for a removed client`);
+    }
+  };
+
   const addSubtask = (subtaskData: Omit<SubTask, 'id'>) => {
     const newSubtask: SubTask = {
       ...subtaskData,
@@ -285,27 +362,42 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     setSubtasks((prev) => [...prev, newSubtask]);
+    logActivity('Subtask Added', `Subtask "${newSubtask.title}" was added to a task`);
     return newSubtask.id;
   };
 
   const updateSubtask = (id: string, subtaskData: Partial<SubTask>) => {
+    let updatedSubtaskTitle = '';
+    
     setSubtasks((prev) => 
-      prev.map((subtask) => 
-        subtask.id === id ? { ...subtask, ...subtaskData } : subtask
-      )
+      prev.map((subtask) => {
+        if (subtask.id === id) {
+          updatedSubtaskTitle = subtask.title;
+          return { ...subtask, ...subtaskData };
+        }
+        return subtask;
+      })
     );
+    
+    if (updatedSubtaskTitle && subtaskData.completed !== undefined) {
+      logActivity('Subtask Updated', `Subtask "${updatedSubtaskTitle}" was marked as ${subtaskData.completed ? 'completed' : 'incomplete'}`);
+    }
   };
 
   const deleteSubtask = (id: string) => {
+    const subtaskToDelete = subtasks.find(st => st.id === id);
+    
     setSubtasks((prev) => prev.filter((subtask) => subtask.id !== id));
+    
+    if (subtaskToDelete) {
+      logActivity('Subtask Deleted', `Subtask "${subtaskToDelete.title}" was deleted`);
+    }
   };
 
-  // Calculate progress percentage for a task based on its subtasks
   const getTaskProgress = (taskId: string): number => {
     const taskSubtasks = subtasks.filter(st => st.taskId === taskId);
     
     if (taskSubtasks.length === 0) {
-      // If no subtasks, use the task status
       const task = tasks.find(t => t.id === taskId);
       if (!task) return 0;
       
@@ -321,7 +413,6 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return Math.round((completedCount / taskSubtasks.length) * 100);
   };
 
-  // Task template functions
   const addTaskTemplate = (templateData: Omit<TaskTemplate, 'id'>) => {
     const newTemplate: TaskTemplate = {
       ...templateData,
@@ -330,24 +421,40 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setTemplates((prev) => [...prev, newTemplate]);
     toast.success(`Template "${newTemplate.name}" was created successfully`);
+    logActivity('Template Created', `Task template "${newTemplate.name}" was created`);
     return newTemplate.id;
   };
 
   const updateTaskTemplate = (id: string, templateData: Partial<TaskTemplate>) => {
+    let updatedTemplateName = '';
+    
     setTemplates((prev) => 
-      prev.map((template) => 
-        template.id === id ? { ...template, ...templateData } : template
-      )
+      prev.map((template) => {
+        if (template.id === id) {
+          updatedTemplateName = templateData.name || template.name;
+          return { ...template, ...templateData };
+        }
+        return template;
+      })
     );
+    
     toast.success("Template updated successfully");
+    if (updatedTemplateName) {
+      logActivity('Template Updated', `Task template "${updatedTemplateName}" was updated`);
+    }
   };
 
   const deleteTaskTemplate = (id: string) => {
+    const templateToDelete = templates.find(t => t.id === id);
+    
     setTemplates((prev) => prev.filter((template) => template.id !== id));
-    toast.success("Template deleted successfully");
+    
+    if (templateToDelete) {
+      toast.success("Template deleted successfully");
+      logActivity('Template Deleted', `Task template "${templateToDelete.name}" was deleted`);
+    }
   };
 
-  // Bulk task creation
   const addBulkTasks = (tasksToAdd: Omit<Task, 'id' | 'createdAt'>[]) => {
     const newTasks = tasksToAdd.map(taskData => ({
       ...taskData,
@@ -357,9 +464,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setTasks((prev) => [...prev, ...newTasks]);
     toast.success(`${newTasks.length} tasks were created successfully`);
+    logActivity('Bulk Tasks Created', `${newTasks.length} tasks were created in bulk`);
   };
 
-  // Create task from template
   const createTaskFromTemplate = (templateId: string, baseTask: Omit<Task, 'id' | 'createdAt'>): string => {
     const template = templates.find(t => t.id === templateId);
     if (!template) {
@@ -367,10 +474,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return "";
     }
     
-    // Create the main task
     const taskId = addTask(baseTask);
     
-    // Create subtasks from template
     if (template.subtasks && template.subtasks.length > 0) {
       const newSubtasks = template.subtasks.map((st, index) => ({
         id: uuidv4(),
@@ -387,6 +492,39 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     return taskId;
+  };
+
+  const getTasksByMonth = (year: number, month: number) => {
+    return tasks.filter(task => {
+      const taskDate = task.dueDate ? new Date(task.dueDate) : null;
+      return taskDate && taskDate.getFullYear() === year && taskDate.getMonth() === month;
+    });
+  };
+  
+  const getTasksByProject = (projectId: string) => {
+    return tasks.filter(task => task.projectId === projectId);
+  };
+  
+  const getTasksByClient = (clientId: string) => {
+    return tasks.filter(task => task.clientId === clientId);
+  };
+  
+  const getActivityLogs = () => {
+    return activityLogs.map(log => ({
+      date: log.date,
+      action: log.action,
+      details: log.details
+    }));
+  };
+
+  const logActivity = (action: string, details: string) => {
+    const newLog: ActivityLog = {
+      id: uuidv4(),
+      date: new Date(),
+      action,
+      details
+    };
+    setActivityLogs(prev => [newLog, ...prev].slice(0, 200));
   };
 
   return (
@@ -410,7 +548,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateTaskTemplate,
       deleteTaskTemplate,
       addBulkTasks,
-      createTaskFromTemplate
+      createTaskFromTemplate,
+      deleteClientTasks,
+      getTasksByMonth,
+      getTasksByProject,
+      getTasksByClient,
+      getActivityLogs
     }}>
       {children}
     </TaskContext.Provider>

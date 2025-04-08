@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -9,7 +8,11 @@ import {
   Users,
   HelpCircle,
   GitMerge,
-  FilePlus
+  FilePlus,
+  LayoutDashboard,
+  Check,
+  ListChecks,
+  BarChart
 } from 'lucide-react';
 
 interface SidebarLinkProps {
@@ -42,16 +45,55 @@ export const SidebarLink: React.FC<SidebarLinkProps> = ({
   );
 };
 
+const links = [
+  {
+    title: "Dashboard",
+    href: "/",
+    icon: <LayoutDashboard className="h-4 w-4" />,
+  },
+  {
+    title: "Tasks",
+    href: "/tasks",
+    icon: <Check className="h-4 w-4" />,
+  },
+  {
+    title: "Client Management",
+    href: "/client-management",
+    icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: "Task Templates",
+    href: "/task-templates",
+    icon: <ClipboardList className="h-4 w-4" />,
+  },
+  {
+    title: "Bulk Task Creation",
+    href: "/bulk-tasks",
+    icon: <ListChecks className="h-4 w-4" />,
+  },
+  {
+    title: "Reports",
+    href: "/reports",
+    icon: <BarChart className="h-4 w-4" />,
+  },
+  {
+    title: "Settings",
+    href: "/settings",
+    icon: <Settings className="h-4 w-4" />,
+  },
+  {
+    title: "Help",
+    href: "/help",
+    icon: <HelpCircle className="h-4 w-4" />,
+  },
+];
+
 export const AppSidebarLinks = () => {
   return (
     <div className="space-y-1 py-2">
-      <SidebarLink to="/" icon={Home} label="Dashboard" end />
-      <SidebarLink to="/tasks" icon={ClipboardList} label="Tasks" />
-      <SidebarLink to="/task-templates" icon={GitMerge} label="Task Templates" />
-      <SidebarLink to="/bulk-tasks" icon={FilePlus} label="Bulk Task Creation" />
-      <SidebarLink to="/client-management" icon={Users} label="Clients" />
-      <SidebarLink to="/settings" icon={Settings} label="Settings" />
-      <SidebarLink to="/help" icon={HelpCircle} label="Help" />
+      {links.map((link) => (
+        <SidebarLink key={link.title} to={link.href} icon={link.icon} label={link.title} />
+      ))}
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProvider } from '@/contexts/ClientContext';
-import { TaskProvider } from '@/contexts/TaskContext';
+import { TaskProvider } from '@/contexts/TaskProvider';
 import { ThemeProvider } from '@/components/theme-provider';
 import Dashboard from '@/pages/Dashboard';
 import ClientManagementPage from '@/pages/ClientManagementPage';
@@ -13,6 +13,7 @@ import HelpPage from '@/pages/HelpPage';
 import Index from '@/pages/Index';
 import TaskTemplatesPage from '@/pages/TaskTemplatesPage';
 import BulkTaskCreationPage from '@/pages/BulkTaskCreationPage';
+import ReportsPage from '@/pages/ReportsPage';
 
 import './App.css';
 
@@ -29,6 +30,7 @@ function App() {
               <Route path="/bulk-tasks" element={<BulkTaskCreationPage />} />
               <Route path="/client-management" element={<ClientManagementPage />} />
               <Route path="/client/:clientId" element={<ClientPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<HelpPage />} />
               {/* Old routes redirect */}
