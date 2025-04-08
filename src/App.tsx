@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientProvider } from '@/contexts/ClientContext';
-import { TaskProvider } from '@/contexts/TaskContext';  // Fixed import path
+import { TaskProvider } from '@/contexts/TaskContext';  
 import { ThemeProvider } from '@/components/theme-provider';
 import Dashboard from '@/pages/Dashboard';
 import ClientManagementPage from '@/pages/ClientManagementPage';
@@ -20,8 +20,8 @@ import './App.css';
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <ClientProvider>
-        <TaskProvider>
+      <TaskProvider>
+        <ClientProvider>
           <Router>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -40,8 +40,8 @@ function App() {
             </Routes>
             <Toaster />
           </Router>
-        </TaskProvider>
-      </ClientProvider>
+        </ClientProvider>
+      </TaskProvider>
     </ThemeProvider>
   );
 }
