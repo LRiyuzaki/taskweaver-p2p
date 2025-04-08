@@ -38,32 +38,32 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({ task, sh
       <ProgressBar 
         value={progress} 
         className="h-1.5"
-        variant={progress === 100 ? "success" : 
-               progress > 0 ? "default" : "default"}
+        variant={progress === 100 ? "success" : "default"}
       />
       
-      {/* Only show subtasks when showAll is true or there are few subtasks */}
-      {(showAll || taskSubtasks.length <= 3) && (
-        <div className="mt-2 pl-1 space-y-1 border-l-2 border-l-muted/50">
-          {taskSubtasks.map((subtask) => (
-            <div key={subtask.id} className="flex items-center gap-2">
-              <Checkbox
-                checked={subtask.completed}
-                onCheckedChange={(checked) => handleSubtaskToggle(subtask, checked === true)}
-                className={subtask.completed ? "text-green-500" : ""}
-              />
-              <span className={cn(
-                "text-sm",
+      {/* Always show subtasks to fix visibility issue */}
+      <div className="mt-2 pl-1 space-y-1 border-l-2 border-l-muted/50">
+        {taskSubtasks.map((subtask) => (
+          <div key={subtask.id} className="flex items-center gap-2">
+            <Checkbox
+              id={`subtask-${subtask.id}`} 
+              checked={subtask.completed}
+              onCheckedChange={(checked) => handleSubtaskToggle(subtask, checked === true)}
+              className={subtask.completed ? "text-green-500" : ""}
+            />
+            <label 
+              htmlFor={`subtask-${subtask.id}`}
+              className={cn(
+                "text-sm cursor-pointer flex-1",
                 subtask.completed && "line-through text-muted-foreground"
-              )}>
-                {subtask.title}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+              )}
+            >
+              {subtask.title}
+            </label>
+          </div>
+        ))}
+      </div>
       
-      {/* Show a summary if there are many subtasks and not showing all */}
       {!showAll && taskSubtasks.length > 3 && (
         <div className="text-xs text-muted-foreground mt-1">
           {taskSubtasks.filter(st => st.completed).length} of {taskSubtasks.length} subtasks completed

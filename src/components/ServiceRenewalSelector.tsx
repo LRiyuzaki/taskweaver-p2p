@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -39,16 +39,29 @@ export const ServiceRenewalSelector: React.FC<ServiceRenewalSelectorProps> = ({
   reminderType,
   onReminderTypeChange,
 }) => {
+  // Handle checkbox click
+  const handleRenewalCheckbox = (checked: boolean) => {
+    onRenewalChange(checked);
+  };
+  
   return (
     <div className="space-y-4 border p-4 rounded-md">
       <div className="flex items-center justify-between">
-        <Label className="font-medium">{serviceName}</Label>
+        <Label className="font-medium cursor-pointer" onClick={() => onRenewalChange(!isRenewalRequired)}>
+          {serviceName}
+        </Label>
         <div className="flex items-center space-x-2">
-          <Label htmlFor={`renewal-${serviceName}`}>Renewal Required:</Label>
+          <Label 
+            htmlFor={`renewal-${serviceName}`}
+            className="cursor-pointer"
+            onClick={() => onRenewalChange(!isRenewalRequired)}
+          >
+            Renewal Required:
+          </Label>
           <Checkbox
             id={`renewal-${serviceName}`}
             checked={isRenewalRequired}
-            onCheckedChange={(checked) => onRenewalChange(checked === true)}
+            onCheckedChange={handleRenewalCheckbox}
           />
         </div>
       </div>
@@ -64,11 +77,23 @@ export const ServiceRenewalSelector: React.FC<ServiceRenewalSelectorProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="days" id={`days-${serviceName}`} />
-                <Label htmlFor={`days-${serviceName}`}>Days Before</Label>
+                <Label 
+                  htmlFor={`days-${serviceName}`} 
+                  className="cursor-pointer"
+                  onClick={() => onReminderTypeChange('days')}
+                >
+                  Days Before
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="date" id={`date-${serviceName}`} />
-                <Label htmlFor={`date-${serviceName}`}>Specific Date</Label>
+                <Label 
+                  htmlFor={`date-${serviceName}`}
+                  className="cursor-pointer"
+                  onClick={() => onReminderTypeChange('date')}
+                >
+                  Specific Date
+                </Label>
               </div>
             </RadioGroup>
           </div>

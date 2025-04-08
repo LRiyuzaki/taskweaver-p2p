@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ClientServiceSelector } from './ClientServiceSelector';
@@ -43,11 +43,20 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     }, {} as Record<string, any>)
   );
   
+  // Update local state when client prop changes
+  useEffect(() => {
+    setSelectedServices(client.requiredServices || {});
+  }, [client.id, client.requiredServices]);
+  
   const handleServiceChange = (serviceName: string, isSelected: boolean) => {
-    setSelectedServices(prev => ({
-      ...prev,
-      [serviceName]: isSelected
-    }));
+    setSelectedServices(prev => {
+      const updated = {
+        ...prev,
+        [serviceName]: isSelected
+      };
+      console.log(`Service ${serviceName} is now ${isSelected ? 'selected' : 'unselected'}`);
+      return updated;
+    });
   };
   
   const handleRenewalRequiredChange = (serviceName: string, isRequired: boolean) => {

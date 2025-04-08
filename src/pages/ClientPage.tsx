@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { ClientDocuments } from '@/components/ClientDocuments';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ClientServiceManager } from '@/components/ClientServiceManager';
+import type { ReactNode } from 'react';
 
 const formatAddress = (address: any): ReactNode => {
   if (!address) return null;
