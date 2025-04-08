@@ -1,130 +1,95 @@
+
 import React from 'react';
-import { Task } from '@/types/task';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { Clock, Calendar, User, Briefcase, Building2, ListChecks } from 'lucide-react';
+import { Task } from '@/types/task';
+import { Calendar, Tag, AlertCircle } from 'lucide-react';
+import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useTaskContext } from '@/contexts/TaskContext';
-import { ProgressBar } from '@/components/ui/progress-bar';
+import { TaskSubtaskDisplay } from './TaskSubtaskDisplay';
 
 interface TaskCardProps {
   task: Task;
-  onClick: (task: Task) => void;
-  isDraggable?: boolean;
+  onClick?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, isDraggable = true }) => {
-  const { getTaskProgress, subtasks } = useTaskContext();
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
+  const isOverdue = task.dueDate && isBefore(new Date(task.dueDate), new Date()) && task.status !== 'done';
+  const isUpcoming = task.dueDate && 
+    isAfter(new Date(task.dueDate), new Date()) && 
+    isBefore(new Date(task.dueDate), addDays(new Date(), 3));
   
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData('taskId', task.id);
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500 text-white';
+      case 'medium': return 'bg-amber-500 text-white';
+      case 'low': return 'bg-blue-500 text-white';
+      default: return 'bg-slate-500 text-white';
+    }
   };
-  
-  const formattedDueDate = task.dueDate ? 
-    format(new Date(task.dueDate), 'MMM d, yyyy') : 
-    null;
-    
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
-  
-  const priorityColor = {
-    low: 'bg-slate-400',
-    medium: 'bg-blue-500',
-    high: 'bg-red-500'
-  }[task.priority];
 
-  const taskSubtasks = subtasks.filter(st => st.taskId === task.id);
-  const progress = getTaskProgress(task.id);
-  
   return (
     <Card 
       className={cn(
-        "mb-2 cursor-pointer hover:shadow-md transition-shadow border-l-4",
-        task.status === 'done' ? "border-l-green-500" : 
-        isOverdue ? "border-l-red-500" : 
-        "border-l-blue-500"
+        "cursor-pointer transition-all hover:shadow-md",
+        task.status === 'done' ? "opacity-80" : "",
+        isOverdue ? "border-l-2 border-l-red-500" : "",
+        isUpcoming && !isOverdue ? "border-l-2 border-l-amber-500" : ""
       )}
-      draggable={isDraggable}
-      onDragStart={handleDragStart}
-      onClick={() => onClick(task)}
+      onClick={() => onClick?.(task)}
     >
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium text-sm truncate">{task.title}</h3>
-          <div className={`w-2 h-2 rounded-full ${priorityColor}`} />
+      <CardHeader className="p-3 pb-0">
+        <div className="flex justify-between items-start">
+          <CardTitle className={cn(
+            "text-base font-medium line-clamp-2", 
+            task.status === 'done' && "line-through text-muted-foreground"
+          )}>
+            {task.title}
+          </CardTitle>
+          <Badge className={getPriorityColor(task.priority)}>
+            {task.priority}
+          </Badge>
         </div>
-        
+      </CardHeader>
+      <CardContent className="p-3 pt-2">
         {task.description && (
-          <p className="text-muted-foreground text-xs mb-2 line-clamp-2">{task.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+            {task.description}
+          </p>
         )}
         
-        {task.clientId && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {task.tags.map((tag, i) => (
+            <Badge key={i} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+
+        {task.dueDate && (
           <div className="flex items-center text-xs text-muted-foreground mb-2">
-            <Building2 className="h-3 w-3 mr-1" />
-            <span className="truncate">{task.clientName || "Client"}</span>
+            {isOverdue ? (
+              <AlertCircle className="h-3 w-3 text-red-500 mr-1" />
+            ) : (
+              <Calendar className="h-3 w-3 mr-1" />
+            )}
+            <span className={isOverdue ? "text-red-500 font-medium" : ""}>
+              {isOverdue ? "Overdue: " : "Due: "}
+              {format(new Date(task.dueDate), "MMM d, yyyy")}
+            </span>
           </div>
         )}
         
-        {task.assigneeName && (
+        {task.clientName && (
           <div className="flex items-center text-xs text-muted-foreground mb-2">
-            <User className="h-3 w-3 mr-1" />
-            <span className="truncate">{task.assigneeName}</span>
-          </div>
-        )}
-        
-        {task.projectName && (
-          <div className="flex items-center text-xs text-muted-foreground mb-2">
-            <Briefcase className="h-3 w-3 mr-1" />
-            <span className="truncate">{task.projectName}</span>
+            <Tag className="h-3 w-3 mr-1" />
+            <span>Client: {task.clientName}</span>
           </div>
         )}
 
-        {taskSubtasks.length > 0 && (
-          <div className="mt-2 space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <ListChecks className="h-3 w-3" />
-                <span>{taskSubtasks.filter(st => st.completed).length}/{taskSubtasks.length} steps</span>
-              </div>
-              <span>{progress}%</span>
-            </div>
-            <ProgressBar 
-              value={progress}
-              showValue={false}
-              className="h-1"
-            />
-          </div>
-        )}
-        
-        <div className="flex items-center justify-between text-xs mt-2">
-          {formattedDueDate && (
-            <div className="flex items-center">
-              <Calendar className="h-3 w-3 mr-1" />
-              <span className={isOverdue ? "text-red-500 font-medium" : "text-muted-foreground"}>
-                {formattedDueDate}
-              </span>
-            </div>
-          )}
-          
-          {task.recurrence !== 'none' && (
-            <Badge variant="outline" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              {task.recurrence}
-            </Badge>
-          )}
-          
-          {task.tags && task.tags.length > 0 && (
-            <div className="flex gap-1 flex-wrap justify-end">
-              {task.tags.slice(0, 2).map(tag => (
-                <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
-              ))}
-              {task.tags.length > 2 && <span className="text-muted-foreground">+{task.tags.length - 2}</span>}
-            </div>
-          )}
-        </div>
+        {/* Integrate the new subtask display component */}
+        <TaskSubtaskDisplay task={task} />
       </CardContent>
     </Card>
   );
 };
-
-export default TaskCard;

@@ -1,3 +1,4 @@
+
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -11,7 +12,7 @@ export interface Task {
   dueDate?: Date;
   createdAt: Date;
   updatedAt?: Date;
-  completedDate?: Date; // Added for compliance tracking
+  completedDate?: Date; // This was missing but referenced in ClientTimeline
   assignedTo?: string;
   assigneeName?: string;
   clientId?: string;
@@ -33,6 +34,8 @@ export interface Project {
   startDate?: Date;
   endDate?: Date;
   createdAt: Date;
+  color?: string; // Adding color for project visual distinction
+  icon?: string; // Adding icon for project visual distinction
 }
 
 export interface TaskCount {

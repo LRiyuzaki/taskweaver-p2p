@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ClientForm } from "./ClientForm";
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { ClientServicesTab } from './ClientServicesTab';
+import { ProgressBar } from './ui/progress-bar';
 
 interface ClientDetailProps {
   clientId: string;
@@ -44,6 +47,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   const clientTasks = tasks.filter(task => task.clientId === clientId);
   const pendingTasks = clientTasks.filter(task => task.status !== 'done').length;
   const completedTasks = clientTasks.filter(task => task.status === 'done').length;
+  
+  const taskCompletionPercent = clientTasks.length > 0 
+    ? Math.round((completedTasks / clientTasks.length) * 100) 
+    : 0;
   
   const handleEditSubmit = (formData: any) => {
     updateClient(clientId, formData);
@@ -192,7 +199,20 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             
             <div>
               <h3 className="text-sm font-medium mb-2">Tasks</h3>
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-4">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Task Completion:</span>
+                    <span className="font-medium">{taskCompletionPercent}%</span>
+                  </div>
+                  <ProgressBar 
+                    value={taskCompletionPercent} 
+                    variant={taskCompletionPercent === 100 ? "success" : 
+                             taskCompletionPercent >= 50 ? "warning" : "default"}
+                    className="h-2"
+                  />
+                </div>
+                
                 <div className="flex justify-between text-sm">
                   <span>Pending Tasks:</span>
                   <Badge variant="outline">{pendingTasks}</Badge>
@@ -212,7 +232,11 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
           {client.address && (
             <div className="mt-6 border-t pt-4">
               <h3 className="text-sm font-medium mb-2">Address</h3>
-              <p className="text-sm whitespace-pre-wrap">{client.address}</p>
+              <p className="text-sm whitespace-pre-wrap">
+                {typeof client.address === 'string' 
+                  ? client.address 
+                  : client.address.registered || client.address.business || ''}
+              </p>
             </div>
           )}
         </CardContent>
@@ -221,6 +245,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
@@ -238,6 +263,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="services" className="mt-6">
+          <ClientServicesTab client={client} />
         </TabsContent>
         
         <TabsContent value="documents" className="mt-6">
@@ -267,7 +296,12 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                         )}
                       </div>
                       <div className="flex items-center">
-                        <Badge className="mr-2">
+                        <Badge className={cn(
+                          "mr-2",
+                          task.status === 'todo' ? "bg-slate-500" :
+                          task.status === 'inProgress' ? "bg-blue-500" : 
+                          "bg-green-500"
+                        )}>
                           {task.status === 'todo' ? 'To Do' : 
                            task.status === 'inProgress' ? 'In Progress' : 'Done'}
                         </Badge>
