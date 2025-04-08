@@ -1,8 +1,8 @@
 
-import { RouterProvider } from 'react-router-dom'
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { router } from './router'
+import { RouterProvider } from 'react-router-dom';
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { router } from './router';
 import { TaskProvider } from './contexts/TaskContext';
 import { ClientProvider } from './contexts/ClientContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,7 +12,14 @@ import { useEffect } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
 
 function App() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: false
+      }
+    }
+  });
   
   // Initialize app with seed data if needed
   useEffect(() => {

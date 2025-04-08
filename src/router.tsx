@@ -10,7 +10,8 @@ import Settings from './pages/Settings';
 import HelpPage from './pages/HelpPage';
 import Database from './pages/Database';
 import NotFound from './pages/NotFound';
-import Index from './pages/Index'; // Add import for Index page
+import Index from './pages/Index';
+import TasksPage from './pages/TasksPage';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
   {
     path: '/client/:id',
     element: <ClientPage />,
+  },
+  {
+    path: '/tasks',
+    element: <TasksPage />,
   },
   {
     path: '/task-templates',

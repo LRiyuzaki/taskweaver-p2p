@@ -3,43 +3,6 @@ export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
 
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-  createdAt: Date;
-  requiredServices: Record<string, boolean>;
-  startDate?: Date;
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role?: string;
-  avatar?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  clientId?: string;
-  createdAt: Date;
-  color?: string;
-  icon?: string;
-}
-
-export interface Subtask {
-  id: string;
-  taskId: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  order: number;
-}
-
 export interface Task {
   id: string;
   title: string;
@@ -48,30 +11,28 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: Date;
   createdAt: Date;
-  tags: string[];
-  clientId?: string;
-  clientName?: string; // Store client name for easier display
+  updatedAt?: Date;
   assignedTo?: string;
-  assigneeName?: string; // Store the name for easier display
+  assigneeName?: string;
+  clientId?: string;
+  clientName?: string;
   projectId?: string;
-  projectName?: string; // Store the project name for easier display
+  projectName?: string;
+  tags: string[];
   recurrence: RecurrenceType;
   recurrenceEndDate?: Date;
-  completedDate?: Date;
-  reminderDate?: Date;
-  subtasks?: Subtask[];
 }
 
-export interface TaskColumn {
-  id: TaskStatus;
-  title: string;
-  tasks: Task[];
-}
-
-export interface DragItem {
+export interface Project {
   id: string;
-  status: TaskStatus;
-  index: number;
+  name: string;
+  description?: string;
+  clientId?: string;
+  clientName?: string;
+  status: 'active' | 'completed' | 'onHold';
+  startDate?: Date;
+  endDate?: Date;
+  createdAt: Date;
 }
 
 export interface TaskCount {
@@ -79,8 +40,7 @@ export interface TaskCount {
   todo: number;
   inProgress: number;
   done: number;
-  upcoming: number; // Tasks with future due dates
-  overdue?: number; // Overdue tasks
+  upcoming: number;
 }
 
 export interface SortOption {
@@ -89,27 +49,6 @@ export interface SortOption {
 }
 
 export interface FilterOption {
-  type: 'status' | 'priority' | 'assignee' | 'dueDate' | 'project';
+  type: string;
   value: string;
-}
-
-export interface TaskReport {
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-  overdueCount: number;
-  upcomingCount: number;
-  byAssignee: {
-    [assigneeId: string]: {
-      assigned: number;
-      completed: number;
-    };
-  };
-  byClient: {
-    [clientId: string]: {
-      total: number;
-      completed: number;
-      pending: number;
-    };
-  };
 }

@@ -230,7 +230,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTasks((prevTasks) => 
       prevTasks.map((task) => {
         if (task.id === id) {
-          const updatedTask = { ...task, ...taskData };
+          const updatedTask = { 
+            ...task, 
+            ...taskData,
+            updatedAt: new Date() 
+          };
           updatedTaskTitle = updatedTask.title;
           
           if (task.status !== 'done' && updatedTask.status === 'done' && updatedTask.recurrence !== 'none') {

@@ -7,7 +7,8 @@ import {
   Calendar,
   ClipboardList,
   Users,
-  HelpCircle
+  HelpCircle,
+  BarChart
 } from 'lucide-react';
 
 interface SidebarLinkProps {
@@ -46,6 +47,7 @@ export const AppSidebarLinks = () => {
       <SidebarLink to="/" icon={Home} label="Dashboard" end />
       <SidebarLink to="/tasks" icon={ClipboardList} label="Tasks" />
       <SidebarLink to="/client-management" icon={Users} label="Clients" />
+      <SidebarLink to="/reports" icon={BarChart} label="Reports" />
       <SidebarLink to="/settings" icon={Settings} label="Settings" />
       <SidebarLink to="/help" icon={HelpCircle} label="Help" />
     </div>
