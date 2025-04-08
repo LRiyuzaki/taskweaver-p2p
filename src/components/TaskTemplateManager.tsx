@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Plus, X, Edit, Trash2, Copy, MoveUp, MoveDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from '@/hooks/use-toast-extensions';
+import { v4 as uuidv4 } from 'uuid';
 
 export const TaskTemplateManager: React.FC = () => {
   const { templates, addTaskTemplate, updateTaskTemplate, deleteTaskTemplate } = useTaskContext();
@@ -56,6 +57,7 @@ export const TaskTemplateManager: React.FC = () => {
         ...subtasks, 
         {
           id: `temp-${Date.now()}`,
+          taskId: '', // Add required taskId property even if it's empty for now
           title: newSubtaskTitle.trim(),
           completed: false,
           order: subtasks.length
@@ -102,13 +104,17 @@ export const TaskTemplateManager: React.FC = () => {
       return;
     }
     
+    // Ensure all subtasks have a taskId (even if it's a placeholder)
+    const subtasksWithTaskId: SubTask[] = subtasks.map((st, index) => ({
+      ...st,
+      taskId: st.taskId || 'template', // Ensure taskId exists
+      order: index
+    }));
+    
     const templateData = {
       name: name.trim(),
       description: description.trim() || undefined,
-      subtasks: subtasks.map((st, index) => ({
-        ...st,
-        order: index
-      }))
+      subtasks: subtasksWithTaskId
     };
     
     if (editingTemplateId) {
@@ -130,11 +136,18 @@ export const TaskTemplateManager: React.FC = () => {
   
   const handleDuplicateTemplate = (template: TaskTemplate) => {
     const newName = `${template.name} (Copy)`;
+    // Ensure all subtasks have taskId property
+    const subtasksWithTaskId = template.subtasks.map(st => ({
+      ...st,
+      taskId: st.taskId || 'template'
+    }));
+    
     addTaskTemplate({
       name: newName,
       description: template.description,
-      subtasks: template.subtasks
+      subtasks: subtasksWithTaskId
     });
+    
     toast.success(`Template "${template.name}" has been duplicated`);
   };
   

@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -134,7 +133,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
   };
   
   const createReminderTask = (service: any, reminderDate: Date) => {
-    // Create reminder task for this service
     const serviceType = serviceTypes.find(type => type.id === service.serviceTypeId);
     if (serviceType) {
       const taskId = addTask({
@@ -146,6 +144,7 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         clientId: service.clientId,
         clientName: service.clientName,
         tags: ['Reminder', serviceType.name],
+        recurrence: 'none'
       });
       
       return taskId;
@@ -158,8 +157,7 @@ export const ServiceRenewalsDashboard: React.FC = () => {
     
     const finalReminderDays = getEditReminderDays();
     
-    // Update the service with new reminder settings
-    const updatedService = {
+    const updatedService: any = {
       reminderDays: finalReminderDays,
       reminderType: editReminderType
     };
@@ -171,7 +169,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
     updateClientService(editingService.clientId, editingService.serviceTypeId, updatedService);
     
     if (editingService.endDate) {
-      // Calculate the reminder date
       let reminderDate: Date;
       if (editReminderType === 'specificDate' && editReminderDate) {
         reminderDate = editReminderDate;
@@ -180,7 +177,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         reminderDate.setDate(reminderDate.getDate() - finalReminderDays);
       }
       
-      // Find and delete existing reminder tasks
       const reminderTasks = tasks.filter(
         task => task.clientId === editingService.clientId && 
                task.tags && task.tags.includes('Reminder') &&
@@ -193,7 +189,6 @@ export const ServiceRenewalsDashboard: React.FC = () => {
         }
       });
       
-      // Create a new reminder task with the updated date
       if (reminderDate >= new Date()) {
         createReminderTask(editingService, reminderDate);
       }

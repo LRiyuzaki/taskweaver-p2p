@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,6 +46,8 @@ const BulkTaskCreationPage = () => {
         clientId: selectedClient || undefined,
         clientName: selectedClient ? clients.find(c => c.id === selectedClient)?.name : undefined,
         dueDate: bulkDueDate,
+        tags: [],
+        recurrence: 'none' as const
       }));
     
     if (tasksToCreate.length === 0) {
@@ -87,6 +88,8 @@ const BulkTaskCreationPage = () => {
           clientId: selectedClient || undefined,
           clientName: selectedClient ? clients.find(c => c.id === selectedClient)?.name : undefined,
           dueDate: bulkDueDate,
+          tags: [],
+          recurrence: 'none'
         });
         
         if (taskId) {
