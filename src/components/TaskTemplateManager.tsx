@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TaskTemplate, SubTask } from '@/types/client';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -21,7 +20,7 @@ export const TaskTemplateManager: React.FC = () => {
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [subtasks, setSubtasks] = useState<Omit<SubTask, 'taskId'>[]>([]);
+  const [subtasks, setSubtasks] = useState<Array<Omit<SubTask, 'taskId'>>>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   
   const resetForm = () => {
@@ -40,12 +39,13 @@ export const TaskTemplateManager: React.FC = () => {
     setName(template.name);
     setDescription(template.description || '');
     setSubtasks(template.subtasks.map(st => ({
-      ...st,
       id: st.id,
       title: st.title,
       description: st.description,
       completed: false,
-      order: st.order
+      order: st.order,
+      assignedTo: st.assignedTo,
+      assigneeName: st.assigneeName
     })));
     setEditingTemplateId(template.id);
     setIsEditModalOpen(true);
@@ -57,7 +57,6 @@ export const TaskTemplateManager: React.FC = () => {
         ...subtasks, 
         {
           id: `temp-${Date.now()}`,
-          taskId: '', // Add required taskId property even if it's empty for now
           title: newSubtaskTitle.trim(),
           completed: false,
           order: subtasks.length
@@ -85,7 +84,6 @@ export const TaskTemplateManager: React.FC = () => {
     newSubtasks[index] = newSubtasks[newIndex];
     newSubtasks[newIndex] = temp;
     
-    // Update order values
     newSubtasks.forEach((st, i) => {
       st.order = i;
     });
@@ -104,10 +102,9 @@ export const TaskTemplateManager: React.FC = () => {
       return;
     }
     
-    // Ensure all subtasks have a taskId (even if it's a placeholder)
     const subtasksWithTaskId: SubTask[] = subtasks.map((st, index) => ({
       ...st,
-      taskId: st.taskId || 'template', // Ensure taskId exists
+      taskId: 'template',
       order: index
     }));
     
@@ -136,10 +133,10 @@ export const TaskTemplateManager: React.FC = () => {
   
   const handleDuplicateTemplate = (template: TaskTemplate) => {
     const newName = `${template.name} (Copy)`;
-    // Ensure all subtasks have taskId property
+    
     const subtasksWithTaskId = template.subtasks.map(st => ({
       ...st,
-      taskId: st.taskId || 'template'
+      taskId: 'template'
     }));
     
     addTaskTemplate({
@@ -227,7 +224,6 @@ export const TaskTemplateManager: React.FC = () => {
         </div>
       )}
       
-      {/* Add Template Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -260,7 +256,6 @@ export const TaskTemplateManager: React.FC = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Edit Template Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -301,8 +296,8 @@ interface TemplateFormProps {
   setName: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
-  subtasks: Omit<SubTask, 'taskId'>[];
-  setSubtasks: (subtasks: Omit<SubTask, 'taskId'>[]) => void;
+  subtasks: Array<Omit<SubTask, 'taskId'>>;
+  setSubtasks: (subtasks: Array<Omit<SubTask, 'taskId'>>) => void;
   newSubtaskTitle: string;
   setNewSubtaskTitle: (value: string) => void;
   handleAddSubtask: () => void;
