@@ -70,33 +70,27 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
     toast.success(`Task added to ${title}`);
   };
   
-  // Sort and filter tasks
   const getFilteredAndSortedTasks = () => {
-    // First filter by priority if filters are active
     let filteredTasks = tasks;
     
     if (priorityFilter.length > 0) {
       filteredTasks = filteredTasks.filter(task => priorityFilter.includes(task.priority));
     }
     
-    // Then sort based on current sortOrder
     switch (sortOrder) {
       case 'priority':
-        // Sort by priority (high > medium > low)
         return [...filteredTasks].sort((a, b) => {
           const priorityValues = { high: 3, medium: 2, low: 1 };
           return (priorityValues[b.priority as keyof typeof priorityValues] || 0) - 
                  (priorityValues[a.priority as keyof typeof priorityValues] || 0);
         });
       case 'date':
-        // Sort by due date (nearest first)
         return [...filteredTasks].sort((a, b) => {
           if (!a.dueDate) return 1;
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         });
       default:
-        // Default order (no sorting)
         return filteredTasks;
     }
   };
@@ -104,7 +98,6 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   const processedTasks = getFilteredAndSortedTasks();
   const isPriorityFiltered = priorityFilter.length > 0;
   
-  // Handle priority filter toggle
   const togglePriorityFilter = (priority: string) => {
     setPriorityFilter(prev => {
       if (prev.includes(priority)) {
@@ -278,7 +271,8 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
           </DialogHeader>
           <TaskForm 
             onSubmit={handleTaskFormSubmit}
-            defaultStatus={status}
+            initialClientId={undefined}
+            task={undefined}
           />
         </DialogContent>
       </Dialog>
