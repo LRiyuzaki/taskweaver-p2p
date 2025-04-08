@@ -1,4 +1,3 @@
-
 export type TaskStatus = 'todo' | 'inProgress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
@@ -12,6 +11,7 @@ export interface Task {
   dueDate?: Date;
   createdAt: Date;
   updatedAt?: Date;
+  completedDate?: Date; // Added for compliance tracking
   assignedTo?: string;
   assigneeName?: string;
   clientId?: string;

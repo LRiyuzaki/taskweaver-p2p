@@ -3,7 +3,7 @@ import { Task, TaskStatus, TaskPriority, Project, RecurrenceType } from '@/types
 import { SubTask, TaskTemplate } from '@/types/client';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/hooks/use-toast-extensions';
-import { addDays, addWeeks, addMonths, addQuarters, addYears } from 'date-fns';
+import { addDays, addWeeks, addMonths, addQuarters, addYears, format } from 'date-fns';
 
 interface TaskContextType {
   tasks: Task[];
@@ -179,6 +179,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextDueDate = calculateNextDueDate(completedTask.dueDate, completedTask.recurrence);
       
       if (completedTask.recurrenceEndDate && nextDueDate > completedTask.recurrenceEndDate) {
+        toast.success(`Recurring task series "${completedTask.title}" is now complete!`);
         return;
       }
       
@@ -193,6 +194,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newTaskId = newTask.id;
       setTasks((prevTasks) => [...prevTasks, newTask]);
       
+      // Copy subtasks for the new recurring instance
       const taskSubtasks = subtasks.filter(st => st.taskId === completedTask.id);
       if (taskSubtasks.length > 0) {
         const newSubtasks = taskSubtasks.map(st => ({
@@ -205,7 +207,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSubtasks(prev => [...prev, ...newSubtasks]);
       }
       
-      toast.success(`Recurring task "${newTask.title}" has been scheduled for ${nextDueDate.toLocaleDateString()}`);
+      toast.success(`Next recurring task "${newTask.title}" has been scheduled for ${format(nextDueDate, 'PPP')}`);
+      logActivity('Recurring Task Created', `Next instance of recurring task "${newTask.title}" was created for ${format(nextDueDate, 'PPP')}`);
     }
   };
 
@@ -405,6 +408,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const task = tasks.find(t => t.id === taskId);
       if (!task) return 0;
       
+      // If no subtasks, base progress on task status
       switch (task.status) {
         case 'todo': return 0;
         case 'inProgress': return 50;
@@ -414,7 +418,24 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     const completedCount = taskSubtasks.filter(st => st.completed).length;
-    return Math.round((completedCount / taskSubtasks.length) * 100);
+    const progress = Math.round((completedCount / taskSubtasks.length) * 100);
+    
+    // Update task status based on subtask completion
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      if (progress === 100 && task.status !== 'done') {
+        // All subtasks complete, mark task as done
+        setTimeout(() => updateTask(taskId, { status: 'done' }), 0);
+      } else if (progress > 0 && progress < 100 && task.status === 'todo') {
+        // Some subtasks complete, move to in progress
+        setTimeout(() => updateTask(taskId, { status: 'inProgress' }), 0);
+      } else if (progress < 100 && task.status === 'done') {
+        // Not all subtasks complete, move back to in progress
+        setTimeout(() => updateTask(taskId, { status: 'inProgress' }), 0);
+      }
+    }
+    
+    return progress;
   };
 
   const addTaskTemplate = (templateData: Omit<TaskTemplate, 'id'>) => {

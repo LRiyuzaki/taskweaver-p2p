@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Building, Mail, Phone, Pencil, Trash2, FileText, Calendar, Check, X } from "lucide-react";
+import { ArrowLeft, Building, Mail, Phone, Pencil, Trash2, FileText, Calendar, Check, X, BookOpen, Receipt } from "lucide-react";
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { ClientDocuments } from './ClientDocuments';
@@ -149,6 +149,24 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                   <div className="flex items-center text-sm">
                     <span className="h-4 w-4 mr-2" />
                     <span>PAN: {client.pan}</span>
+                  </div>
+                )}
+                {client.tan && (
+                  <div className="flex items-center text-sm">
+                    <Receipt className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>TAN: {client.tan}</span>
+                  </div>
+                )}
+                {client.entityType === 'Company' && client.cin && (
+                  <div className="flex items-center text-sm">
+                    <Receipt className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>CIN: {client.cin}</span>
+                  </div>
+                )}
+                {client.entityType === 'LLP' && client.llpin && (
+                  <div className="flex items-center text-sm">
+                    <Receipt className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>LLPIN: {client.llpin}</span>
                   </div>
                 )}
               </div>

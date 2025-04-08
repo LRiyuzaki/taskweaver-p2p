@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Client, ClientFormData, Service, Note, Document, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
@@ -47,6 +46,52 @@ interface ClientContextType {
   
   // Helper functions
   getAvailableServiceNames: () => string[];
+
+  // Compliance specific functions
+  updateClientCompliance: (id: string, complianceData: {
+    isGSTRegistered?: boolean;
+    gstin?: string;
+    gstRegistrationDate?: Date;
+    pan?: string;
+    tan?: string;
+    cin?: string;
+    llpin?: string;
+    isMSME?: boolean;
+    msmeNumber?: string;
+    isIECHolder?: boolean;
+    iecNumber?: string;
+    financialYearEnd?: 'March' | 'December';
+    statutoryDueDates?: {
+      gstReturn?: number;
+      tdsReturn?: number;
+      advanceTax?: {
+        q1: Date;
+        q2: Date;
+        q3: Date;
+        q4: Date;
+      };
+    };
+  }) => void;
+
+  getClientComplianceStatus: (id: string) => {
+    isCompliant: boolean;
+    missingDocuments: string[];
+    upcomingDeadlines: {
+      type: string;
+      dueDate: Date;
+      status: 'pending' | 'overdue' | 'completed';
+    }[];
+  };
+
+  bulkUpdateClientServices: (updates: {
+    clientId: string;
+    services: {
+      serviceTypeId: string;
+      startDate: Date;
+      endDate?: Date;
+      status: 'active' | 'inactive' | 'completed';
+    }[];
+  }[]) => void;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -472,6 +517,133 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toast.success("Service renewal deleted successfully");
   };
 
+  const updateClientCompliance = (id: string, complianceData: any) => {
+    setClients((prevClients) =>
+      prevClients.map((client) =>
+        client.id === id
+          ? {
+              ...client,
+              ...complianceData,
+              // Ensure dates are properly converted
+              gstRegistrationDate: complianceData.gstRegistrationDate 
+                ? new Date(complianceData.gstRegistrationDate)
+                : client.gstRegistrationDate,
+              statutoryDueDates: {
+                ...client.statutoryDueDates,
+                ...complianceData.statutoryDueDates,
+                advanceTax: complianceData.statutoryDueDates?.advanceTax 
+                  ? {
+                      q1: new Date(complianceData.statutoryDueDates.advanceTax.q1),
+                      q2: new Date(complianceData.statutoryDueDates.advanceTax.q2),
+                      q3: new Date(complianceData.statutoryDueDates.advanceTax.q3),
+                      q4: new Date(complianceData.statutoryDueDates.advanceTax.q4),
+                    }
+                  : client.statutoryDueDates?.advanceTax
+              }
+            }
+          : client
+      )
+    );
+    toast.success("Client compliance data updated successfully");
+  };
+
+  const getClientComplianceStatus = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    if (!client) {
+      return {
+        isCompliant: false,
+        missingDocuments: [],
+        upcomingDeadlines: []
+      };
+    }
+
+    const missingDocuments: string[] = [];
+    
+    // Check required documents based on entity type
+    if (!client.pan) missingDocuments.push('PAN');
+    if (client.isGSTRegistered && !client.gstin) missingDocuments.push('GSTIN');
+    if (client.entityType === 'Company' && !client.cin) missingDocuments.push('CIN');
+    if (client.entityType === 'LLP' && !client.llpin) missingDocuments.push('LLPIN');
+    if (client.isMSME && !client.msmeNumber) missingDocuments.push('MSME Registration');
+    if (client.isIECHolder && !client.iecNumber) missingDocuments.push('IEC Number');
+
+    // Get upcoming deadlines
+    const now = new Date();
+    const upcomingDeadlines = clientServices
+      .filter(cs => cs.clientId === id)
+      .map(cs => {
+        const serviceType = serviceTypes.find(st => st.id === cs.serviceTypeId);
+        if (!serviceType) return null;
+
+        const dueDate = cs.nextRenewalDate || cs.endDate;
+        if (!dueDate) return null;
+
+        return {
+          type: serviceType.name,
+          dueDate: new Date(dueDate),
+          status: 
+            cs.status === 'completed' ? 'completed' :
+            now > dueDate ? 'overdue' : 'pending'
+        };
+      })
+      .filter(Boolean) as {
+        type: string;
+        dueDate: Date;
+        status: 'pending' | 'overdue' | 'completed';
+      }[];
+
+    return {
+      isCompliant: missingDocuments.length === 0,
+      missingDocuments,
+      upcomingDeadlines
+    };
+  };
+
+  const bulkUpdateClientServices = (updates: {
+    clientId: string;
+    services: {
+      serviceTypeId: string;
+      startDate: Date;
+      endDate?: Date;
+      status: 'active' | 'inactive' | 'completed';
+    }[];
+  }[]) => {
+    const newClientServices = [...clientServices];
+
+    updates.forEach(update => {
+      update.services.forEach(service => {
+        const existingIndex = newClientServices.findIndex(
+          cs => cs.clientId === update.clientId && cs.serviceTypeId === service.serviceTypeId
+        );
+
+        const serviceType = serviceTypes.find(st => st.id === service.serviceTypeId);
+        if (!serviceType) return;
+
+        if (existingIndex >= 0) {
+          newClientServices[existingIndex] = {
+            ...newClientServices[existingIndex],
+            ...service,
+            startDate: new Date(service.startDate),
+            endDate: service.endDate ? new Date(service.endDate) : undefined
+          };
+        } else {
+          newClientServices.push({
+            clientId: update.clientId,
+            serviceTypeId: service.serviceTypeId,
+            serviceTypeName: serviceType.name,
+            startDate: new Date(service.startDate),
+            endDate: service.endDate ? new Date(service.endDate) : undefined,
+            status: service.status,
+            reminderDays: 7 // Default reminder days
+          });
+        }
+      });
+    });
+
+    setClientServices(newClientServices);
+    toast.success("Client services updated successfully");
+  };
+
   return (
     <ClientContext.Provider
       value={{
@@ -503,6 +675,9 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateServiceRenewal,
         deleteServiceRenewal,
         getAvailableServiceNames,
+        updateClientCompliance,
+        getClientComplianceStatus,
+        bulkUpdateClientServices
       }}
     >
       {children}

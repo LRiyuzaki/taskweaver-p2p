@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Client, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 import { Task, TaskStatus, TaskPriority, RecurrenceType, Subtask } from '@/types/task';
@@ -19,38 +18,139 @@ export const generateSeedData = () => {
     const serviceTypes: ServiceType[] = [
       { 
         id: uuidv4(), 
-        name: 'GST Filing', 
-        description: 'Monthly GST return filing', 
-        frequency: 'monthly', 
-        renewalPeriod: 1 
+        name: 'GST Return Filing',
+        description: 'Monthly GSTR-1 and GSTR-3B filing',
+        frequency: 'monthly',
+        category: 'gst',
+        dueDate: {
+          type: 'fixed',
+          day: 20, // GSTR-3B due by 20th
+        },
+        requiresGST: true,
+        applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship', 'Trust', 'HUF'],
+        renewalPeriod: 1,
+        documentRequirements: [
+          { name: 'Sales Register', description: 'Monthly sales data with GST details', required: true },
+          { name: 'Purchase Register', description: 'Monthly purchase data with GST details', required: true },
+          { name: 'E-way Bills', description: 'If applicable', required: false },
+        ],
+        taskTemplate: [
+          { title: 'Collect monthly transaction data', order: 0 },
+          { title: 'Reconcile input and output GST', order: 1 },
+          { title: 'Prepare GSTR-1', order: 2 },
+          { title: 'File GSTR-1', order: 3 },
+          { title: 'Review GSTR-2B', order: 4 },
+          { title: 'Prepare GSTR-3B', order: 5 },
+          { title: 'Calculate tax liability', order: 6 },
+          { title: 'File GSTR-3B', order: 7 },
+        ]
       },
       { 
         id: uuidv4(), 
-        name: 'Income Tax Filing', 
-        description: 'Annual income tax return filing', 
-        frequency: 'annually', 
-        renewalPeriod: 12 
+        name: 'Income Tax Return Filing',
+        description: 'Annual income tax return preparation and filing',
+        frequency: 'annually',
+        category: 'incometax',
+        dueDate: {
+          type: 'relative',
+          monthOffset: 7, // 7 months after financial year end (usually October 31st)
+        },
+        requiresPAN: true,
+        applicableEntities: ['Individual', 'Company', 'LLP', 'Partnership', 'Trust', 'HUF'],
+        renewalPeriod: 12,
+        documentRequirements: [
+          { name: 'Balance Sheet', required: true },
+          { name: 'Profit & Loss Statement', required: true },
+          { name: 'Form 26AS', required: true },
+          { name: 'Bank Statements', required: true },
+        ],
+        taskTemplate: [
+          { title: 'Collect annual financial statements', order: 0 },
+          { title: 'Review Form 26AS', order: 1 },
+          { title: 'Reconcile TDS credits', order: 2 },
+          { title: 'Calculate taxable income', order: 3 },
+          { title: 'Prepare income tax computation', order: 4 },
+          { title: 'File ITR', order: 5 },
+          { title: 'Verify ITR', order: 6 },
+        ]
       },
       { 
         id: uuidv4(), 
-        name: 'Bookkeeping', 
-        description: 'Monthly bookkeeping services', 
-        frequency: 'monthly', 
-        renewalPeriod: 1 
+        name: 'TDS Return Filing',
+        description: 'Quarterly TDS return filing (Form 24Q, 26Q)',
+        frequency: 'quarterly',
+        category: 'tds',
+        dueDate: {
+          type: 'relative',
+          daysOffset: 31, // 31 days after quarter end
+        },
+        requiresTAN: true,
+        applicableEntities: ['Company', 'LLP', 'Partnership', 'Trust'],
+        renewalPeriod: 3,
+        documentRequirements: [
+          { name: 'TDS Payment Challans', required: true },
+          { name: 'Vendor Bills', required: true },
+          { name: 'Rent Agreements', required: false },
+        ],
+        taskTemplate: [
+          { title: 'Collect payment details', order: 0 },
+          { title: 'Verify TDS rates applied', order: 1 },
+          { title: 'Prepare TDS return', order: 2 },
+          { title: 'Generate Form 27A', order: 3 },
+          { title: 'File TDS return', order: 4 },
+        ]
       },
       { 
         id: uuidv4(), 
-        name: 'Audit', 
-        description: 'Annual audit services', 
-        frequency: 'annually', 
-        renewalPeriod: 12 
+        name: 'GST Annual Return',
+        description: 'Annual GST return (GSTR-9) filing',
+        frequency: 'annually',
+        category: 'gst',
+        dueDate: {
+          type: 'relative',
+          monthOffset: 9, // 9 months after financial year end (usually December 31st)
+        },
+        requiresGST: true,
+        applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship'],
+        renewalPeriod: 12,
+        documentRequirements: [
+          { name: 'Monthly GST Returns', required: true },
+          { name: 'Annual Financial Statements', required: true },
+          { name: 'GST Audit Report', required: false },
+        ],
+        taskTemplate: [
+          { title: 'Review monthly GST returns', order: 0 },
+          { title: 'Reconcile with books of accounts', order: 1 },
+          { title: 'Prepare GSTR-9', order: 2 },
+          { title: 'Review reconciliation', order: 3 },
+          { title: 'File GSTR-9', order: 4 },
+        ]
       },
       { 
         id: uuidv4(), 
-        name: 'TDS Filing', 
-        description: 'Quarterly TDS return filing', 
-        frequency: 'quarterly', 
-        renewalPeriod: 3 
+        name: 'Company Annual Compliance',
+        description: 'Annual ROC compliance including AOC-4 and MGT-7',
+        frequency: 'annually',
+        category: 'compliance',
+        dueDate: {
+          type: 'relative',
+          monthOffset: 6, // 6 months after financial year end
+        },
+        applicableEntities: ['Company'],
+        renewalPeriod: 12,
+        documentRequirements: [
+          { name: 'Annual Financial Statements', required: true },
+          { name: 'Board Resolution', required: true },
+          { name: 'AGM Minutes', required: true },
+        ],
+        taskTemplate: [
+          { title: 'Prepare financial statements', order: 0 },
+          { title: 'Conduct board meeting', order: 1 },
+          { title: 'Conduct AGM', order: 2 },
+          { title: 'Prepare AOC-4', order: 3 },
+          { title: 'Prepare MGT-7', order: 4 },
+          { title: 'File with ROC', order: 5 },
+        ]
       },
     ];
     

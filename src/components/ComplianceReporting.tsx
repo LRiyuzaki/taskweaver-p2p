@@ -1,204 +1,385 @@
-
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
-} from 'recharts';
-import { format, addDays, isAfter, isBefore } from 'date-fns';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { Calendar as CalendarIcon, Download, Loader2 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Badge } from "@/components/ui/badge";
 
-interface ComplianceReportingProps {
-  dateRange: string;
+interface ReportOptions {
+  startDate: Date;
+  endDate: Date;
+  includeGST: boolean;
+  includeTDS: boolean;
+  includeIncomeTax: boolean;
+  includeROC: boolean;
+  entityType?: string;
 }
 
-export const ComplianceReporting: React.FC<ComplianceReportingProps> = ({ dateRange }) => {
-  const { clients, getAvailableServiceNames } = useClientContext();
+export const ComplianceReporting = () => {
+  const { clients, getClientComplianceStatus } = useClientContext();
   const { tasks } = useTaskContext();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [options, setOptions] = useState<ReportOptions>({
+    startDate: startOfMonth(subMonths(new Date(), 1)),
+    endDate: endOfMonth(new Date()),
+    includeGST: true,
+    includeTDS: true,
+    includeIncomeTax: true,
+    includeROC: true,
+    entityType: undefined
+  });
 
-  // Sample compliance metrics - in a real app, this would use actual compliance data
-  const complianceScores = useMemo(() => {
-    // This would normally calculate real compliance metrics based on tasks, clients, etc.
-    return [
-      { name: 'Documentation', score: 85, fullMark: 100 },
-      { name: 'Deadlines', score: 92, fullMark: 100 },
-      { name: 'Regulatory', score: 78, fullMark: 100 },
-      { name: 'Client Information', score: 95, fullMark: 100 },
-      { name: 'Process Adherence', score: 88, fullMark: 100 },
-    ];
-  }, []);
-  
-  // Calculate upcoming compliance tasks
-  const upcomingComplianceTasks = useMemo(() => {
-    const today = new Date();
-    const nextMonth = addDays(today, 30);
-    
-    return tasks.filter(task => {
-      // Assume tasks with "compliance", "deadline", "regulatory" tags are compliance-related
-      const isComplianceTask = task.tags.some(tag => 
-        ['compliance', 'deadline', 'regulatory', 'filing'].includes(tag.toLowerCase())
+  const generateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const doc = new jsPDF();
+      const reportDate = format(new Date(), 'dd/MM/yyyy');
+      
+      // Add report header
+      doc.setFontSize(20);
+      doc.text('Compliance Status Report', 15, 20);
+      doc.setFontSize(12);
+      doc.text(`Report Period: ${format(options.startDate, 'dd/MM/yyyy')} - ${format(options.endDate, 'dd/MM/yyyy')}`, 15, 30);
+      doc.text(`Generated on: ${reportDate}`, 15, 37);
+
+      // Filter clients based on entity type
+      const filteredClients = clients.filter(client => 
+        !options.entityType || client.entityType === options.entityType
       );
-      
-      const isDueSoon = task.dueDate && 
-                        isAfter(new Date(task.dueDate), today) && 
-                        isBefore(new Date(task.dueDate), nextMonth);
-      
-      return isComplianceTask && isDueSoon && task.status !== 'done';
-    });
-  }, [tasks]);
 
-  // Service type compliance status
-  const serviceComplianceData = useMemo(() => {
-    const serviceNames = getAvailableServiceNames();
-    
-    return serviceNames.map(service => {
-      // In a real app, this would calculate actual compliance metrics for each service
-      // For now, we'll generate sample data
-      const completionRate = Math.floor(Math.random() * 40) + 60; // Random between 60-100%
-      
-      return {
-        name: service,
-        complianceRate: completionRate,
+      // Summarize compliance status
+      const complianceSummary = {
+        total: filteredClients.length,
+        gstCompliant: filteredClients.filter(c => c.isGSTRegistered && c.gstin).length,
+        tdsCompliant: filteredClients.filter(c => c.tan).length,
+        panCompliant: filteredClients.filter(c => c.pan).length,
+        cinCompliant: filteredClients.filter(c => 
+          c.entityType === 'Company' ? c.cin : true
+        ).length,
       };
-    }).filter(service => service.name !== '');
-  }, [getAvailableServiceNames]);
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
-  
-  // Risk categories (sample data)
-  const riskData = [
-    { name: 'Low Risk', value: clients.length * 0.6 },
-    { name: 'Medium Risk', value: clients.length * 0.3 },
-    { name: 'High Risk', value: clients.length * 0.1 },
-  ];
+      // Add summary section
+      doc.setFontSize(14);
+      doc.text('Compliance Summary', 15, 50);
+      doc.setFontSize(12);
+      
+      const summaryData = [
+        ['Total Clients', complianceSummary.total.toString()],
+        ['GST Registered & Compliant', complianceSummary.gstCompliant.toString()],
+        ['TDS Compliant', complianceSummary.tdsCompliant.toString()],
+        ['PAN Available', complianceSummary.panCompliant.toString()],
+        ['CIN Available (Companies)', complianceSummary.cinCompliant.toString()],
+      ];
+
+      autoTable(doc, {
+        startY: 55,
+        head: [['Metric', 'Count']],
+        body: summaryData,
+        theme: 'grid',
+      });
+
+      // Add client-wise compliance details
+      if (options.includeGST || options.includeTDS || options.includeIncomeTax || options.includeROC) {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text('Client-wise Compliance Details', 15, 20);
+
+        const clientData = filteredClients.map(client => {
+          const status = getClientComplianceStatus(client.id);
+          return [
+            client.name,
+            client.entityType,
+            client.isGSTRegistered ? (client.gstin ? 'Compliant' : 'Non-compliant') : 'N/A',
+            client.tan ? 'Available' : 'Missing',
+            status.missingDocuments.join(', ') || 'None',
+            status.isCompliant ? 'Compliant' : 'Non-compliant'
+          ];
+        });
+
+        autoTable(doc, {
+          startY: 30,
+          head: [['Client Name', 'Entity Type', 'GST Status', 'TDS Status', 'Missing Documents', 'Overall Status']],
+          body: clientData,
+          theme: 'striped',
+          styles: { fontSize: 10 },
+        });
+      }
+
+      // Add filing status for the period
+      if (options.includeGST || options.includeTDS) {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text('Filing Status', 15, 20);
+
+        const filingData = filteredClients.flatMap(client => {
+          const periodTasks = tasks.filter(task => 
+            task.clientId === client.id &&
+            task.dueDate &&
+            task.dueDate >= options.startDate &&
+            task.dueDate <= options.endDate &&
+            ((options.includeGST && task.tags.includes('GST')) ||
+             (options.includeTDS && task.tags.includes('TDS')) ||
+             (options.includeIncomeTax && task.tags.includes('Income Tax')) ||
+             (options.includeROC && task.tags.includes('ROC')))
+          );
+
+          return periodTasks.map(task => [
+            client.name,
+            task.title,
+            format(new Date(task.dueDate!), 'dd/MM/yyyy'),
+            task.status === 'inProgress' ? 'In Progress' : 
+              task.status === 'done' ? 'Completed' : 'Pending',
+            task.completedDate ? format(new Date(task.completedDate), 'dd/MM/yyyy') : '-'
+          ]);
+        });
+
+        autoTable(doc, {
+          startY: 30,
+          head: [['Client Name', 'Filing Type', 'Due Date', 'Status', 'Completion Date']],
+          body: filingData,
+          theme: 'striped',
+          styles: { fontSize: 10 },
+        });
+      }
+
+      // Save the PDF
+      doc.save(`compliance-report-${format(new Date(), 'dd-MM-yyyy')}.pdf`);
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Overall Compliance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">87%</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Upcoming Deadlines</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{upcomingComplianceTasks.length}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">High Risk Clients</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{Math.round(clients.length * 0.1)}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Document Compliance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">92%</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Compliance by Service Type</CardTitle>
-            <CardDescription>Compliance rates across different services</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={serviceComplianceData}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis type="category" dataKey="name" />
-                <Tooltip formatter={(value) => [`${value}%`, 'Compliance Rate']} />
-                <Legend />
-                <Bar dataKey="complianceRate" fill="#8884d8" name="Compliance Rate (%)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Risk Assessment</CardTitle>
-            <CardDescription>Client distribution by risk category</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={riskData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {riskData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Compliance Metrics</CardTitle>
-          <CardDescription>Key compliance areas performance</CardDescription>
+          <CardTitle>Compliance Report Generator</CardTitle>
+          <CardDescription>
+            Generate detailed compliance reports for your clients
+          </CardDescription>
         </CardHeader>
-        <CardContent className="h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart outerRadius={150} data={complianceScores}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="name" />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} />
-              <Radar name="Compliance Score" dataKey="score" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-              <Tooltip />
-              <Legend />
-            </RadarChart>
-          </ResponsiveContainer>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Report Period</Label>
+              <div className="flex space-x-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !options.startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {options.startDate ? format(options.startDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={options.startDate}
+                      onSelect={(date) => setOptions(prev => ({ ...prev, startDate: date || prev.startDate }))}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal",
+                        !options.endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {options.endDate ? format(options.endDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={options.endDate}
+                      onSelect={(date) => setOptions(prev => ({ ...prev, endDate: date || prev.endDate }))}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Filter by Entity Type</Label>
+              <Select
+                value={options.entityType}
+                onValueChange={(value) => setOptions(prev => ({ ...prev, entityType: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Entity Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="Individual">Individual</SelectItem>
+                  <SelectItem value="Proprietorship">Proprietorship</SelectItem>
+                  <SelectItem value="Company">Company</SelectItem>
+                  <SelectItem value="LLP">LLP</SelectItem>
+                  <SelectItem value="Partnership">Partnership</SelectItem>
+                  <SelectItem value="Trust">Trust</SelectItem>
+                  <SelectItem value="HUF">HUF</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Include Compliance Types</Label>
+            <div className="flex flex-wrap gap-4 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="gst"
+                  checked={options.includeGST}
+                  onCheckedChange={(checked) => 
+                    setOptions(prev => ({ ...prev, includeGST: checked === true }))
+                  }
+                />
+                <label htmlFor="gst">GST Compliance</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="tds"
+                  checked={options.includeTDS}
+                  onCheckedChange={(checked) => 
+                    setOptions(prev => ({ ...prev, includeTDS: checked === true }))
+                  }
+                />
+                <label htmlFor="tds">TDS Compliance</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="incomeTax"
+                  checked={options.includeIncomeTax}
+                  onCheckedChange={(checked) => 
+                    setOptions(prev => ({ ...prev, includeIncomeTax: checked === true }))
+                  }
+                />
+                <label htmlFor="incomeTax">Income Tax</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="roc"
+                  checked={options.includeROC}
+                  onCheckedChange={(checked) => 
+                    setOptions(prev => ({ ...prev, includeROC: checked === true }))
+                  }
+                />
+                <label htmlFor="roc">ROC Filings</label>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            className="w-full"
+            onClick={generateReport}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Generate Report
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
+
+      {/* Quick Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">GST Compliance Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div className="text-2xl font-bold">
+                {Math.round((clients.filter(c => c.isGSTRegistered && c.gstin).length / 
+                           clients.filter(c => c.isGSTRegistered).length) * 100)}%
+              </div>
+              <Badge variant="outline">
+                {clients.filter(c => c.isGSTRegistered && c.gstin).length} / {clients.filter(c => c.isGSTRegistered).length}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">TDS Registration Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div className="text-2xl font-bold">
+                {Math.round((clients.filter(c => c.tan).length / clients.length) * 100)}%
+              </div>
+              <Badge variant="outline">
+                {clients.filter(c => c.tan).length} / {clients.length}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Overall Compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div className="text-2xl font-bold">
+                {Math.round((clients.filter(c => {
+                  const status = getClientComplianceStatus(c.id);
+                  return status.isCompliant;
+                }).length / clients.length) * 100)}%
+              </div>
+              <Badge variant="outline">
+                {clients.filter(c => {
+                  const status = getClientComplianceStatus(c.id);
+                  return status.isCompliant;
+                }).length} / {clients.length}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

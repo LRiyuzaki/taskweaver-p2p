@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Task } from '@/types/task';
 import { SubTask } from '@/types/client';
@@ -12,6 +11,8 @@ import { Pencil, Trash2, CalendarClock, User, Tag, CheckCircle2 } from 'lucide-r
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
+import { toast } from '@/hooks/use-toast-extensions';
+import { cn } from '@/lib/utils';
 
 interface TaskDetailsProps {
   task: Task;
@@ -31,19 +32,12 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const handleSubtaskToggle = (subtaskId: string, isCompleted: boolean) => {
     updateSubtask(subtaskId, { completed: isCompleted });
     
-    // If all subtasks are completed, mark task as done
-    const allCompleted = subtasks
-      .filter(st => st.taskId === task.id)
-      .every(st => st.id === subtaskId ? isCompleted : st.completed);
-      
-    if (allCompleted && task.status !== 'done') {
-      updateTask(task.id, { status: 'done' });
-    }
-    else if (!allCompleted && task.status === 'done') {
-      updateTask(task.id, { status: 'inProgress' });
-    }
-    else if (isCompleted && task.status === 'todo') {
-      updateTask(task.id, { status: 'inProgress' });
+    // Progress will be automatically updated by getTaskProgress in TaskContext
+    const progress = getTaskProgress(task.id);
+    
+    // If the task has recurrence and all subtasks are complete
+    if (progress === 100 && task.recurrence !== 'none') {
+      toast.success('All steps completed! A new recurring task will be created.');
     }
   };
   
@@ -171,7 +165,11 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               </h3>
             </div>
             
-            <Progress value={progressPercentage} className="h-2" />
+            <Progress value={progressPercentage} className={cn(
+              "h-2",
+              progressPercentage === 100 ? "bg-green-100" : 
+              progressPercentage > 0 ? "bg-blue-100" : ""
+            )} />
             
             <div className="space-y-2 mt-4">
               {taskSubtasks.length > 0 ? (
@@ -183,10 +181,16 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
                         onCheckedChange={(checked) => 
                           handleSubtaskToggle(subtask.id, checked === true)
                         }
-                        className="mt-1"
+                        className={cn(
+                          "mt-1",
+                          subtask.completed && "bg-green-500 text-white"
+                        )}
                       />
                       <div className="flex-1">
-                        <p className={`text-sm font-medium ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
+                        <p className={cn(
+                          "text-sm font-medium",
+                          subtask.completed && "line-through text-muted-foreground"
+                        )}>
                           {subtask.title}
                         </p>
                         {subtask.description && (

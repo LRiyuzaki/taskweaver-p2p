@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -57,8 +56,27 @@ const formSchema = z.object({
   clientId: z.string().optional(),
   projectId: z.string().optional(),
   recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
-  recurrenceEndDate: z.date().optional(),
+  recurrenceEndDate: z.date().optional()
+    .refine(
+      (date) => {
+        if (!date) return true;
+        const recurrence = form?.getValues('recurrence');
+        const dueDate = form?.getValues('dueDate');
+        if (recurrence === 'none' || !dueDate) return true;
+        return date > dueDate;
+      },
+      'End date must be after the due date'
+    ),
   templateId: z.string().optional(),
+}).refine((data) => {
+  // Require due date if recurrence is set
+  if (data.recurrence !== 'none' && !data.dueDate) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Due date is required for recurring tasks",
+  path: ["dueDate"]
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -196,6 +214,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
 
   const handleSubmitWithSubtasks = (values: FormValues) => {
     const submitValues = { ...values } as any;
+
+    // If there are subtasks, default status to 'todo' regardless of selection
+    // This ensures proper progress tracking through subtasks
+    if (subtasks.length > 0) {
+      submitValues.status = 'todo';
+    }
     
     // Add the assignee name if an assignee is selected
     if (values.assignedTo) {
@@ -206,7 +230,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     }
     
     // Add the project name if a project is selected
-    if (values.projectId) {
+    if (values.projectId && values.projectId !== 'no-project') {
       const project = projects.find(p => p.id === values.projectId);
       if (project) {
         submitValues.projectName = project.name;
@@ -217,15 +241,27 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     if (values.clientId && values.clientId !== 'no-client') {
       const client = clients.find(c => c.id === values.clientId);
       if (client) {
-        // Store client name for easy display without having to look it up again
         submitValues.clientName = client.name;
       }
     }
     
-    // Pass the subtasks along with the task data
-    submitValues.subtasks = subtasks;
+    // Handle task submission
+    const taskId = onSubmit(submitValues);
     
-    onSubmit(submitValues);
+    // Add subtasks if any exist
+    if (subtasks.length > 0) {
+      subtasks.forEach((subtask, index) => {
+        addSubtask({
+          taskId,
+          title: subtask.title,
+          description: subtask.description,
+          completed: false,
+          order: index,
+          assignedTo: subtask.assignedTo,
+          assigneeName: subtask.assigneeName
+        });
+      });
+    }
   };
 
   return (

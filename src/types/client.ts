@@ -1,4 +1,3 @@
-
 import { Task } from './task';
 
 export interface Client {
@@ -20,14 +19,52 @@ export interface Client {
   documents: Document[];
   
   // Entity information
-  entityType?: 'Individual' | 'Company' | 'LLP' | 'Partnership' | 'Trust';
+  entityType?: 'Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF';
   gstin?: string;
   pan?: string;
+  tan?: string;
+  cin?: string; // Company Incorporation Number
+  llpin?: string; // LLP Identification Number
+  
+  // Bank account details for tax purposes
+  bankAccounts?: {
+    accountNumber: string;
+    ifscCode: string;
+    bankName: string;
+    branch: string;
+  }[];
+  
+  // Registration details
+  gstRegistrationDate?: Date;
+  incorporationDate?: Date;
+  financialYearEnd?: 'March' | 'December';
   
   // Additional fields
   startDate?: Date;
-  address?: string;
+  address?: {
+    registered: string;
+    business?: string;
+  };
   tasks?: Task[];
+  
+  // Compliance-specific flags
+  isGSTRegistered?: boolean;
+  isMSME?: boolean;
+  msmeNumber?: string;
+  isIECHolder?: boolean;
+  iecNumber?: string;
+  
+  // Statutory due dates
+  statutoryDueDates?: {
+    gstReturn?: number; // Day of month
+    tdsReturn?: number; // Day of month
+    advanceTax?: {
+      q1: Date;
+      q2: Date;
+      q3: Date;
+      q4: Date;
+    };
+  };
 }
 
 export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks' | 'active' | 'services' | 'notes' | 'documents'> {}
@@ -65,8 +102,24 @@ export interface ServiceType {
   name: string;
   description: string;
   frequency: 'one-time' | 'monthly' | 'quarterly' | 'annually';
+  category: 'gst' | 'incometax' | 'tds' | 'compliance' | 'audit' | 'registration' | 'other';
+  dueDate?: {
+    type: 'fixed' | 'relative';
+    day?: number; // Fixed day of month (1-31)
+    monthOffset?: number; // Number of months after fiscal year end
+    daysOffset?: number; // Number of days after period end
+  };
+  requiresGST?: boolean;
+  requiresPAN?: boolean;
+  requiresTAN?: boolean;
+  applicableEntities?: ('Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF')[];
   renewalPeriod?: number; // Period in months
   taskTemplate?: SubTask[]; // Default subtasks for this service type
+  documentRequirements?: {
+    name: string;
+    description?: string;
+    required: boolean;
+  }[];
 }
 
 export interface ClientService {
