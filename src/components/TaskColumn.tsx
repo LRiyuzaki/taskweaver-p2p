@@ -4,14 +4,18 @@ import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from '@/components/TaskCard';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, Plus, Filter, SortAsc, SortDesc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuCheckboxItem
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
@@ -37,6 +41,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [sortOrder, setSortOrder] = useState<'default' | 'priority' | 'date'>('default');
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([]); // Array of priorities to filter
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -65,36 +70,56 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
     toast.success(`Task added to ${title}`);
   };
   
-  // Sort tasks based on current sortOrder
-  const getSortedTasks = () => {
+  // Sort and filter tasks
+  const getFilteredAndSortedTasks = () => {
+    // First filter by priority if filters are active
+    let filteredTasks = tasks;
+    
+    if (priorityFilter.length > 0) {
+      filteredTasks = filteredTasks.filter(task => priorityFilter.includes(task.priority));
+    }
+    
+    // Then sort based on current sortOrder
     switch (sortOrder) {
       case 'priority':
         // Sort by priority (high > medium > low)
-        return [...tasks].sort((a, b) => {
+        return [...filteredTasks].sort((a, b) => {
           const priorityValues = { high: 3, medium: 2, low: 1 };
           return (priorityValues[b.priority as keyof typeof priorityValues] || 0) - 
                  (priorityValues[a.priority as keyof typeof priorityValues] || 0);
         });
       case 'date':
         // Sort by due date (nearest first)
-        return [...tasks].sort((a, b) => {
+        return [...filteredTasks].sort((a, b) => {
           if (!a.dueDate) return 1;
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         });
       default:
         // Default order (no sorting)
-        return tasks;
+        return filteredTasks;
     }
   };
   
-  const sortedTasks = getSortedTasks();
+  const processedTasks = getFilteredAndSortedTasks();
+  const isPriorityFiltered = priorityFilter.length > 0;
+  
+  // Handle priority filter toggle
+  const togglePriorityFilter = (priority: string) => {
+    setPriorityFilter(prev => {
+      if (prev.includes(priority)) {
+        return prev.filter(p => p !== priority);
+      } else {
+        return [...prev, priority];
+      }
+    });
+  };
   
   return (
     <div className="min-h-[300px]">
       <div 
         className={cn(
-          "task-column h-full flex flex-col rounded-md border border-border p-4 transition-colors",
+          "task-column h-full flex flex-col rounded-md border border-border p-4 transition-all hover:border-border/80",
           isMinimized ? "max-h-16 overflow-hidden" : ""
         )}
         onDragOver={handleDragOver}
@@ -104,7 +129,10 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-sm uppercase tracking-wide">{title}</h3>
-            <Badge variant="secondary">{tasks.length}</Badge>
+            <Badge variant={
+              status === 'todo' ? "outline" :
+              status === 'inProgress' ? "secondary" : "success"
+            }>{processedTasks.length}</Badge>
           </div>
           
           <div className="flex items-center gap-1">
@@ -128,16 +156,69 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
                   <Plus className="h-4 w-4 mr-2" />
                   Add Task to {title}
                 </DropdownMenuItem>
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSortOrder('default')} disabled={sortOrder === 'default'}>
-                  Default Order
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOrder('priority')} disabled={sortOrder === 'priority'}>
-                  Sort by Priority
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOrder('date')} disabled={sortOrder === 'date'}>
-                  Sort by Due Date
-                </DropdownMenuItem>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter by Priority
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuCheckboxItem
+                      checked={priorityFilter.includes('high')}
+                      onCheckedChange={() => togglePriorityFilter('high')}
+                    >
+                      High Priority
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={priorityFilter.includes('medium')}
+                      onCheckedChange={() => togglePriorityFilter('medium')}
+                    >
+                      Medium Priority
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={priorityFilter.includes('low')}
+                      onCheckedChange={() => togglePriorityFilter('low')}
+                    >
+                      Low Priority
+                    </DropdownMenuCheckboxItem>
+                    {isPriorityFiltered && (
+                      <DropdownMenuItem onClick={() => setPriorityFilter([])}>
+                        Clear Filters
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <SortAsc className="h-4 w-4 mr-2" />
+                    Sort Tasks
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem 
+                      onClick={() => setSortOrder('default')} 
+                      disabled={sortOrder === 'default'}
+                    >
+                      Default Order
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setSortOrder('priority')} 
+                      disabled={sortOrder === 'priority'}
+                    >
+                      By Priority
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setSortOrder('date')} 
+                      disabled={sortOrder === 'date'}
+                    >
+                      By Due Date
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -146,7 +227,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
         {!isMinimized && (
           <>
             <div className={cn("space-y-3 flex-1")}>
-              {sortedTasks.map((task) => (
+              {processedTasks.map((task) => (
                 <div 
                   key={task.id}
                   className="group"
@@ -162,9 +243,14 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
                 </div>
               ))}
               
-              {tasks.length === 0 && (
+              {processedTasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-32 bg-muted/30 rounded-md border border-dashed border-muted">
-                  <p className="text-sm text-muted-foreground mb-2">No tasks in this column</p>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {isPriorityFiltered ? 
+                      "No tasks match your filter" : 
+                      "No tasks in this column"
+                    }
+                  </p>
                   <Button variant="outline" size="sm" onClick={handleAddTask}>
                     <Plus className="h-4 w-4 mr-1" /> Add Task
                   </Button>
@@ -172,7 +258,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
               )}
             </div>
             
-            {tasks.length > 0 && (
+            {processedTasks.length > 0 && (
               <Button
                 onClick={handleAddTask}
                 variant="ghost"
@@ -192,6 +278,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
           </DialogHeader>
           <TaskForm 
             onSubmit={handleTaskFormSubmit}
+            initialValues={{ status }}
           />
         </DialogContent>
       </Dialog>

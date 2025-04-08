@@ -9,7 +9,9 @@ import {
   FileTextIcon, 
   Briefcase,
   ClipboardIcon,
-  Search
+  Search,
+  RefreshCw,
+  Filter
 } from "lucide-react";
 import { useClientContext } from "@/contexts/ClientContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -20,13 +22,24 @@ import { ServicesManagement } from "@/components/ServicesManagement";
 import { Input } from "@/components/ui/input";
 import { toast } from '@/hooks/use-toast';
 import { SeedDataButton } from "@/components/SeedDataButton";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const ClientManagementPage = () => {
-  const { clients, addClient } = useClientContext();
+  const { clients, addClient, getAvailableServiceNames } = useClientContext();
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [serviceFilters, setServiceFilters] = useState<string[]>([]);
+  const availableServices = getAvailableServiceNames();
 
   const handleClientClick = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -54,13 +67,32 @@ const ClientManagementPage = () => {
     setSelectedClientId(null);
   };
 
-  // Filter clients based on search term
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.contactPerson && client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const toggleServiceFilter = (service: string) => {
+    setServiceFilters(prev => {
+      if (prev.includes(service)) {
+        return prev.filter(s => s !== service);
+      }
+      return [...prev, service];
+    });
+  };
+
+  // Filter clients based on search term and service filters
+  const filteredClients = clients.filter(client => {
+    // First check search term
+    const matchesSearch = 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.contactPerson && client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Then check if we need to filter by services
+    if (serviceFilters.length === 0) return matchesSearch;
+    
+    // Check if client has any of the required services
+    return matchesSearch && serviceFilters.some(service => 
+      client.requiredServices && client.requiredServices[service]
+    );
+  });
 
   return (
     <div className="flex flex-col h-screen">
@@ -110,8 +142,8 @@ const ClientManagementPage = () => {
 
             <TabsContent value="clients" className="space-y-6">
               {!selectedClientId && (
-                <div className="flex mb-4">
-                  <div className="relative w-full max-w-sm">
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Search clients..." 
@@ -120,6 +152,55 @@ const ClientManagementPage = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="gap-1">
+                        <Filter className="h-4 w-4" />
+                        Filter
+                        {serviceFilters.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1">
+                            {serviceFilters.length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem disabled className="font-semibold">
+                        Filter by Service
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {availableServices.map(service => (
+                        <DropdownMenuCheckboxItem
+                          key={service}
+                          checked={serviceFilters.includes(service)}
+                          onCheckedChange={() => toggleServiceFilter(service)}
+                        >
+                          {service}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                      {serviceFilters.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setServiceFilters([])}>
+                            Clear Filters
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setServiceFilters([]);
+                    }}
+                    disabled={searchTerm === '' && serviceFilters.length === 0}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
 
@@ -129,10 +210,25 @@ const ClientManagementPage = () => {
                   onBack={handleBackToList}
                 />
               ) : (
-                <ClientList 
-                  clients={filteredClients}
-                  onClientClick={handleClientClick}
-                />
+                <>
+                  <ClientList 
+                    clients={filteredClients}
+                    onClientClick={handleClientClick}
+                  />
+                  
+                  {filteredClients.length === 0 && searchTerm !== '' && (
+                    <div className="text-center p-8 border rounded-lg bg-muted/20">
+                      <p className="text-muted-foreground">No clients match your search criteria.</p>
+                      <Button 
+                        variant="link" 
+                        onClick={() => setSearchTerm('')}
+                        className="mt-2"
+                      >
+                        Clear Search
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
 
@@ -143,9 +239,12 @@ const ClientManagementPage = () => {
             <TabsContent value="reports" className="space-y-6">
               <div className="bg-muted/50 p-8 rounded-lg text-center">
                 <h3 className="text-xl font-medium mb-2">Reports Coming Soon</h3>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground mb-4">
                   Generate comprehensive reports for compliance tracking and team performance.
                 </p>
+                <Button onClick={() => window.location.href = '/reports-list'}>
+                  Go to Reports
+                </Button>
               </div>
             </TabsContent>
 

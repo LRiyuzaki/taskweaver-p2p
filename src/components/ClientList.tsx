@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -72,14 +73,14 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
           <div>
             <Label>Entity Type</Label>
             <Select
-              value={filters.entityType}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, entityType: value }))}
+              value={filters.entityType || "all"} // Ensure we never have empty string
+              onValueChange={(value) => setFilters(prev => ({ ...prev, entityType: value === "all" ? undefined : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All Entity Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Individual">Individual</SelectItem>
                 <SelectItem value="Proprietorship">Proprietorship</SelectItem>
                 <SelectItem value="Company">Company</SelectItem>

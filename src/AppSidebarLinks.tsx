@@ -1,62 +1,66 @@
 
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React from "react";
 import { 
+  BarChart2, 
+  ClipboardList, 
+  Database, 
+  FileText, 
   Home, 
+  LayoutDashboard, 
   Settings, 
-  Calendar,
-  ClipboardList,
-  Users,
+  Users, 
   HelpCircle,
-  GitMerge,
-  FilePlus,
-  LayoutDashboard,
-  Check,
-  ListChecks,
-  BarChart
-} from 'lucide-react';
+  PlusSquare,
+  FileBarChart2,
+} from "lucide-react";
+import { Link } from "@/components/ui/sidebar";
 
-interface SidebarLinkProps {
-  to: string;
-  icon: React.ElementType;
-  label: string;
-  end?: boolean;
+export default function AppSidebarLinks() {
+  return (
+    <>
+      <Link to="/" icon={<Home />}>
+        Home
+      </Link>
+
+      <Link to="/dashboard" icon={<LayoutDashboard />}>
+        Dashboard
+      </Link>
+
+      <Link to="/tasks" icon={<ClipboardList />}>
+        Tasks
+      </Link>
+
+      <Link to="/task-templates" icon={<PlusSquare />}>
+        Templates
+      </Link>
+
+      <Link to="/bulk-task-creation" icon={<FileText />}>
+        Bulk Creation
+      </Link>
+
+      <Link to="/client-management" icon={<Users />}>
+        Clients
+      </Link>
+
+      <Link to="/task-column" icon={<BarChart2 />}>
+        Task Board
+      </Link>
+
+      <Link to="/reports-list" icon={<FileBarChart2 />}>
+        Reports
+      </Link>
+
+      <Link to="/database" icon={<Database />}>
+        Database
+      </Link>
+
+      <Link to="/settings" icon={<Settings />}>
+        Settings
+      </Link>
+
+      <Link to="/help" icon={<HelpCircle />}>
+        Help
+      </Link>
+    </>
+  );
 }
-
-export const SidebarLink: React.FC<SidebarLinkProps> = ({ 
-  to, 
-  icon: Icon, 
-  label,
-  end = false
-}) => {
-  return (
-    <NavLink 
-      to={to} 
-      end={end}
-      className={({ isActive }) => `
-        flex items-center gap-2 px-3 py-2 rounded-md text-sm
-        ${isActive 
-          ? 'bg-accent text-accent-foreground' 
-          : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}
-      `}
-    >
-      <Icon className="h-4 w-4" />
-      <span>{label}</span>
-    </NavLink>
-  );
-};
-
-export const AppSidebarLinks = () => {
-  return (
-    <div className="space-y-1 py-2">
-      <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" end />
-      <SidebarLink to="/tasks" icon={Check} label="Tasks" />
-      <SidebarLink to="/client-management" icon={Users} label="Client Management" />
-      <SidebarLink to="/task-templates" icon={ClipboardList} label="Task Templates" />
-      <SidebarLink to="/bulk-tasks" icon={ListChecks} label="Bulk Task Creation" />
-      <SidebarLink to="/reports" icon={BarChart} label="Reports" />
-      <SidebarLink to="/settings" icon={Settings} label="Settings" />
-      <SidebarLink to="/help" icon={HelpCircle} label="Help" />
-    </div>
-  );
-};
