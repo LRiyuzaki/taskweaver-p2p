@@ -39,3 +39,33 @@ export interface IPFSNode {
   status: 'online' | 'offline' | 'starting';
   addresses?: string[];
 }
+
+// Any-Sync specific types
+export interface AnySyncNode {
+  id: string;
+  status: 'online' | 'offline' | 'starting';
+  deviceId?: string;
+  capabilities?: string[];
+}
+
+export interface AnySyncDocumentMetadata {
+  id: string;
+  version: number;
+  lastModified: Date;
+  authorId?: string;
+  isDeleted?: boolean;
+  mergeHistory?: string[];
+}
+
+export interface AnySyncConflict<T> {
+  docId: string;
+  localVersion: T;
+  remoteVersion: T;
+  merged?: T;
+  resolved: boolean;
+}
+
+export enum SyncProtocol {
+  IPFS = 'ipfs',
+  ANY_SYNC = 'any-sync'
+}

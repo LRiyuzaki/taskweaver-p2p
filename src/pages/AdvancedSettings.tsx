@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,14 +39,16 @@ const AdvancedSettings = () => {
     startLocalDiscovery,
     syncKey,
     generateSyncKey,
-    setSyncKey
+    setSyncKey,
+    useAnySyncProtocol,
+    setUseAnySyncProtocol,
+    initializeAnySync
   } = useP2P();
   
   const [peerInput, setPeerInput] = useState("");
   const [joinKey, setJoinKey] = useState("");
   const [taskTimeFormula, setTaskTimeFormula] = useState("{taskCount} * 2.5");
   
-  // Calculate task metrics for use in formulas
   const taskMetrics = {
     taskCount: tasks.length,
     todoCount: tasks.filter(t => t.status === 'todo').length,
@@ -72,7 +73,6 @@ const AdvancedSettings = () => {
       description: "Attempting to connect to the P2P network...",
     });
     
-    // Simulate connecting to peers after joining
     setTimeout(() => {
       startLocalDiscovery();
     }, 1500);
@@ -85,7 +85,21 @@ const AdvancedSettings = () => {
     setPeerInput("");
   };
 
-  // Start IPFS node when the component mounts
+  const handleToggleAnySync = async (checked: boolean) => {
+    setUseAnySyncProtocol(checked);
+    
+    if (checked && ipfsNode?.status === 'online') {
+      const success = await initializeAnySync();
+      
+      if (success) {
+        toast({
+          title: "Any-Sync Enabled",
+          description: "Local-first synchronization protocol is now active.",
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     if (syncOptions.autoSync && !ipfsNode) {
       initializeIPFS();
@@ -132,18 +146,18 @@ const AdvancedSettings = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Link2 className="h-5 w-5" />
-                    IPFS Peer-to-Peer Synchronization
+                    P2P Synchronization
                   </CardTitle>
                   <CardDescription>
-                    Enable real-time synchronization between devices using IPFS without a central server
+                    Enable real-time synchronization between devices without a central server
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="sync-toggle" className="text-base">Enable IPFS P2P Sync</Label>
+                      <Label htmlFor="sync-toggle" className="text-base">Enable P2P Sync</Label>
                       <p className="text-sm text-muted-foreground">
-                        Sync your data across devices using InterPlanetary File System
+                        Sync your data across devices using peer-to-peer technology
                       </p>
                     </div>
                     <Switch 
@@ -162,7 +176,7 @@ const AdvancedSettings = () => {
                   {ipfsNode?.status === 'online' && (
                     <>
                       <div className="rounded-lg bg-muted p-4">
-                        <div className="font-medium mb-1">IPFS Node Status</div>
+                        <div className="font-medium mb-1">Node Status</div>
                         <div className="flex items-center gap-2">
                           <div className={`h-2 w-2 rounded-full ${
                             ipfsNode?.status === 'online' ? 'bg-green-500' : 
@@ -177,6 +191,48 @@ const AdvancedSettings = () => {
                         <div className="mt-4 flex items-center justify-between">
                           <span className="text-sm font-medium">Connected Peers:</span>
                           <Badge variant="outline">{syncStatus.peersConnected}</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="rounded-lg bg-muted p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <div className="font-medium">Sync Protocol</div>
+                            <p className="text-sm text-muted-foreground">
+                              Choose which protocol to use for peer-to-peer synchronization
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="use-ipfs">IPFS (Default)</Label>
+                            <Switch 
+                              id="use-ipfs"
+                              checked={!useAnySyncProtocol}
+                              onCheckedChange={(checked) => handleToggleAnySync(!checked)}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <Label htmlFor="use-any-sync">Any-Sync Protocol</Label>
+                              <Badge variant="outline" className="text-xs">New</Badge>
+                            </div>
+                            <Switch 
+                              id="use-any-sync"
+                              checked={useAnySyncProtocol}
+                              onCheckedChange={handleToggleAnySync}
+                            />
+                          </div>
+                          
+                          {useAnySyncProtocol && (
+                            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-2 rounded text-sm">
+                              Any-Sync protocol enables local-first collaboration with conflict-free 
+                              replicated data types (CRDTs), allowing seamless offline editing and 
+                              automatic conflict resolution.
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -608,10 +664,8 @@ const AdvancedSettings = () => {
   );
 };
 
-// Helper function for formula evaluation
 function evaluateFormula(formula: string, variables: Record<string, any>): string {
   try {
-    // Replace variables with their values
     let evalStr = formula;
     
     Object.entries(variables).forEach(([key, val]) => {
@@ -619,17 +673,14 @@ function evaluateFormula(formula: string, variables: Record<string, any>): strin
       evalStr = evalStr.replace(regex, typeof val === 'number' ? val.toString() : `"${val}"`);
     });
     
-    // Basic sanity check
     if (/[;\\]/.test(evalStr)) {
       return "Error: Invalid characters";
     }
 
-    // Simple mathematical expressions only
     if (!/^[0-9+\-*/()., "<>=&|!%\s"]*$/.test(evalStr)) {
       return "Error: Invalid operators";
     }
 
-    // Evaluate the formula
     const result = Function(`"use strict"; return (${evalStr})`)();
     return result.toString();
   } catch (e) {

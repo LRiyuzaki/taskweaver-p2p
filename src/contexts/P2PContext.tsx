@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PeerInfo, SyncStatus, SyncOptions, IPFSNode, SyncedDocument } from '@/types/p2p';
 import { toast } from '@/hooks/use-toast';
+import { AnySyncAdapter } from '@/integrations/any-sync/client';
 
 interface P2PContextType {
   // IPFS Node status
@@ -32,6 +33,12 @@ interface P2PContextType {
   syncKey: string | null;
   setSyncKey: (key: string | null) => void;
   generateSyncKey: () => string;
+  
+  // Any-Sync specific
+  anySyncAdapter: AnySyncAdapter | null;
+  initializeAnySync: () => Promise<boolean>;
+  useAnySyncProtocol: boolean;
+  setUseAnySyncProtocol: (use: boolean) => void;
 }
 
 const P2PContext = createContext<P2PContextType | undefined>(undefined);
@@ -70,6 +77,12 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [syncKey, setSyncKey] = useState<string | null>(() => {
     return localStorage.getItem('p2p_sync_key');
   });
+
+  // Any-Sync related state
+  const [anySyncAdapter, setAnySyncAdapter] = useState<AnySyncAdapter | null>(null);
+  const [useAnySyncProtocol, setUseAnySyncProtocol] = useState<boolean>(() => {
+    return localStorage.getItem('use_any_sync') === 'true';
+  });
   
   // Store sync key in localStorage when it changes
   useEffect(() => {
@@ -79,6 +92,90 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem('p2p_sync_key');
     }
   }, [syncKey]);
+  
+  // Store Any-Sync protocol preference
+  useEffect(() => {
+    localStorage.setItem('use_any_sync', useAnySyncProtocol ? 'true' : 'false');
+  }, [useAnySyncProtocol]);
+  
+  // Initialize Any-Sync adapter
+  const initializeAnySync = async (): Promise<boolean> => {
+    try {
+      if (anySyncAdapter) {
+        // Already initialized
+        return true;
+      }
+      
+      const adapter = new AnySyncAdapter({
+        syncKey,
+        onError: (error) => {
+          console.error('Any-Sync error:', error);
+          toast({
+            variant: "destructive",
+            title: "Sync Error",
+            description: `Any-Sync error: ${error.message}`,
+          });
+        },
+        onPeerConnected: (peerId) => {
+          // Update our peers list when Any-Sync connects to peers
+          const newPeer: PeerInfo = {
+            id: peerId,
+            name: `Any-Sync Peer ${peerId.substring(0, 6)}`,
+            status: 'connected',
+            lastSeen: new Date(),
+            deviceType: 'Any-Sync Node',
+          };
+          
+          setPeers(prev => {
+            // Don't add duplicate peers
+            if (prev.some(p => p.id === peerId)) {
+              return prev.map(p => 
+                p.id === peerId ? { ...p, status: 'connected', lastSeen: new Date() } : p
+              );
+            }
+            return [...prev, newPeer];
+          });
+          
+          setSyncStatus(prev => ({ ...prev, peersConnected: prev.peersConnected + 1 }));
+        },
+        onDocumentUpdated: (docId, doc) => {
+          // Handle document updates from the network
+          console.log(`Document updated: ${docId}`, doc);
+        }
+      });
+      
+      const success = await adapter.initialize();
+      
+      if (success) {
+        setAnySyncAdapter(adapter);
+        
+        toast({
+          title: "Any-Sync Initialized",
+          description: "Local-first peer-to-peer sync is now enabled.",
+        });
+        
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Any-Sync Error",
+          description: "Failed to initialize Any-Sync adapter.",
+        });
+        
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to initialize Any-Sync:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Any-Sync Error",
+        description: "Failed to initialize the Any-Sync adapter.",
+      });
+      
+      return false;
+    }
+  };
   
   // Initialize IPFS node
   const initializeIPFS = async (): Promise<void> => {
@@ -91,6 +188,11 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setIpfsNode({ id: 'simulated-ipfs-node', status: 'online', addresses: ['/ip4/127.0.0.1/tcp/5001'] });
+      
+      // If we're using Any-Sync, initialize it too
+      if (useAnySyncProtocol) {
+        await initializeAnySync();
+      }
       
       toast({
         title: "IPFS Node Started",
@@ -116,6 +218,12 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPeers([]);
       setSyncStatus(prev => ({ ...prev, peersConnected: 0 }));
       
+      // Clean up Any-Sync adapter
+      if (anySyncAdapter) {
+        anySyncAdapter.dispose();
+        setAnySyncAdapter(null);
+      }
+      
       toast({
         title: "IPFS Node Stopped",
         description: "P2P synchronization is now disabled.",
@@ -138,6 +246,16 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     try {
+      // Try connecting with Any-Sync if enabled
+      if (useAnySyncProtocol && anySyncAdapter) {
+        const success = await anySyncAdapter.connectToPeer(peerId);
+        
+        if (!success) {
+          throw new Error(`Any-Sync couldn't connect to peer ${peerId}`);
+        }
+      }
+      
+      // Also connect with IPFS (fallback or dual connection)
       // In a real implementation, this would connect to an actual peer
       // For now, we'll simulate adding a new peer
       const newPeer: PeerInfo = {
@@ -198,9 +316,15 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setSyncStatus(prev => ({ ...prev, syncing: true }));
       
-      // In a real implementation, this would actually sync data with peers
-      // For now, we'll simulate syncing with a timeout
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // If using Any-Sync, use its sync mechanism
+      if (useAnySyncProtocol && anySyncAdapter) {
+        const syncedDocs = await anySyncAdapter.syncWithPeers();
+        console.log(`Synced ${syncedDocs.length} documents with Any-Sync`);
+      } else {
+        // In a real implementation, this would actually sync data with peers
+        // For now, we'll simulate syncing with a timeout
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
       
       setSyncStatus({
         syncing: false,
@@ -237,12 +361,19 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     try {
-      // In a real implementation, this would publish data to IPFS
-      // For now, we'll simulate it by generating a fake CID
-      const fakeCid = `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      let cid: string | null = null;
       
-      console.log(`Published ${type} data with ID ${data.id} to IPFS with CID: ${fakeCid}`);
-      return fakeCid;
+      // If using Any-Sync, publish through that
+      if (useAnySyncProtocol && anySyncAdapter) {
+        cid = await anySyncAdapter.publishDocument(type, data.id, data);
+      } else {
+        // In a real implementation, this would publish data to IPFS
+        // For now, we'll simulate it by generating a fake CID
+        cid = `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      }
+      
+      console.log(`Published ${type} data with ID ${data.id} to ${useAnySyncProtocol ? 'Any-Sync' : 'IPFS'} with CID: ${cid}`);
+      return cid;
     } catch (error) {
       console.error(`Failed to publish ${type} data:`, error);
       return null;
@@ -251,7 +382,7 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   // Subscribe to data updates of a specific type
   const subscribeToData = <T extends { id: string }>(type: string, callback: (data: T) => void) => {
-    // In a real implementation, this would set up a subscription to IPFS pubsub
+    // In a real implementation, this would set up a subscription to IPFS pubsub or Any-Sync
     console.log(`Subscribed to ${type} data updates`);
     
     // Return an unsubscribe function
@@ -341,6 +472,10 @@ export const P2PProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncKey,
         setSyncKey,
         generateSyncKey,
+        anySyncAdapter,
+        initializeAnySync,
+        useAnySyncProtocol,
+        setUseAnySyncProtocol,
       }}
     >
       {children}

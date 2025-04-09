@@ -3,15 +3,30 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useP2P } from '@/contexts/P2PContext';
 import { useIPFSSync } from '@/hooks/useIPFSSync';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
-import { RefreshCw, Shield, AlertCircle } from 'lucide-react';
+import { RefreshCw, Shield, AlertCircle, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const P2PSyncPanel: React.FC = () => {
-  const { ipfsNode, syncStatus, peers } = useP2P();
+  const { 
+    ipfsNode, 
+    syncStatus, 
+    peers, 
+    useAnySyncProtocol, 
+    setUseAnySyncProtocol, 
+    initializeAnySync,
+    anySyncAdapter 
+  } = useP2P();
   const { syncClient, syncTask, syncMultiple } = useIPFSSync();
   const { tasks } = useTaskContext();
   const { clients } = useClientContext ? useClientContext() : { clients: [] };
@@ -48,6 +63,14 @@ export const P2PSyncPanel: React.FC = () => {
       description: "All data has been synchronized with the P2P network."
     });
   };
+
+  const handleToggleAnySync = async (checked: boolean) => {
+    setUseAnySyncProtocol(checked);
+    
+    if (checked && !anySyncAdapter && ipfsNode?.status === 'online') {
+      await initializeAnySync();
+    }
+  };
   
   const connectedPeers = peers.filter(p => p.status === 'connected');
   
@@ -70,6 +93,40 @@ export const P2PSyncPanel: React.FC = () => {
           </div>
           <Badge variant="outline">{connectedPeers.length} Peers</Badge>
         </div>
+        
+        {/* Any-Sync Protocol Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-medium">Use Any-Sync Protocol</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="inline">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">
+                    Any-Sync is a local-first protocol for real-time data synchronization 
+                    that works offline and supports CRDTs for conflict resolution.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Switch
+            checked={useAnySyncProtocol}
+            onCheckedChange={handleToggleAnySync}
+            disabled={!ipfsNode || ipfsNode.status !== 'online'}
+          />
+        </div>
+        
+        {useAnySyncProtocol && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-2 rounded flex items-center text-sm">
+            <Shield className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+            <span>Any-Sync enabled: {anySyncAdapter ? 'Active' : 'Initializing...'}</span>
+          </div>
+        )}
         
         {ipfsNode?.status === 'online' ? (
           <div className="text-sm">
