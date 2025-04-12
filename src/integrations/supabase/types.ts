@@ -274,6 +274,117 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_documents: {
+        Row: {
+          cid: string
+          content: Json
+          created_at: string
+          document_type: string
+          id: string
+          is_deleted: boolean
+          original_id: string
+          updated_at: string
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          cid: string
+          content: Json
+          created_at?: string
+          document_type: string
+          id?: string
+          is_deleted?: boolean
+          original_id: string
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          cid?: string
+          content?: Json
+          created_at?: string
+          document_type?: string
+          id?: string
+          is_deleted?: boolean
+          original_id?: string
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          details: Json | null
+          document_id: string | null
+          id: string
+          operation: string
+          peer_id: string | null
+          status: string
+          timestamp: string
+        }
+        Insert: {
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          operation: string
+          peer_id?: string | null
+          status: string
+          timestamp?: string
+        }
+        Update: {
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          operation?: string
+          peer_id?: string | null
+          status?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "sync_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_logs_peer_id_fkey"
+            columns: ["peer_id"]
+            isOneToOne: false
+            referencedRelation: "sync_peers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_peers: {
+        Row: {
+          device_type: string | null
+          id: string
+          last_seen: string
+          name: string | null
+          peer_id: string
+          status: string
+        }
+        Insert: {
+          device_type?: string | null
+          id?: string
+          last_seen?: string
+          name?: string | null
+          peer_id: string
+          status?: string
+        }
+        Update: {
+          device_type?: string | null
+          id?: string
+          last_seen?: string
+          name?: string | null
+          peer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -28,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from "@/hooks/use-toast";
 import { Database, FileJson, ArrowDownToLine, ArrowUpFromLine, Trash2, Shield } from 'lucide-react';
+import { SyncHistory } from './SyncHistory';
 
 export const DataManagementPanel: React.FC = () => {
   const [backupFrequency, setBackupFrequency] = useState("weekly");
@@ -175,6 +175,8 @@ export const DataManagementPanel: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      
+      <SyncHistory />
       
       <Card>
         <CardHeader>
