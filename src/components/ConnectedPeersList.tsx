@@ -41,7 +41,8 @@ export const ConnectedPeersList: React.FC = () => {
       case 'connected':
         return 'default';
       case 'connecting':
-        return 'warning';
+        // Changed from 'warning' to 'secondary' since 'warning' is not a valid variant
+        return 'secondary';
       case 'disconnected':
       default:
         return 'outline';

@@ -1,3 +1,4 @@
+
 import { useP2P } from '@/contexts/P2PContext';
 import { PeerStatus, SyncedDocument } from '@/types/p2p';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,14 +66,17 @@ export class AnySyncAdapter {
       
       if (supabasePeers) {
         supabasePeers.forEach(peer => {
+          // Ensure the status is a valid PeerStatus
+          const peerStatus: PeerStatus = this.validatePeerStatus(peer.status);
+          
           this.peers.set(peer.peer_id, {
             id: peer.peer_id,
             name: peer.name,
-            status: peer.status
+            status: peerStatus
           });
 
           // Notify about connected peers
-          if (peer.status === 'connected') {
+          if (peerStatus === 'connected') {
             this.options.onPeerConnected?.(peer.peer_id);
           }
         });
@@ -113,6 +117,15 @@ export class AnySyncAdapter {
       this.options.onError?.(error as Error);
       return false;
     }
+  }
+
+  // Helper method to validate and convert status strings to PeerStatus
+  private validatePeerStatus(status: string): PeerStatus {
+    if (status === 'connected' || status === 'disconnected' || status === 'connecting') {
+      return status as PeerStatus;
+    }
+    // Default to disconnected if an invalid status is provided
+    return 'disconnected';
   }
   
   public async publishDocument(type: string, id: string, content: any): Promise<string | null> {
@@ -182,7 +195,7 @@ export class AnySyncAdapter {
       // In a real implementation, this would establish a connection
       const peer: AnySyncPeer = {
         id: peerId,
-        status: 'connected'
+        status: 'connected' // This is now correctly typed as PeerStatus
       };
       
       this.peers.set(peerId, peer);
