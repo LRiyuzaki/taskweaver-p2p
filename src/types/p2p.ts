@@ -1,4 +1,3 @@
-
 import { Task } from './task';
 import { Client } from './client';
 
@@ -40,7 +39,8 @@ export interface IPFSNode {
   addresses?: string[];
 }
 
-// Any-Sync specific types
+export type PeerStatus = 'connected' | 'disconnected' | 'connecting';
+
 export interface AnySyncNode {
   id: string;
   status: 'online' | 'offline' | 'starting';

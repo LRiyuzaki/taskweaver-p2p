@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Users, Clock, Laptop, Smartphone, Server } from 'lucide-react';
 import { format, formatDistance } from 'date-fns';
+import { PeerStatus } from '@/types/p2p';
 
 export const ConnectedPeersList: React.FC = () => {
   const { connectedPeers, fetchPeers } = useSupabaseSync();
@@ -32,6 +33,19 @@ export const ConnectedPeersList: React.FC = () => {
     }
     
     return <Server className="h-4 w-4" />;
+  };
+
+  // Get badge variant based on peer status
+  const getBadgeVariant = (status: PeerStatus) => {
+    switch(status) {
+      case 'connected':
+        return 'default';
+      case 'connecting':
+        return 'warning';
+      case 'disconnected':
+      default:
+        return 'outline';
+    }
   };
 
   return (
@@ -62,7 +76,7 @@ export const ConnectedPeersList: React.FC = () => {
                       {peer.name || `Peer ${peer.peer_id.substring(0, 8)}...`}
                     </span>
                   </div>
-                  <Badge variant={peer.status === 'connected' ? "default" : "outline"}>
+                  <Badge variant={getBadgeVariant(peer.status)}>
                     {peer.status}
                   </Badge>
                 </div>

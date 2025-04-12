@@ -1,7 +1,6 @@
-
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SyncedDocument } from '@/types/p2p';
+import { PeerStatus } from '@/types/p2p';
 import { useP2P } from '@/contexts/P2PContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -24,7 +23,7 @@ export interface SupabaseSyncPeer {
   name?: string;
   last_seen: string;
   device_type?: string;
-  status: 'connected' | 'disconnected';
+  status: PeerStatus;
 }
 
 export const useSupabaseSync = () => {
@@ -108,12 +107,12 @@ export const useSupabaseSync = () => {
   }, []);
 
   // Update peer status in Supabase
-  const updatePeerStatus = useCallback(async (peer_id: string, status: 'connected' | 'disconnected', name?: string, device_type?: string) => {
+  const updatePeerStatus = useCallback(async (peer_id: string, status: PeerStatus, name?: string, device_type?: string) => {
     try {
       // Check if peer exists
       const { data: existingPeer } = await supabase
         .from('sync_peers')
-        .select('id')
+        .select('id, name, device_type')
         .eq('peer_id', peer_id)
         .maybeSingle();
 
@@ -163,7 +162,15 @@ export const useSupabaseSync = () => {
         throw error;
       }
 
-      setConnectedPeers(data || []);
+      // Convert status string to PeerStatus type to ensure type safety
+      const typedPeers = data?.map(peer => ({
+        ...peer,
+        status: (peer.status === 'connected' || peer.status === 'disconnected' || peer.status === 'connecting') 
+          ? peer.status as PeerStatus 
+          : 'disconnected' as PeerStatus
+      })) || [];
+
+      setConnectedPeers(typedPeers);
       return data;
     } catch (error) {
       console.error('Error fetching peers:', error);
@@ -215,7 +222,7 @@ export const useSupabaseSync = () => {
       if (peer.id) {
         updatePeerStatus(
           peer.id,
-          peer.status,
+          peer.status as PeerStatus,
           peer.name,
           peer.deviceType
         );

@@ -1,10 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { PeerStatus } from '@/types/p2p';
 
 export interface PeerRegisterParams {
   peer_id: string;
   name?: string;
   device_type?: string;
+  status?: PeerStatus;
 }
 
 export interface DiscoverPeersParams {
@@ -14,10 +16,16 @@ export interface DiscoverPeersParams {
 export const peerDiscoveryService = {
   async registerPeer(params: PeerRegisterParams): Promise<any> {
     try {
+      // Default to connected status if not provided
+      const peerData = {
+        ...params,
+        status: params.status || 'connected'
+      };
+
       const { data, error } = await supabase.functions.invoke('peer-discovery', {
         body: {
           action: 'register',
-          peer: params
+          peer: peerData
         }
       });
       
@@ -51,7 +59,10 @@ export const peerDiscoveryService = {
       const { data, error } = await supabase.functions.invoke('peer-discovery', {
         body: {
           action: 'disconnect',
-          peer: { peer_id }
+          peer: { 
+            peer_id,
+            status: 'disconnected' as PeerStatus
+          }
         }
       });
       

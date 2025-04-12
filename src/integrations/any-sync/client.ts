@@ -1,6 +1,5 @@
-
 import { useP2P } from '@/contexts/P2PContext';
-import { SyncedDocument } from '@/types/p2p';
+import { PeerStatus, SyncedDocument } from '@/types/p2p';
 import { supabase } from '@/integrations/supabase/client';
 
 // Types matching Any-Sync concepts
@@ -14,7 +13,7 @@ interface AnySyncDocument {
 interface AnySyncPeer {
   id: string;
   name?: string;
-  status: 'connected' | 'disconnected';
+  status: PeerStatus;
 }
 
 // Adapter class that bridges our P2P system to Any-Sync protocol
