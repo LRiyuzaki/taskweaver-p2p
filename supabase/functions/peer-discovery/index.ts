@@ -13,9 +13,26 @@ interface PeerInfo {
   name?: string;
   device_type?: string;
   ip_address?: string;
+  status?: string;
 }
 
-serve(async (req) => {
+/**
+ * Log operation details to the sync_logs table
+ */
+async function logOperation(supabase, operation: string, status: string, details: any) {
+  try {
+    await supabase.from('sync_logs').insert({
+      operation,
+      status,
+      details
+    });
+  } catch (error) {
+    console.error('Error logging operation:', error);
+    // Non-critical error, continue execution
+  }
+}
+
+serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -50,7 +67,7 @@ serve(async (req) => {
             peer_id: peer.peer_id,
             name: peer.name,
             device_type: peer.device_type,
-            status: 'connected',
+            status: peer.status || 'connected',
             last_seen: new Date().toISOString()
           }, {
             onConflict: 'peer_id',
@@ -63,12 +80,8 @@ serve(async (req) => {
           throw registerError;
         }
 
-        // Log the connection
-        await supabase.from('sync_logs').insert({
-          operation: 'register',
-          status: 'success',
-          details: { peer_id: peer.peer_id, ip_address }
-        });
+        // Log the operation
+        await logOperation(supabase, 'register', 'success', { peer_id: peer.peer_id, ip_address });
 
         return new Response(
           JSON.stringify({ success: true, peer: registerData }),
@@ -91,6 +104,46 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ success: true, peers }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+
+      case 'update_status':
+        if (!peer || !peer.peer_id || !peer.status) {
+          return new Response(
+            JSON.stringify({ error: 'Missing peer_id or status' }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            }
+          );
+        }
+
+        // Update peer status
+        const { data: updateData, error: updateError } = await supabase
+          .from('sync_peers')
+          .update({
+            status: peer.status,
+            last_seen: new Date().toISOString()
+          })
+          .eq('peer_id', peer.peer_id)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Log the operation
+        await logOperation(supabase, 'update_status', 'success', { 
+          peer_id: peer.peer_id,
+          status: peer.status,
+          ip_address 
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, peer: updateData }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
@@ -120,11 +173,10 @@ serve(async (req) => {
           throw disconnectError;
         }
 
-        // Log the disconnection
-        await supabase.from('sync_logs').insert({
-          operation: 'disconnect',
-          status: 'success',
-          details: { peer_id: peer.peer_id, ip_address }
+        // Log the operation
+        await logOperation(supabase, 'disconnect', 'success', { 
+          peer_id: peer.peer_id,
+          ip_address 
         });
 
         return new Response(

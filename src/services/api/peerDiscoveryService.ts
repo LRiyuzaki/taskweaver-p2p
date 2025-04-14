@@ -1,93 +1,165 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PeerStatus } from '@/types/p2p';
-import { PeerRegisterParams, DiscoverPeersParams, PeerDiscoveryResponse } from './peerTypes';
+import { 
+  PeerRegisterParams, 
+  DiscoverPeersParams, 
+  PeerDiscoveryResponse,
+  UpdatePeerStatusParams,
+  DisconnectPeerParams,
+  PeerData
+} from './peerTypes';
+import { toast } from '@/hooks/use-toast';
+
+/**
+ * Base URL for the peer discovery edge function
+ */
+const PEER_DISCOVERY_URL = 'https://wweihgiklnxetpqcpyyf.supabase.co/functions/v1/peer-discovery';
 
 /**
  * Service for peer discovery operations
- * Handles communication with the Supabase functions API
  */
 export const peerDiscoveryService = {
   /**
-   * Register a new peer in the network
+   * Register a new peer with the network
    * @param params Peer registration parameters
-   * @returns Promise with the registration response
+   * @returns Response with registered peer data or error
    */
-  async registerPeer(params: PeerRegisterParams): Promise<PeerDiscoveryResponse> {
+  async registerPeer(params: PeerRegisterParams): Promise<PeerDiscoveryResponse<PeerData>> {
     try {
-      // Default to connected status if not provided
-      const peerData = {
-        ...params,
-        status: params.status || 'connected'
-      };
-
-      const { data, error } = await supabase.functions.invoke('peer-discovery', {
+      const response = await supabase.functions.invoke('peer-discovery', {
         body: {
           action: 'register',
-          peer: peerData
+          peer: params
         }
       });
       
-      if (error) return { data: null, error: new Error(error.message) };
-      return { data, error: null };
+      if (response.error) {
+        throw new Error(`Registration failed: ${response.error.message}`);
+      }
+      
+      return {
+        data: response.data.peer,
+        error: null,
+        status: 'success'
+      };
     } catch (error) {
       console.error('Error registering peer:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error during peer registration') 
+      toast({
+        variant: "destructive",
+        title: "Peer Registration Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred"
+      });
+      
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+        status: 'error',
+        message: 'Failed to register peer with the network'
       };
     }
   },
-  
+
   /**
    * Discover peers in the network
-   * @param params Optional discovery parameters
-   * @returns Promise with discovered peers
+   * @param params Parameters for peer discovery
+   * @returns Response with list of discovered peers or error
    */
-  async discoverPeers(params?: DiscoverPeersParams): Promise<PeerDiscoveryResponse> {
+  async discoverPeers(params?: DiscoverPeersParams): Promise<PeerDiscoveryResponse<PeerData[]>> {
     try {
-      const { data, error } = await supabase.functions.invoke('peer-discovery', {
+      const response = await supabase.functions.invoke('peer-discovery', {
         body: {
           action: 'discover',
           peer: params
         }
       });
       
-      if (error) return { data: null, error: new Error(error.message) };
-      return { data, error: null };
+      if (response.error) {
+        throw new Error(`Discovery failed: ${response.error.message}`);
+      }
+      
+      return {
+        data: response.data.peers,
+        error: null,
+        status: 'success'
+      };
     } catch (error) {
       console.error('Error discovering peers:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error during peer discovery')
+      
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+        status: 'error',
+        message: 'Failed to discover peers in the network'
       };
     }
   },
-  
+
   /**
-   * Disconnect a peer from the network
-   * @param peer_id ID of the peer to disconnect
-   * @returns Promise with the disconnection response
+   * Update the status of a peer
+   * @param params Parameters for updating peer status
+   * @returns Response with updated peer data or error
    */
-  async disconnectPeer(peer_id: string): Promise<PeerDiscoveryResponse> {
+  async updatePeerStatus(params: UpdatePeerStatusParams): Promise<PeerDiscoveryResponse<PeerData>> {
     try {
-      const { data, error } = await supabase.functions.invoke('peer-discovery', {
+      const response = await supabase.functions.invoke('peer-discovery', {
         body: {
-          action: 'disconnect',
-          peer: { 
-            peer_id,
-            status: 'disconnected' as PeerStatus
-          }
+          action: 'update_status',
+          peer: params
         }
       });
       
-      if (error) return { data: null, error: new Error(error.message) };
-      return { data, error: null };
+      if (response.error) {
+        throw new Error(`Status update failed: ${response.error.message}`);
+      }
+      
+      return {
+        data: response.data.peer,
+        error: null,
+        status: 'success'
+      };
+    } catch (error) {
+      console.error('Error updating peer status:', error);
+      
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+        status: 'error',
+        message: 'Failed to update peer status'
+      };
+    }
+  },
+
+  /**
+   * Disconnect a peer from the network
+   * @param params Parameters for disconnecting a peer
+   * @returns Response with operation result or error
+   */
+  async disconnectPeer(params: DisconnectPeerParams): Promise<PeerDiscoveryResponse<boolean>> {
+    try {
+      const response = await supabase.functions.invoke('peer-discovery', {
+        body: {
+          action: 'disconnect',
+          peer: params
+        }
+      });
+      
+      if (response.error) {
+        throw new Error(`Disconnect failed: ${response.error.message}`);
+      }
+      
+      return {
+        data: true,
+        error: null,
+        status: 'success'
+      };
     } catch (error) {
       console.error('Error disconnecting peer:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error during peer disconnection')
+      
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+        status: 'error',
+        message: 'Failed to disconnect peer from the network'
       };
     }
   }

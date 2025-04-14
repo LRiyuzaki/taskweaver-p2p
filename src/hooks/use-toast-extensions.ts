@@ -1,53 +1,58 @@
 
-import { toast as baseToast } from "@/hooks/use-toast";
-import type { ToastProps } from "@/components/ui/toast";
+// Re-export toast functionality and add custom toast helper functions
+import { toast as toastBase, type ToastProps } from '@/hooks/use-toast';
 
-// Define the type for the toast function result
-type ToastResult = {
-  id: string;
-  dismiss: () => void;
-  update: (props: any) => void;
-};
-
-// Extend the toast function with common patterns
+// Basic toast function from original package
 export const toast = {
-  // Base toast function for direct calling
-  default: (props: ToastProps): ToastResult => baseToast(props),
+  ...toastBase,
   
-  // Success toast
-  success: (message: string): ToastResult => {
-    return baseToast({
-      title: "Success",
-      description: message,
-      variant: "default",
-      className: "bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300"
+  // Custom toast helpers for peer operations
+  peerConnected: (name: string) => {
+    toastBase({
+      title: 'Peer Connected',
+      description: `${name || 'A peer'} has joined the network`,
+      variant: 'default'
     });
   },
   
-  // Error toast
-  error: (message: string): ToastResult => {
-    return baseToast({
-      title: "Error",
-      description: message,
-      variant: "destructive"
+  peerDisconnected: (name: string) => {
+    toastBase({
+      title: 'Peer Disconnected',
+      description: `${name || 'A peer'} has left the network`,
+      variant: 'default'
     });
   },
   
-  // Warning toast
-  warning: (message: string): ToastResult => {
-    return baseToast({
-      title: "Warning",
-      description: message,
-      className: "bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-300"
+  syncComplete: (count: number) => {
+    toastBase({
+      title: 'Synchronization Complete',
+      description: `Successfully synchronized ${count} ${count === 1 ? 'item' : 'items'}`,
+      variant: 'default'
     });
   },
   
-  // Info toast
-  info: (message: string): ToastResult => {
-    return baseToast({
-      title: "Info",
+  syncFailed: (error?: string) => {
+    toastBase({
+      title: 'Synchronization Failed',
+      description: error || 'Failed to synchronize with the network',
+      variant: 'destructive'
+    });
+  },
+  
+  // General success and error toasts
+  success: (message: string) => {
+    toastBase({
+      title: 'Success',
       description: message,
-      className: "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+      variant: 'default'
+    });
+  },
+  
+  error: (message: string) => {
+    toastBase({
+      title: 'Error',
+      description: message,
+      variant: 'destructive'
     });
   }
 };
