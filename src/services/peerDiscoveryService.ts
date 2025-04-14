@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { PeerStatus } from '@/types/p2p';
 
+// Improved type definitions
 export interface PeerRegisterParams {
   peer_id: string;
   name?: string;
@@ -13,8 +14,22 @@ export interface DiscoverPeersParams {
   peer_id?: string;
 }
 
+export interface PeerDiscoveryResponse<T = any> {
+  data: T | null;
+  error: Error | null;
+}
+
+/**
+ * Service for peer discovery operations
+ * Handles communication with the Supabase functions API
+ */
 export const peerDiscoveryService = {
-  async registerPeer(params: PeerRegisterParams): Promise<any> {
+  /**
+   * Register a new peer in the network
+   * @param params Peer registration parameters
+   * @returns Promise with the registration response
+   */
+  async registerPeer(params: PeerRegisterParams): Promise<PeerDiscoveryResponse> {
     try {
       // Default to connected status if not provided
       const peerData = {
@@ -29,15 +44,23 @@ export const peerDiscoveryService = {
         }
       });
       
-      if (error) throw error;
-      return data;
+      if (error) return { data: null, error: new Error(error.message) };
+      return { data, error: null };
     } catch (error) {
       console.error('Error registering peer:', error);
-      throw error;
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error during peer registration') 
+      };
     }
   },
   
-  async discoverPeers(params?: DiscoverPeersParams): Promise<any> {
+  /**
+   * Discover peers in the network
+   * @param params Optional discovery parameters
+   * @returns Promise with discovered peers
+   */
+  async discoverPeers(params?: DiscoverPeersParams): Promise<PeerDiscoveryResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('peer-discovery', {
         body: {
@@ -46,15 +69,23 @@ export const peerDiscoveryService = {
         }
       });
       
-      if (error) throw error;
-      return data;
+      if (error) return { data: null, error: new Error(error.message) };
+      return { data, error: null };
     } catch (error) {
       console.error('Error discovering peers:', error);
-      throw error;
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error during peer discovery')
+      };
     }
   },
   
-  async disconnectPeer(peer_id: string): Promise<any> {
+  /**
+   * Disconnect a peer from the network
+   * @param peer_id ID of the peer to disconnect
+   * @returns Promise with the disconnection response
+   */
+  async disconnectPeer(peer_id: string): Promise<PeerDiscoveryResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('peer-discovery', {
         body: {
@@ -66,11 +97,14 @@ export const peerDiscoveryService = {
         }
       });
       
-      if (error) throw error;
-      return data;
+      if (error) return { data: null, error: new Error(error.message) };
+      return { data, error: null };
     } catch (error) {
       console.error('Error disconnecting peer:', error);
-      throw error;
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error during peer disconnection')
+      };
     }
   }
 };

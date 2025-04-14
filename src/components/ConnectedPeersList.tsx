@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Clock, Laptop, Smartphone, Server } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { PeerStatus } from '@/types/p2p';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const ConnectedPeersList: React.FC = () => {
-  const { connectedPeers, fetchPeers } = useSupabaseSync();
+  const { connectedPeers, fetchPeers, loading } = useSupabaseSync();
 
   useEffect(() => {
+    // Fetch peers on component mount
     fetchPeers();
     
     // Refresh the peers list every 30 seconds
@@ -18,6 +20,7 @@ export const ConnectedPeersList: React.FC = () => {
       fetchPeers();
     }, 30000);
     
+    // Clean up interval on component unmount
     return () => clearInterval(interval);
   }, [fetchPeers]);
 
@@ -60,7 +63,16 @@ export const ConnectedPeersList: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {connectedPeers.length === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border rounded-md p-3">
+                <Skeleton className="h-5 w-40 mb-2" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
+        ) : connectedPeers.length === 0 ? (
           <div className="py-4 text-center text-muted-foreground">No peers connected</div>
         ) : (
           <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
