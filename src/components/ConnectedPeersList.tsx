@@ -4,7 +4,7 @@ import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Clock, Laptop, Smartphone, Server } from 'lucide-react';
-import { format, formatDistance } from 'date-fns';
+import { formatDistance } from 'date-fns';
 import { PeerStatus } from '@/types/p2p';
 
 export const ConnectedPeersList: React.FC = () => {
@@ -41,7 +41,6 @@ export const ConnectedPeersList: React.FC = () => {
       case 'connected':
         return 'default';
       case 'connecting':
-        // Changed from 'warning' to 'secondary' since 'warning' is not a valid variant
         return 'secondary';
       case 'disconnected':
       default:
