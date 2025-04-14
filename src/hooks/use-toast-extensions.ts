@@ -1,6 +1,6 @@
 
 // Re-export toast functionality and add custom toast helper functions
-import { toast as toastBase, type ToastProps } from '@/hooks/use-toast';
+import { toast as toastBase } from '@/hooks/use-toast';
 
 // Basic toast function from original package
 export const toast = {

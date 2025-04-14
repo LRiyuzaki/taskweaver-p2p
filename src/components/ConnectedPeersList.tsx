@@ -42,7 +42,14 @@ export const ConnectedPeersList: React.FC = () => {
         ) : (
           <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
             {connectedPeers.map((peer) => (
-              <PeerCard key={peer.id} peer={peer} />
+              <PeerCard 
+                key={peer.id} 
+                id={peer.peer_id}
+                name={peer.name}
+                deviceType={peer.device_type}
+                lastSeen={peer.last_seen}
+                status={peer.status}
+              />
             ))}
           </div>
         )}

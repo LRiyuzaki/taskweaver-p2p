@@ -38,3 +38,6 @@ enabled = true
 
 [edge_functions]
 enabled = true
+
+[functions.any-sync-node]
+verify_jwt = false

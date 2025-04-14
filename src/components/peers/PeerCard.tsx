@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Laptop, Smartphone, Server, CircleSlash, CheckCircle, AlertCircle } from 'lucide-react';
 import { PeerStatus } from '@/types/p2p';
 
-interface PeerCardProps {
+export interface PeerCardProps {
   id: string;
   name?: string;
   deviceType?: string;
