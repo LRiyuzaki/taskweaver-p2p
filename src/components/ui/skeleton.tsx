@@ -1,10 +1,16 @@
 
 import { cn } from "@/lib/utils"
 
+type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
+
+/**
+ * Skeleton component for loading states
+ * Displays a pulsing placeholder
+ */
 function Skeleton({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: SkeletonProps) {
   return (
     <div
       className={cn("animate-pulse rounded-md bg-muted", className)}
