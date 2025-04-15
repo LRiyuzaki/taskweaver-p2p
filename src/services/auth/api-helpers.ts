@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants';
 
 interface RequestConfig {
   method?: string;
-  body?: Record<string, unknown>;
+  body?: Record<string, any>;
 }
 
 export async function makeRpcRequest<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
