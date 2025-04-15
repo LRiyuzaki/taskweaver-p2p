@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { TeamMemberRole, PeerAuthStatus, DeviceRegistration, TeamMemberWithDevices, TeamMemberStatus, DatabaseDevice, mapDatabaseDeviceToDeviceRegistration } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
+// Get Supabase URL and anon key from the client integration file
+const SUPABASE_URL = "https://wweihgiklnxetpqcpyyf.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3ZWloZ2lrbG54ZXRwcWNweXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2MzcxMzksImV4cCI6MjA1MTIxMzEzOX0.MGXo-JjykqeUfnD6Zb7yhj6Klz7Wr1JND9WLpffnjUA";
+
 interface RawTeamMember {
   id: string;
   user_id?: string;
@@ -107,14 +111,15 @@ export const p2pAuthService = {
       }
       
       // Use fetch directly to call the RPC function to bypass TypeScript issues
+      // Using constants instead of accessing protected properties
       const response = await fetch(
-        `${supabase.supabaseUrl}/rest/v1/rpc/insert_team_member_device`,
+        `${SUPABASE_URL}/rest/v1/rpc/insert_team_member_device`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey,
-            'Authorization': `Bearer ${supabase.supabaseKey}`
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
           },
           body: JSON.stringify({
             p_team_member_id: memberIdToUse,
@@ -152,14 +157,15 @@ export const p2pAuthService = {
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
       // Use fetch directly to call the RPC function to bypass TypeScript issues
+      // Using constants instead of accessing protected properties
       const response = await fetch(
-        `${supabase.supabaseUrl}/rest/v1/rpc/update_device_trust_status`,
+        `${SUPABASE_URL}/rest/v1/rpc/update_device_trust_status`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey,
-            'Authorization': `Bearer ${supabase.supabaseKey}`
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
           },
           body: JSON.stringify({
             p_device_id: deviceId,
@@ -190,14 +196,15 @@ export const p2pAuthService = {
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
       // Use fetch directly to call the RPC function to bypass TypeScript issues
+      // Using constants instead of accessing protected properties
       const response = await fetch(
-        `${supabase.supabaseUrl}/rest/v1/rpc/get_team_member_devices`,
+        `${SUPABASE_URL}/rest/v1/rpc/get_team_member_devices`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey,
-            'Authorization': `Bearer ${supabase.supabaseKey}`
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
           },
           body: JSON.stringify({
             p_team_member_id: teamMemberId
