@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useP2PAuth } from '@/contexts/P2PAuthContext';
-import { Loader2, DeviceMobile } from 'lucide-react';
+import { Loader2, Smartphone } from 'lucide-react';
 import { generateRandomId } from '@/utils/p2p-helpers';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
@@ -95,7 +95,7 @@ export const P2PDeviceRegistration: React.FC = () => {
               <div className="text-xs text-muted-foreground space-y-1">
                 {devices.map((device) => (
                   <div key={device.deviceId} className="flex items-center">
-                    <DeviceMobile className="h-3 w-3 mr-1" />
+                    <Smartphone className="h-3 w-3 mr-1" />
                     <span>
                       {device.deviceName} ({device.deviceType})
                       {device.trusted && " ✓"}

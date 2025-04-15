@@ -56,17 +56,39 @@ export interface P2PAuthConfig {
 }
 
 /**
- * Device registration information
+ * Device registration information - matches the database schema
  */
 export interface DeviceRegistration {
+  id?: string;
+  team_member_id?: string;
   deviceId: string;
   deviceName?: string;
   deviceType?: string;
   publicKey?: string;
-  registeredAt: Date;
+  registeredAt?: Date;
   lastActive?: Date;
   trusted: boolean;
 }
+
+/**
+ * Database representation of a device - matches the team_member_devices table
+ */
+export interface DatabaseDevice {
+  id: string;
+  team_member_id: string;
+  device_id: string;
+  device_name?: string;
+  device_type?: string;
+  public_key?: string;
+  registered_at: string;
+  updated_at: string;
+  trusted: boolean;
+}
+
+/**
+ * Status of a team member
+ */
+export type TeamMemberStatus = 'active' | 'inactive' | 'pending';
 
 /**
  * Team member with their associated devices
@@ -78,7 +100,7 @@ export interface TeamMemberWithDevices {
   name: string;
   role: TeamMemberRole;
   devices: DeviceRegistration[];
-  status: 'active' | 'inactive' | 'pending';
+  status: TeamMemberStatus;
 }
 
 /**
@@ -91,4 +113,21 @@ export interface P2PAuthContext {
   authenticateTeamMember: (email: string, password: string) => Promise<boolean>;
   registerDevice: (device: Omit<DeviceRegistration, 'registeredAt' | 'trusted'>) => Promise<string>;
   logout: () => Promise<void>;
+}
+
+/**
+ * Helper function to convert database device to DeviceRegistration
+ */
+export function mapDatabaseDeviceToDeviceRegistration(dbDevice: DatabaseDevice): DeviceRegistration {
+  return {
+    id: dbDevice.id,
+    team_member_id: dbDevice.team_member_id,
+    deviceId: dbDevice.device_id,
+    deviceName: dbDevice.device_name,
+    deviceType: dbDevice.device_type,
+    publicKey: dbDevice.public_key,
+    registeredAt: dbDevice.registered_at ? new Date(dbDevice.registered_at) : undefined,
+    lastActive: dbDevice.updated_at ? new Date(dbDevice.updated_at) : undefined,
+    trusted: dbDevice.trusted
+  };
 }

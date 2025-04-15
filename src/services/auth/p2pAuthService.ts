@@ -1,7 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { TeamMemberRole, PeerAuthStatus, DeviceRegistration, TeamMemberWithDevices } from '@/types/p2p-auth';
+import { TeamMemberRole, PeerAuthStatus, DeviceRegistration, TeamMemberWithDevices, TeamMemberStatus, DatabaseDevice, mapDatabaseDeviceToDeviceRegistration } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
+
+interface RawTeamMember {
+  id: string;
+  user_id?: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+  workload?: number | null;
+  last_seen?: string | null;
+}
 
 /**
  * Service for P2P authentication operations
@@ -24,7 +35,7 @@ export const p2pAuthService = {
       if (authError) throw new Error(`Authentication failed: ${authError.message}`);
       
       // Then get the team member profile
-      const { data: teamMember, error: teamError } = await supabase
+      const { data: teamMemberData, error: teamError } = await supabase
         .from('team_members')
         .select('*')
         .eq('email', email)
@@ -32,32 +43,25 @@ export const p2pAuthService = {
       
       if (teamError) throw new Error(`Team member not found: ${teamError.message}`);
       
-      // Get this team member's registered devices
-      const { data: devices, error: devicesError } = await supabase
-        .from('team_member_devices')
-        .select('*')
-        .eq('team_member_id', teamMember.id);
-      
-      if (devicesError) {
-        console.error('Error fetching devices:', devicesError);
-      }
+      // Fetch devices from custom function to handle conversion
+      const devices = await this.getTeamMemberDevices(teamMemberData.id);
       
       // Create the full team member profile with devices
       const teamMemberWithDevices: TeamMemberWithDevices = {
-        id: teamMember.id,
+        id: teamMemberData.id,
         userId: authData.user?.id,
-        email: teamMember.email,
-        name: teamMember.name,
-        role: teamMember.role as TeamMemberRole,
-        status: teamMember.status,
-        devices: devices || []
+        email: teamMemberData.email,
+        name: teamMemberData.name,
+        role: teamMemberData.role as TeamMemberRole,
+        status: teamMemberData.status as TeamMemberStatus,
+        devices: devices
       };
       
       // Update the last seen timestamp
       await supabase
         .from('team_members')
         .update({ last_seen: new Date().toISOString() })
-        .eq('id', teamMember.id);
+        .eq('id', teamMemberData.id);
       
       return { success: true, teamMember: teamMemberWithDevices };
     } catch (error) {
@@ -98,26 +102,20 @@ export const p2pAuthService = {
         memberIdToUse = teamMember.id;
       }
       
-      // Register the device
-      const { data: device, error } = await supabase
-        .from('team_member_devices')
-        .insert({
-          team_member_id: memberIdToUse,
-          device_id: deviceInfo.deviceId,
-          device_name: deviceInfo.deviceName,
-          device_type: deviceInfo.deviceType,
-          public_key: deviceInfo.publicKey,
-          registered_at: new Date().toISOString(),
-          trusted: false
-        })
-        .select()
-        .single();
+      // Register the device using raw SQL since the structure doesn't match the Supabase types
+      const { data: device, error } = await supabase.rpc('insert_team_member_device', {
+        p_team_member_id: memberIdToUse,
+        p_device_id: deviceInfo.deviceId,
+        p_device_name: deviceInfo.deviceName || null,
+        p_device_type: deviceInfo.deviceType || null,
+        p_public_key: deviceInfo.publicKey || null
+      });
       
       if (error) throw error;
       
       toast.success(`Device ${deviceInfo.deviceName || deviceInfo.deviceId} registered successfully`);
       
-      return device.device_id;
+      return deviceInfo.deviceId;
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
@@ -133,10 +131,11 @@ export const p2pAuthService = {
    */
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('team_member_devices')
-        .update({ trusted, updated_at: new Date().toISOString() })
-        .eq('device_id', deviceId);
+      // Update trust status using raw SQL since the structure doesn't match the Supabase types
+      const { error } = await supabase.rpc('update_device_trust_status', {
+        p_device_id: deviceId,
+        p_trusted: trusted
+      });
       
       if (error) throw error;
       
@@ -156,14 +155,27 @@ export const p2pAuthService = {
    */
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      const { data, error } = await supabase
-        .from('team_member_devices')
-        .select('*')
-        .eq('team_member_id', teamMemberId);
+      // Use raw SQL to get devices and convert them to the expected format
+      const { data, error } = await supabase.rpc('get_team_member_devices', {
+        p_team_member_id: teamMemberId
+      });
       
       if (error) throw error;
       
-      return data as DeviceRegistration[];
+      // Map the database results to our DeviceRegistration interface
+      const devices: DeviceRegistration[] = (data || []).map((device: any) => ({
+        id: device.id,
+        team_member_id: device.team_member_id,
+        deviceId: device.device_id,
+        deviceName: device.device_name,
+        deviceType: device.device_type,
+        publicKey: device.public_key,
+        registeredAt: device.registered_at ? new Date(device.registered_at) : undefined,
+        lastActive: device.updated_at ? new Date(device.updated_at) : undefined,
+        trusted: device.trusted
+      }));
+      
+      return devices;
     } catch (error) {
       console.error('Error fetching team member devices:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to fetch devices');

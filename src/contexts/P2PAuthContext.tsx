@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { p2pAuthService } from '@/services/auth/p2pAuthService';
-import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole } from '@/types/p2p-auth';
+import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
 interface P2PAuthContextType {
@@ -47,25 +47,31 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setUser(sessionData.session.user);
           
           // Get team member profile
-          const { data: teamMember } = await supabase
-            .from('team_members')
-            .select('*')
-            .eq('user_id', sessionData.session.user.id)
-            .single();
-          
-          if (teamMember) {
-            // Get devices
-            const { data: devices } = await supabase
-              .from('team_member_devices')
+          try {
+            const { data: teamMemberData } = await supabase
+              .from('team_members')
               .select('*')
-              .eq('team_member_id', teamMember.id);
+              .eq('user_id', sessionData.session.user.id)
+              .single();
             
-            setTeamMember({
-              ...teamMember,
-              devices: devices || []
-            } as TeamMemberWithDevices);
-            
-            setDevices(devices || []);
+            if (teamMemberData) {
+              // Get devices - using p2pAuthService to get properly formatted devices
+              const devicesList = await p2pAuthService.getTeamMemberDevices(teamMemberData.id);
+              
+              setTeamMember({
+                id: teamMemberData.id,
+                userId: sessionData.session.user.id,
+                email: teamMemberData.email,
+                name: teamMemberData.name,
+                role: teamMemberData.role as TeamMemberRole,
+                status: teamMemberData.status as TeamMemberStatus,
+                devices: devicesList
+              });
+              
+              setDevices(devicesList);
+            }
+          } catch (err) {
+            console.error('Error fetching team member:', err);
           }
         }
       } catch (error) {
@@ -79,6 +85,8 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
+        // We'll handle team member data in checkSession to avoid duplication
+        checkSession();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setTeamMember(null);
