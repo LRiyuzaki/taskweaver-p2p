@@ -106,19 +106,32 @@ export const p2pAuthService = {
         memberIdToUse = teamMember.id;
       }
       
-      // Use RPC function to register device with type assertion
-      const { data, error } = await supabase.rpc(
-        'insert_team_member_device', 
+      // Use fetch directly to call the RPC function to bypass TypeScript issues
+      const response = await fetch(
+        `${supabase.supabaseUrl}/rest/v1/rpc/insert_team_member_device`,
         {
-          p_team_member_id: memberIdToUse,
-          p_device_id: deviceInfo.deviceId,
-          p_device_name: deviceInfo.deviceName || null,
-          p_device_type: deviceInfo.deviceType || null,
-          p_public_key: deviceInfo.publicKey || null
-        } as any  // Use type assertion to bypass type checking for RPC
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({
+            p_team_member_id: memberIdToUse,
+            p_device_id: deviceInfo.deviceId,
+            p_device_name: deviceInfo.deviceName || null,
+            p_device_type: deviceInfo.deviceType || null,
+            p_public_key: deviceInfo.publicKey || null
+          })
+        }
       );
-      
-      if (error) throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to register device');
+      }
+
+      const data = await response.json();
       
       toast.success(`Device ${deviceInfo.deviceName || deviceInfo.deviceId} registered successfully`);
       
@@ -138,16 +151,27 @@ export const p2pAuthService = {
    */
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      // Use RPC function with type assertion
-      const { error } = await supabase.rpc(
-        'update_device_trust_status', 
+      // Use fetch directly to call the RPC function to bypass TypeScript issues
+      const response = await fetch(
+        `${supabase.supabaseUrl}/rest/v1/rpc/update_device_trust_status`,
         {
-          p_device_id: deviceId,
-          p_trusted: trusted
-        } as any  // Use type assertion to bypass type checking for RPC
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({
+            p_device_id: deviceId,
+            p_trusted: trusted
+          })
+        }
       );
-      
-      if (error) throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update device trust status');
+      }
       
       toast.success(`Device trust status updated to ${trusted ? 'trusted' : 'untrusted'}`);
       return true;
@@ -165,15 +189,28 @@ export const p2pAuthService = {
    */
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      // Use the RPC function with type assertion
-      const { data, error } = await supabase.rpc(
-        'get_team_member_devices',
+      // Use fetch directly to call the RPC function to bypass TypeScript issues
+      const response = await fetch(
+        `${supabase.supabaseUrl}/rest/v1/rpc/get_team_member_devices`,
         {
-          p_team_member_id: teamMemberId
-        } as any  // Use type assertion to bypass type checking for RPC
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabase.supabaseKey,
+            'Authorization': `Bearer ${supabase.supabaseKey}`
+          },
+          body: JSON.stringify({
+            p_team_member_id: teamMemberId
+          })
+        }
       );
-      
-      if (error) throw error;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch team member devices');
+      }
+
+      const data = await response.json();
       
       // Map the database results to our DeviceRegistration interface
       const devices: DeviceRegistration[] = (data || []).map((device: DatabaseDevice) => 
