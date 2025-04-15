@@ -3,10 +3,10 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants';
 
 interface RequestConfig {
   method?: string;
-  body?: Record<string, any>;
+  body?: Record<string, any>; // Using Record<string, any> to avoid complex type instantiation
 }
 
-export async function makeRpcRequest<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
+export async function makeRpcRequest<T = any>(endpoint: string, config: RequestConfig = {}): Promise<T> {
   const { method = 'POST', body } = config;
   
   const response = await fetch(`${SUPABASE_URL}${endpoint}`, {
