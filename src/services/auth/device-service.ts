@@ -54,7 +54,9 @@ export const deviceService = {
 
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      const data = await makeRpcRequest<DatabaseDevice[]>(API_ENDPOINTS.GET_DEVICES, {
+      type DatabaseDeviceResponse = DatabaseDevice[];
+      
+      const data = await makeRpcRequest<DatabaseDeviceResponse>(API_ENDPOINTS.GET_DEVICES, {
         body: {
           p_team_member_id: teamMemberId
         }

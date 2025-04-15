@@ -48,7 +48,10 @@ export const p2pAuthService = {
     }
   },
   
-  async registerDevice(deviceInfo: Omit<DeviceRegistration, 'registeredAt' | 'trusted'>, teamMemberId?: string): Promise<string | null> {
+  async registerDevice(
+    deviceInfo: Omit<DeviceRegistration, 'registeredAt' | 'trusted'>,
+    teamMemberId?: string
+  ): Promise<string | null> {
     try {
       let memberIdToUse = teamMemberId;
       
@@ -63,7 +66,7 @@ export const p2pAuthService = {
           .from('team_members')
           .select('id')
           .eq('user_id', userData.user.id)
-          .single();
+          .maybeSingle();
         
         if (!teamMember) {
           throw new Error('Team member profile not found');
