@@ -106,14 +106,17 @@ export const p2pAuthService = {
         memberIdToUse = teamMember.id;
       }
       
-      // Use RPC function to register device instead of direct table access
-      const { data, error } = await supabase.rpc('insert_team_member_device', {
-        p_team_member_id: memberIdToUse,
-        p_device_id: deviceInfo.deviceId,
-        p_device_name: deviceInfo.deviceName || null,
-        p_device_type: deviceInfo.deviceType || null,
-        p_public_key: deviceInfo.publicKey || null
-      });
+      // Use RPC function to register device with type assertion
+      const { data, error } = await supabase.rpc(
+        'insert_team_member_device', 
+        {
+          p_team_member_id: memberIdToUse,
+          p_device_id: deviceInfo.deviceId,
+          p_device_name: deviceInfo.deviceName || null,
+          p_device_type: deviceInfo.deviceType || null,
+          p_public_key: deviceInfo.publicKey || null
+        } as any  // Use type assertion to bypass type checking for RPC
+      );
       
       if (error) throw error;
       
@@ -135,11 +138,14 @@ export const p2pAuthService = {
    */
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      // Use RPC function to update trust status instead of direct table access
-      const { error } = await supabase.rpc('update_device_trust_status', {
-        p_device_id: deviceId,
-        p_trusted: trusted
-      });
+      // Use RPC function with type assertion
+      const { error } = await supabase.rpc(
+        'update_device_trust_status', 
+        {
+          p_device_id: deviceId,
+          p_trusted: trusted
+        } as any  // Use type assertion to bypass type checking for RPC
+      );
       
       if (error) throw error;
       
@@ -159,10 +165,13 @@ export const p2pAuthService = {
    */
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      // Use the RPC function defined in database to get devices
-      const { data, error } = await supabase.rpc('get_team_member_devices', {
-        p_team_member_id: teamMemberId
-      });
+      // Use the RPC function with type assertion
+      const { data, error } = await supabase.rpc(
+        'get_team_member_devices',
+        {
+          p_team_member_id: teamMemberId
+        } as any  // Use type assertion to bypass type checking for RPC
+      );
       
       if (error) throw error;
       
