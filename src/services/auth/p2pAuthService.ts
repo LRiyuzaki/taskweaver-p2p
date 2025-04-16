@@ -80,7 +80,7 @@ export const p2pAuthService = {
         teamMemberId = teamMember.id;
       }
       
-      return deviceService.registerDevice(teamMemberId, deviceInfo);
+      return await deviceService.registerDevice(teamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
