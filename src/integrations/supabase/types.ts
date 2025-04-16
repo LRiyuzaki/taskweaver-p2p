@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_services: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          renewal_date: string | null
+          service_id: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          renewal_date?: string | null
+          service_id: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          renewal_date?: string | null
+          service_id?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_uploads: {
         Row: {
           client_id: string | null
@@ -274,6 +325,77 @@ export type Database = {
         }
         Relationships: []
       }
+      services: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          requires_review: boolean | null
+          standard_time_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          requires_review?: boolean | null
+          standard_time_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          requires_review?: boolean | null
+          standard_time_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subtasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          order_position: number
+          task_id: string
+          title: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_position: number
+          task_id: string
+          title: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_position?: number
+          task_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_documents: {
         Row: {
           cid: string
@@ -384,6 +506,95 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          comments: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          requires_review: boolean | null
+          review_status: string | null
+          reviewer_id: string | null
+          service_id: string | null
+          started_at: string | null
+          status: string
+          time_spent_minutes: number | null
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          comments?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          requires_review?: boolean | null
+          review_status?: string | null
+          reviewer_id?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string
+          time_spent_minutes?: number | null
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          comments?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          requires_review?: boolean | null
+          review_status?: string | null
+          reviewer_id?: string | null
+          service_id?: string | null
+          started_at?: string | null
+          status?: string
+          time_spent_minutes?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {

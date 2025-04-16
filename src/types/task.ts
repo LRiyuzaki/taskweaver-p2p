@@ -1,5 +1,5 @@
 
-export type TaskStatus = 'todo' | 'inProgress' | 'done';
+export type TaskStatus = 'todo' | 'inProgress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
 
@@ -12,16 +12,37 @@ export interface Task {
   dueDate?: Date;
   createdAt: Date;
   updatedAt?: Date;
-  completedDate?: Date; // This was missing but referenced in ClientTimeline
+  completedDate?: Date;
+  startedAt?: Date; // When the task was started
+  timeSpentMinutes?: number; // Time tracking in minutes
   assignedTo?: string;
   assigneeName?: string;
   clientId?: string;
   clientName?: string;
   projectId?: string;
   projectName?: string;
+  serviceId?: string;
+  serviceName?: string;
+  requiresReview?: boolean;
+  reviewerId?: string;
+  reviewerName?: string;
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
+  comments?: string; // Comments on the task
   tags: string[];
   recurrence: RecurrenceType;
   recurrenceEndDate?: Date;
+  subtasks?: TaskSubtask[];
+}
+
+export interface TaskSubtask {
+  id: string;
+  taskId: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  orderPosition: number;
+  createdAt: Date;
+  completedAt?: Date;
 }
 
 export interface Project {
@@ -42,16 +63,17 @@ export interface TaskCount {
   total: number;
   todo: number;
   inProgress: number;
+  review: number; // Added review to task count
   done: number;
   upcoming: number;
 }
 
-export interface SortOption {
-  label: string;
-  value: string;
-}
-
-export interface FilterOption {
-  type: string;
-  value: string;
+export interface ServiceInfo {
+  id: string;
+  name: string;
+  description?: string;
+  standardTimeHours?: number;
+  requiresReview: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

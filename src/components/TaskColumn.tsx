@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+
+import React, { useState, ReactNode } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from '@/components/TaskCard';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, ChevronUp, ChevronDown, Plus, Filter, SortAsc, SortDesc } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, Plus, Filter, SortAsc, SortDesc, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ interface TaskColumnProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onDrop: (e: React.DragEvent, status: TaskStatus) => void;
+  icon?: ReactNode;
 }
 
 export const TaskColumn: React.FC<TaskColumnProps> = ({ 
@@ -34,13 +36,15 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   status, 
   tasks, 
   onTaskClick,
-  onDrop
+  onDrop,
+  icon
 }) => {
   const { addTask } = useTaskContext();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'default' | 'priority' | 'date'>('default');
-  const [priorityFilter, setPriorityFilter] = useState<string[]>([]); // Array of priorities to filter
+  const [sortOrder, setSortOrder] = useState<'default' | 'priority' | 'date' | 'timeSpent'>('default');
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([]); 
+  const [showSubtasks, setShowSubtasks] = useState(true); // Toggle for subtask visibility
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -90,6 +94,12 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         });
+      case 'timeSpent':
+        return [...filteredTasks].sort((a, b) => {
+          const aTime = a.timeSpentMinutes || 0;
+          const bTime = b.timeSpentMinutes || 0;
+          return bTime - aTime; // Sort by most time spent first
+        });
       default:
         return filteredTasks;
     }
@@ -108,11 +118,23 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
     });
   };
   
+  // Get appropriate status color
+  const getStatusColor = () => {
+    switch(status) {
+      case 'todo': return 'border-slate-200';
+      case 'inProgress': return 'border-blue-200';
+      case 'review': return 'border-amber-200';
+      case 'done': return 'border-green-200';
+      default: return 'border-slate-200';
+    }
+  };
+  
   return (
     <div className="min-h-[300px]">
       <div 
         className={cn(
-          "task-column h-full flex flex-col rounded-md border border-border p-4 transition-all hover:border-border/80",
+          "task-column h-full flex flex-col rounded-md border-2 p-4 transition-all hover:border-border/80",
+          getStatusColor(),
           isMinimized ? "max-h-16 overflow-hidden" : ""
         )}
         onDragOver={handleDragOver}
@@ -121,10 +143,13 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
+            {icon}
             <h3 className="font-medium text-sm uppercase tracking-wide">{title}</h3>
             <Badge variant={
               status === 'todo' ? "outline" :
-              status === 'inProgress' ? "secondary" : "default"
+              status === 'inProgress' ? "secondary" :
+              status === 'review' ? "warning" : 
+              "default"
             }>{processedTasks.length}</Badge>
           </div>
           
@@ -210,8 +235,22 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
                     >
                       By Due Date
                     </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setSortOrder('timeSpent')} 
+                      disabled={sortOrder === 'timeSpent'}
+                    >
+                      By Time Spent
+                    </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
+
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem 
+                  checked={showSubtasks}
+                  onCheckedChange={setShowSubtasks}
+                >
+                  Show Subtasks
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -232,6 +271,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
                   <TaskCard 
                     task={task} 
                     onClick={() => onTaskClick(task)}
+                    showSubtasks={showSubtasks}
                   />
                 </div>
               ))}

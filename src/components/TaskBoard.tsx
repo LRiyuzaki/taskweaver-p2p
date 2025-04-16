@@ -6,7 +6,7 @@ import { TaskForm } from './TaskForm';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, Search } from 'lucide-react';
+import { Plus, RefreshCw, Filter, Search, ClipboardCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast-extensions';
@@ -19,7 +19,9 @@ export const TaskBoard: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
 
+  // Add filtering by service
   const filteredTasks = tasks.filter((task) => {
     // Apply search filter
     const matchesSearch = !searchTerm || 
@@ -32,18 +34,28 @@ export const TaskBoard: React.FC = () => {
     
     // Apply client filter
     const matchesClient = !selectedClient || task.clientId === selectedClient;
+
+    // Apply service filter
+    const matchesService = !selectedService || task.serviceId === selectedService;
     
-    return matchesSearch && matchesPriority && matchesClient;
+    return matchesSearch && matchesPriority && matchesClient && matchesService;
   });
   
   const todoTasks = filteredTasks.filter((task) => task.status === 'todo');
   const inProgressTasks = filteredTasks.filter((task) => task.status === 'inProgress');
+  const reviewTasks = filteredTasks.filter((task) => task.status === 'review'); // Add review tasks
   const doneTasks = filteredTasks.filter((task) => task.status === 'done');
 
   // Get unique clients for filter dropdown
   const uniqueClients = Array.from(new Set(tasks
     .filter(t => t.clientId && t.clientName)
     .map(t => ({ id: t.clientId!, name: t.clientName! }))
+  ));
+
+  // Get unique services for filter dropdown
+  const uniqueServices = Array.from(new Set(tasks
+    .filter(t => t.serviceId && t.serviceName)
+    .map(t => ({ id: t.serviceId!, name: t.serviceName! }))
   ));
 
   const handleTaskClick = (task: Task) => {
@@ -63,8 +75,11 @@ export const TaskBoard: React.FC = () => {
     // Provide visual feedback
     const task = tasks.find(t => t.id === taskId);
     if (task) {
-      toast.success(`Task "${task.title}" moved to ${newStatus === 'todo' ? 'To Do' : 
-        newStatus === 'inProgress' ? 'In Progress' : 'Done'}`);
+      toast.success(`Task "${task.title}" moved to ${
+        newStatus === 'todo' ? 'To Do' : 
+        newStatus === 'inProgress' ? 'In Progress' : 
+        newStatus === 'review' ? 'Review' : 'Done'
+      }`);
     }
   };
 
@@ -83,6 +98,7 @@ export const TaskBoard: React.FC = () => {
     setSearchTerm('');
     setSelectedPriority(null);
     setSelectedClient(null);
+    setSelectedService(null);
   };
 
   return (
@@ -110,7 +126,7 @@ export const TaskBoard: React.FC = () => {
             <Filter className="h-4 w-4" />
           </Button>
           
-          {(searchTerm || selectedPriority || selectedClient) && (
+          {(searchTerm || selectedPriority || selectedClient || selectedService) && (
             <Button variant="ghost" size="sm" onClick={handleClearFilters} className="text-xs">
               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Clear
             </Button>
@@ -171,11 +187,30 @@ export const TaskBoard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Add service filter */}
+            {uniqueServices.length > 0 && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Service</label>
+                <div className="flex flex-wrap gap-1">
+                  {uniqueServices.map(service => (
+                    <Badge 
+                      key={service.id}
+                      variant={selectedService === service.id ? 'default' : 'outline'} 
+                      className="cursor-pointer hover:bg-primary/10"
+                      onClick={() => setSelectedService(selectedService === service.id ? null : service.id)}
+                    >
+                      {service.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <TaskColumn
           title="To Do"
           status="todo"
@@ -189,6 +224,14 @@ export const TaskBoard: React.FC = () => {
           tasks={inProgressTasks}
           onTaskClick={handleTaskClick}
           onDrop={handleDrop}
+        />
+        <TaskColumn
+          title="Review"
+          status="review"
+          tasks={reviewTasks}
+          onTaskClick={handleTaskClick}
+          onDrop={handleDrop}
+          icon={<ClipboardCheck className="h-4 w-4 mr-1" />}
         />
         <TaskColumn
           title="Done"
