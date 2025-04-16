@@ -40,13 +40,14 @@ export const deviceService = {
     }
   },
 
+  // Update method to accept boolean instead of string
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
       // Use explicit type annotation for the response
       const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
         body: {
           p_device_id: deviceId,
-          p_trusted: trusted
+          p_trusted: trusted // This now correctly passes a boolean
         }
       });
       

@@ -158,8 +158,9 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return deviceId;
   };
   
-  // Update device trust status
+  // Update device trust status - Fix for the boolean to string parameter issue
   const updateDeviceTrustStatus = async (deviceId: string, trusted: boolean): Promise<boolean> => {
+    // Pass the boolean directly as the p2pAuthService.updateDeviceTrustStatus now handles boolean
     const success = await p2pAuthService.updateDeviceTrustStatus(deviceId, trusted);
     
     if (success && teamMember) {

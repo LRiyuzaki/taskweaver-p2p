@@ -48,7 +48,7 @@ export const p2pAuthService = {
     }
   },
   
-  // Define a simple device info interface to avoid complex type instantiation
+  // Fix for error TS2589: Type instantiation is excessively deep
   async registerDevice(
     deviceInfo: {
       deviceId: string;
@@ -81,7 +81,7 @@ export const p2pAuthService = {
         teamMemberId = teamMember.id;
       }
       
-      // Call device service with explicit return type
+      // Call device service with simplified approach
       return await deviceService.registerDevice(teamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
@@ -90,9 +90,10 @@ export const p2pAuthService = {
     }
   },
 
-  // Use a simpler approach to avoid type recursion
-  updateDeviceTrustStatus(deviceId: string, status: string): Promise<boolean> {
-    return deviceService.updateDeviceTrustStatus(deviceId, status);
+  // Fix for error TS2345: Argument of type 'string' is not assignable to parameter of type 'boolean'
+  updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
+    // Convert trusted boolean to the appropriate string format expected by the service
+    return deviceService.updateDeviceTrustStatus(deviceId, trusted);
   },
   
   getTeamMemberDevices(teamMemberId: string) {
