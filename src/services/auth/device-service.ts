@@ -15,7 +15,8 @@ export const deviceService = {
     }
   ): Promise<string | null> {
     try {
-      await makeRpcRequest(API_ENDPOINTS.INSERT_DEVICE, {
+      // Type annotate the makeRpcRequest explicitly to avoid deep type inference
+      await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.INSERT_DEVICE, {
         body: {
           p_team_member_id: teamMemberId,
           p_device_id: deviceInfo.deviceId,
@@ -36,7 +37,8 @@ export const deviceService = {
 
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      await makeRpcRequest(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
+      // Type annotate the makeRpcRequest explicitly
+      await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
         body: {
           p_device_id: deviceId,
           p_trusted: trusted
