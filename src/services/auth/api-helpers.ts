@@ -1,6 +1,7 @@
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants';
 
+// Simple interface for request config to avoid deep type nesting
 interface RequestConfig {
   method?: string;
   body?: Record<string, any>; // Using Record<string, any> to avoid complex type instantiation

@@ -54,7 +54,7 @@ export const deviceService = {
 
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      // Define explicit type for response to avoid type recursion
+      // Explicitly define the response type to avoid type recursion
       const data = await makeRpcRequest<DatabaseDevice[]>(API_ENDPOINTS.GET_DEVICES, {
         body: {
           p_team_member_id: teamMemberId
