@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Task } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -165,7 +164,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
               </h3>
             </div>
             
-            <TaskSubtaskDisplay task={task} showAll={true} editable={true} />
+            <TaskSubtaskDisplay task={task} showCheckboxes={true} showAll={true} editable={true} />
           </div>
         </CardContent>
         

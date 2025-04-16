@@ -8,11 +8,15 @@ import { useTaskContext } from '@/contexts/TaskContext';
 interface TaskSubtaskDisplayProps {
   task: Task;
   showCheckboxes?: boolean;
+  showAll?: boolean; // Added showAll prop
+  editable?: boolean; // Added editable prop
 }
 
 export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({ 
   task,
-  showCheckboxes = true
+  showCheckboxes = true,
+  showAll = false,
+  editable = false
 }) => {
   const { updateTask } = useTaskContext();
 

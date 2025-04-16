@@ -81,7 +81,7 @@ export const p2pAuthService = {
         teamMemberId = teamMember.id;
       }
       
-      // Call device service with explicit return type to break type recursion
+      // Call device service with explicit return type
       return await deviceService.registerDevice(teamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
@@ -90,8 +90,14 @@ export const p2pAuthService = {
     }
   },
 
-  updateDeviceTrustStatus: deviceService.updateDeviceTrustStatus,
-  getTeamMemberDevices: deviceService.getTeamMemberDevices,
+  // Use a simpler approach to avoid type recursion
+  updateDeviceTrustStatus(deviceId: string, status: string): Promise<boolean> {
+    return deviceService.updateDeviceTrustStatus(deviceId, status);
+  },
+  
+  getTeamMemberDevices(teamMemberId: string) {
+    return deviceService.getTeamMemberDevices(teamMemberId);
+  },
   
   async logout(): Promise<boolean> {
     try {

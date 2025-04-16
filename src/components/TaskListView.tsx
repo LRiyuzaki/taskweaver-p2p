@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Task, TaskCount, SortOption, FilterOption } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -86,23 +85,20 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
     setSearchTerm('');
   };
 
-  // Initial filtering by client if filterClient is provided
   const clientFilteredTasks = filterClient
     ? tasks.filter(task => task.clientId === filterClient)
     : tasks;
 
-  // Calculate task counts
   const taskCounts: TaskCount = {
     total: clientFilteredTasks.length,
     todo: clientFilteredTasks.filter(task => task.status === 'todo').length,
     inProgress: clientFilteredTasks.filter(task => task.status === 'inProgress').length,
+    review: clientFilteredTasks.filter(task => task.status === 'review').length,
     done: clientFilteredTasks.filter(task => task.status === 'done').length,
     upcoming: clientFilteredTasks.filter(task => task.dueDate && isAfter(task.dueDate, new Date())).length
   };
 
-  // Filter and sort tasks
   const filteredAndSortedTasks = useMemo(() => {
-    // First apply search term filter
     let filtered = clientFilteredTasks.filter(task => {
       if (!searchTerm) return true;
       
@@ -115,7 +111,6 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
       );
     });
     
-    // Apply status/priority/due date filters
     filtered = filtered.filter(task => {
       if (filters.length === 0) return true;
       
@@ -147,7 +142,6 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
       });
     });
     
-    // Sort the filtered tasks
     const [sortField, sortOrder] = sortBy.split('-');
     
     return [...filtered].sort((a, b) => {
@@ -246,6 +240,14 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Review</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{taskCounts.review}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm">Upcoming</CardTitle>
           </CardHeader>
           <CardContent>
@@ -311,6 +313,12 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
                   onClick={() => toggleFilter({ type: 'status', value: 'inProgress' })}
                 >
                   In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className={isFilterActive('status', 'review') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'status', value: 'review' })}
+                >
+                  Review
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('status', 'done') ? 'bg-accent' : ''}

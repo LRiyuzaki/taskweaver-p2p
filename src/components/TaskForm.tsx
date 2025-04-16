@@ -38,7 +38,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card } from "@/components/ui/card";
 
-// Simulate team members data (in a real app, this would come from your API/context)
 const teamMembers = [
   { id: '1', name: 'John Doe', email: 'john@example.com' },
   { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
@@ -48,7 +47,7 @@ const teamMembers = [
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  status: z.enum(['todo', 'inProgress', 'done']),
+  status: z.enum(['todo', 'inProgress', 'review', 'done']),
   priority: z.enum(['low', 'medium', 'high']),
   dueDate: z.date().optional(),
   tags: z.array(z.string()).optional(),
@@ -59,7 +58,6 @@ const formSchema = z.object({
   recurrenceEndDate: z.date().optional(),
   templateId: z.string().optional(),
 }).refine((data) => {
-  // Validate recurrence end date is after due date if both are provided
   if (data.recurrenceEndDate && data.dueDate) {
     if (data.recurrence !== 'none') {
       return data.recurrenceEndDate > data.dueDate;
@@ -70,7 +68,6 @@ const formSchema = z.object({
   message: "End date must be after the due date",
   path: ["recurrenceEndDate"]
 }).refine((data) => {
-  // Require due date if recurrence is set
   if (data.recurrence !== 'none' && !data.dueDate) {
     return false;
   }
@@ -114,7 +111,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     },
   });
 
-  // Load existing subtasks if editing
   useEffect(() => {
     if (task?.id) {
       const taskSubtasks = existingSubtasks
@@ -134,19 +130,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
     }
   }, [task?.id, existingSubtasks]);
 
-  // Show client in form when editing task with clientId
   useEffect(() => {
     if (initialClientId) {
       form.setValue('clientId', initialClientId);
     }
   }, [initialClientId, form]);
 
-  // Set additional conditions for recurrence end date visibility
   const showRecurrenceEndDate = form.watch('recurrence') !== 'none';
   const selectedClientId = form.watch('clientId');
   const selectedTemplateId = form.watch('templateId');
   
-  // Get selected client details
   const selectedClient = selectedClientId ? 
     clients.find(client => client.id === selectedClientId) : null;
 
@@ -216,13 +209,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
   const handleSubmitWithSubtasks = (values: FormValues) => {
     const submitValues = { ...values } as any;
 
-    // If there are subtasks, default status to 'todo' regardless of selection
-    // This ensures proper progress tracking through subtasks
     if (subtasks.length > 0) {
       submitValues.status = 'todo';
     }
     
-    // Add the assignee name if an assignee is selected
     if (values.assignedTo) {
       const assignee = teamMembers.find(member => member.id === values.assignedTo);
       if (assignee) {
@@ -230,7 +220,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       }
     }
     
-    // Add the project name if a project is selected
     if (values.projectId && values.projectId !== 'no-project') {
       const project = projects.find(p => p.id === values.projectId);
       if (project) {
@@ -238,7 +227,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       }
     }
     
-    // Add client name if client is selected
     if (values.clientId && values.clientId !== 'no-client') {
       const client = clients.find(c => c.id === values.clientId);
       if (client) {
@@ -246,15 +234,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
       }
     }
     
-    // Handle task submission - call the onSubmit prop with the values
     onSubmit(submitValues);
     
-    // Add subtasks if any exist
     if (subtasks.length > 0 && addSubtask) {
       subtasks.forEach((subtask, index) => {
-        if (subtask.title) {  // Make sure we have a title before adding
+        if (subtask.title) {
           addSubtask({
-            taskId: task?.id || '', // This will be replaced with the actual new task ID by the context
+            taskId: task?.id || '',
             title: subtask.title,
             description: subtask.description,
             completed: subtask.completed || false,
@@ -298,7 +284,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
           )}
         />
 
-        {/* Template selection */}
         <FormField
           control={form.control}
           name="templateId"
@@ -334,7 +319,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
           )}
         />
 
-        {/* Client selection field */}
         <FormField
           control={form.control}
           name="clientId"
@@ -361,7 +345,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
               </Select>
               <FormMessage />
               
-              {/* Show selected client information if available */}
               {selectedClient && (
                 <div className="mt-2 p-2 bg-muted/40 rounded-md">
                   <p className="text-sm">
@@ -395,6 +378,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
                   <SelectContent>
                     <SelectItem value="todo">To Do</SelectItem>
                     <SelectItem value="inProgress">In Progress</SelectItem>
+                    <SelectItem value="review">In Review</SelectItem>
                     <SelectItem value="done">Done</SelectItem>
                   </SelectContent>
                 </Select>

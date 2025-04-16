@@ -77,3 +77,14 @@ export interface ServiceInfo {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Add missing types for TaskListView
+export interface SortOption {
+  label: string;
+  value: string;
+}
+
+export interface FilterOption {
+  type: string;
+  value: string;
+}

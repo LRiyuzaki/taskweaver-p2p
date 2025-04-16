@@ -62,7 +62,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, showSubtasks 
       case 'inProgress': 
         return <Badge variant="secondary">In Progress</Badge>;
       case 'review': 
-        return <Badge variant="warning">In Review</Badge>;
+        return <Badge variant="outline" className="border-amber-500 text-amber-600">In Review</Badge>;
       case 'done': 
         return <Badge variant="default">Done</Badge>;
       default: 

@@ -1,4 +1,3 @@
-
 import React, { useState, ReactNode } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from '@/components/TaskCard';
@@ -148,7 +147,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
             <Badge variant={
               status === 'todo' ? "outline" :
               status === 'inProgress' ? "secondary" :
-              status === 'review' ? "warning" : 
+              status === 'review' ? "outline" : 
               "default"
             }>{processedTasks.length}</Badge>
           </div>
