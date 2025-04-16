@@ -48,18 +48,20 @@ export const p2pAuthService = {
     }
   },
   
-  // Fix for error TS2589: Type instantiation is excessively deep
+  // Completely simplified device registration to avoid deep type instantiation
   async registerDevice(
-    deviceInfo: {
-      deviceId: string;
-      deviceName?: string;
-      deviceType?: string;
-      publicKey?: string;
+    deviceInfo: { 
+      deviceId: string; 
+      deviceName?: string; 
+      deviceType?: string; 
+      publicKey?: string; 
     },
     teamMemberId?: string
   ): Promise<string | null> {
     try {
-      if (!teamMemberId) {
+      let finalTeamMemberId = teamMemberId;
+      
+      if (!finalTeamMemberId) {
         // Get current user
         const { data } = await supabase.auth.getUser();
         
@@ -78,11 +80,11 @@ export const p2pAuthService = {
           throw new Error('Team member profile not found');
         }
         
-        teamMemberId = teamMember.id;
+        finalTeamMemberId = teamMember.id;
       }
       
-      // Call device service with simplified approach
-      return await deviceService.registerDevice(teamMemberId, deviceInfo);
+      // Call device service 
+      return await deviceService.registerDevice(finalTeamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
@@ -90,9 +92,7 @@ export const p2pAuthService = {
     }
   },
 
-  // Fix for error TS2345: Argument of type 'string' is not assignable to parameter of type 'boolean'
   updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
-    // Convert trusted boolean to the appropriate string format expected by the service
     return deviceService.updateDeviceTrustStatus(deviceId, trusted);
   },
   
