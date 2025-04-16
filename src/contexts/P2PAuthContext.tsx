@@ -1,10 +1,16 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { p2pAuthService } from '@/services/auth/p2pAuthService';
 import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
+
+interface DeviceInfo {
+  deviceId: string;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
+}
 
 interface P2PAuthContextType {
   user: User | null;
@@ -14,7 +20,7 @@ interface P2PAuthContextType {
   devices: DeviceRegistration[];
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  registerDevice: (deviceInfo: Omit<DeviceRegistration, 'registeredAt' | 'trusted'>) => Promise<string | null>;
+  registerDevice: (deviceInfo: DeviceInfo) => Promise<string | null>;
   updateDeviceTrustStatus: (deviceId: string, trusted: boolean) => Promise<boolean>;
   hasRole: (role: TeamMemberRole) => boolean;
 }
@@ -35,7 +41,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [devices, setDevices] = useState<DeviceRegistration[]>([]);
   
-  // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       setIsLoading(true);
@@ -46,7 +51,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (sessionData?.session?.user) {
           setUser(sessionData.session.user);
           
-          // Get team member profile
           try {
             const { data: teamMemberData } = await supabase
               .from('team_members')
@@ -55,7 +59,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
               .single();
             
             if (teamMemberData) {
-              // Get devices - using p2pAuthService to get properly formatted devices
               const devicesList = await p2pAuthService.getTeamMemberDevices(teamMemberData.id);
               
               setTeamMember({
@@ -81,11 +84,9 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     };
     
-    // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
-        // We'll handle team member data in checkSession to avoid duplication
         checkSession();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -101,7 +102,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
   
-  // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -124,7 +124,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
-  // Logout function
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     try {
@@ -140,17 +139,15 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
-  // Register a device
-  const registerDevice = async (deviceInfo: Omit<DeviceRegistration, 'registeredAt' | 'trusted'>): Promise<string | null> => {
+  const registerDevice = async (deviceInfo: DeviceInfo): Promise<string | null> => {
     if (!teamMember) {
       toast.error('You must be logged in to register a device');
       return null;
     }
     
-    const deviceId = await p2pAuthService.registerDevice(deviceInfo, teamMember.id);
+    const deviceId = await p2pAuthService.registerDevice(teamMember.id, deviceInfo);
     
     if (deviceId) {
-      // Refresh devices list
       const updatedDevices = await p2pAuthService.getTeamMemberDevices(teamMember.id);
       setDevices(updatedDevices);
     }
@@ -158,13 +155,10 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return deviceId;
   };
   
-  // Update device trust status - Fix for the boolean to string parameter issue
   const updateDeviceTrustStatus = async (deviceId: string, trusted: boolean): Promise<boolean> => {
-    // Pass the boolean directly as the p2pAuthService.updateDeviceTrustStatus now handles boolean
     const success = await p2pAuthService.updateDeviceTrustStatus(deviceId, trusted);
     
     if (success && teamMember) {
-      // Refresh devices list
       const updatedDevices = await p2pAuthService.getTeamMemberDevices(teamMember.id);
       setDevices(updatedDevices);
     }
@@ -172,7 +166,6 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return success;
   };
   
-  // Check if the team member has a specific role
   const hasRole = (role: TeamMemberRole): boolean => {
     if (!teamMember) return false;
     

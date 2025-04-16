@@ -1,8 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus } from '@/types/p2p-auth';
+import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistration } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 import { deviceService } from './device-service';
+
+// Define a specific type for device info to avoid deep type instantiation
+interface DeviceInfo {
+  deviceId: string;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
+}
 
 export const p2pAuthService = {
   async authenticateTeamMember(email: string, password: string): Promise<{ success: boolean; teamMember?: TeamMemberWithDevices }> {
@@ -48,15 +56,10 @@ export const p2pAuthService = {
     }
   },
   
-  // Fix: Use a specific interface rather than 'object' for device info
+  // Use the explicitly defined DeviceInfo type
   async registerDevice(
     teamMemberId: string | undefined,
-    deviceInfo: {
-      deviceId: string;
-      deviceName?: string;
-      deviceType?: string;
-      publicKey?: string;
-    }
+    deviceInfo: DeviceInfo
   ): Promise<string | null> {
     try {
       let finalTeamMemberId = teamMemberId;

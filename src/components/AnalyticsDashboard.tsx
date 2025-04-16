@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -129,6 +128,7 @@ export const AnalyticsDashboard = () => {
     .sort((a, b) => new Date(b.completedDate || 0).getTime() - new Date(a.completedDate || 0).getTime())
     .slice(0, 5);
   
+  // Format time spent function
   const formatTimeSpent = (minutes?: number): string => {
     if (!minutes) return "0h";
     const hours = Math.floor(minutes / 60);
@@ -241,7 +241,6 @@ export const AnalyticsDashboard = () => {
         </Card>
       </div>
       
-      {/* New Section: Recently Completed Tasks with details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
