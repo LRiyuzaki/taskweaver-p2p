@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -6,7 +5,6 @@ import { p2pAuthService } from '@/services/auth/p2pAuthService';
 import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
-// Simplified device info interface to avoid deep type instantiation
 interface DeviceInfo {
   deviceId: string;
   deviceName?: string;
@@ -141,15 +139,13 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
-  // Fixed registerDevice function that passes a simple object
   const registerDevice = async (deviceInfo: DeviceInfo): Promise<string | null> => {
     if (!teamMember) {
       toast.error('You must be logged in to register a device');
       return null;
     }
     
-    // Explicitly pass each property to avoid type issues
-    const deviceId = await p2pAuthService.registerDevice(
+    const result = await p2pAuthService.registerDevice(
       teamMember.id, 
       {
         deviceId: deviceInfo.deviceId,
@@ -159,12 +155,12 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     );
     
-    if (deviceId) {
+    if (result) {
       const updatedDevices = await p2pAuthService.getTeamMemberDevices(teamMember.id);
       setDevices(updatedDevices);
     }
     
-    return deviceId;
+    return result;
   };
   
   const updateDeviceTrustStatus = async (deviceId: string, trusted: boolean): Promise<boolean> => {

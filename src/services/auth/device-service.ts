@@ -1,13 +1,15 @@
+
 import { DeviceRegistration, DatabaseDevice, mapDatabaseDeviceToDeviceRegistration } from '@/types/p2p-auth';
 import { makeRpcRequest } from './api-helpers';
 import { API_ENDPOINTS } from './constants';
 import { toast } from '@/hooks/use-toast-extensions';
 
+// Use a simple interface definition to avoid complex type inference
 interface SimpleDeviceInfo {
   deviceId: string;
-  deviceName?: string | undefined;
-  deviceType?: string | undefined;
-  publicKey?: string | undefined;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
 }
 
 export const deviceService = {

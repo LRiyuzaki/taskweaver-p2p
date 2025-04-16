@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistration } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
@@ -56,10 +55,10 @@ export const p2pAuthService = {
     }
   },
   
-  // Simplified registerDevice function to avoid deep type instantiation
+  // Completely rewrite the registerDevice function to avoid type instantiation issues
   async registerDevice(
     teamMemberId: string | undefined, 
-    deviceInfo: DeviceInfo
+    deviceInfo: { deviceId: string; deviceName?: string; deviceType?: string; publicKey?: string; }
   ): Promise<string | null> {
     try {
       let finalTeamMemberId = teamMemberId;
@@ -86,13 +85,16 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Avoid passing complex types directly to prevent excessive type instantiation
-      return deviceService.registerDevice(finalTeamMemberId, {
+      // Use a simple, flat object structure to avoid complex type inference
+      const deviceData = {
         deviceId: deviceInfo.deviceId,
         deviceName: deviceInfo.deviceName || undefined,
         deviceType: deviceInfo.deviceType || undefined,
         publicKey: deviceInfo.publicKey || undefined
-      });
+      };
+      
+      // Call the device service with the simplified object
+      return deviceService.registerDevice(finalTeamMemberId, deviceData);
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
