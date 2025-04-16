@@ -48,14 +48,9 @@ export const p2pAuthService = {
     }
   },
   
-  // Completely simplified device registration to avoid deep type instantiation
+  // Simplified device registration to avoid deep type instantiation
   async registerDevice(
-    deviceInfo: { 
-      deviceId: string; 
-      deviceName?: string; 
-      deviceType?: string; 
-      publicKey?: string; 
-    },
+    deviceInfo: object,
     teamMemberId?: string
   ): Promise<string | null> {
     try {

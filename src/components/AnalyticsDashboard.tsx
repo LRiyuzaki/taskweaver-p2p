@@ -15,10 +15,22 @@ import {
   Users, 
   AlertCircle, 
   Calendar, 
-  BarChart2
+  BarChart2,
+  Calendar as CalendarIcon,
+  User,
+  ClipboardList
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
 
 export const AnalyticsDashboard = () => {
   const { tasks } = useTaskContext();
@@ -54,12 +66,14 @@ export const AnalyticsDashboard = () => {
   const statusCounts = {
     todo: tasks.filter(task => task.status === 'todo').length,
     inProgress: tasks.filter(task => task.status === 'inProgress').length,
+    review: tasks.filter(task => task.status === 'review').length,
     done: tasks.filter(task => task.status === 'done').length,
   };
   
   const statusChartData = [
     { name: 'To Do', value: statusCounts.todo, color: '#f97316' },
     { name: 'In Progress', value: statusCounts.inProgress, color: '#3b82f6' },
+    { name: 'Review', value: statusCounts.review, color: '#eab308' },
     { name: 'Completed', value: statusCounts.done, color: '#10b981' },
   ];
   
@@ -108,6 +122,19 @@ export const AnalyticsDashboard = () => {
     month.completed = Math.floor(Math.random() * 15) + 5;
     month.added = Math.floor(Math.random() * 20) + 10;
   }
+
+  // Get recent tasks with full details for the task list
+  const recentCompletedTasks = tasks
+    .filter(task => task.status === 'done')
+    .sort((a, b) => new Date(b.completedDate || 0).getTime() - new Date(a.completedDate || 0).getTime())
+    .slice(0, 5);
+  
+  const formatTimeSpent = (minutes?: number): string => {
+    if (!minutes) return "0h";
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
+  };
   
   return (
     <div className="space-y-6">
@@ -213,6 +240,63 @@ export const AnalyticsDashboard = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* New Section: Recently Completed Tasks with details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" /> 
+            Recently Completed Tasks
+          </CardTitle>
+          <CardDescription>
+            Details of recently completed tasks including client, service, time taken and more
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task Title</TableHead>
+                  <TableHead>Client Name</TableHead>
+                  <TableHead>Service Type</TableHead>
+                  <TableHead>Date Started</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Time Taken</TableHead>
+                  <TableHead>Comments</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentCompletedTasks.length > 0 ? (
+                  recentCompletedTasks.map(task => (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-medium">{task.title}</TableCell>
+                      <TableCell>{task.clientName || 'N/A'}</TableCell>
+                      <TableCell>
+                        {task.serviceName || (task.tags.length > 0 ? task.tags[0] : 'N/A')}
+                      </TableCell>
+                      <TableCell>
+                        {task.startedAt ? format(new Date(task.startedAt), 'MMM dd, yyyy') : 'N/A'}
+                      </TableCell>
+                      <TableCell>{task.assigneeName || 'Unassigned'}</TableCell>
+                      <TableCell>{formatTimeSpent(task.timeSpentMinutes)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {task.comments || 'No comments'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                      No completed tasks found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>
