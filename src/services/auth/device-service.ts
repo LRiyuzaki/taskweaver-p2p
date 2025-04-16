@@ -1,18 +1,19 @@
-
 import { DeviceRegistration, DatabaseDevice, mapDatabaseDeviceToDeviceRegistration } from '@/types/p2p-auth';
 import { makeRpcRequest } from './api-helpers';
 import { API_ENDPOINTS } from './constants';
 import { toast } from '@/hooks/use-toast-extensions';
 
+interface SimpleDeviceInfo {
+  deviceId: string;
+  deviceName?: string | undefined;
+  deviceType?: string | undefined;
+  publicKey?: string | undefined;
+}
+
 export const deviceService = {
   async registerDevice(
     teamMemberId: string,
-    deviceInfo: {
-      deviceId: string;
-      deviceName?: string;
-      deviceType?: string;
-      publicKey?: string;
-    }
+    deviceInfo: SimpleDeviceInfo
   ): Promise<string | null> {
     try {
       // Use explicit type annotation for the response
