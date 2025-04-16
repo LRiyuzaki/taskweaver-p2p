@@ -4,12 +4,12 @@ import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistra
 import { toast } from '@/hooks/use-toast-extensions';
 import { deviceService } from './device-service';
 
-// Define a specific type for device info to avoid deep type instantiation
+// Define a concrete type for device info to avoid deep type instantiation
 interface DeviceInfo {
   deviceId: string;
-  deviceName?: string;
-  deviceType?: string;
-  publicKey?: string;
+  deviceName?: string | undefined;
+  deviceType?: string | undefined;
+  publicKey?: string | undefined;
 }
 
 export const p2pAuthService = {
@@ -58,7 +58,7 @@ export const p2pAuthService = {
   
   // Use the explicitly defined DeviceInfo type
   async registerDevice(
-    teamMemberId: string | undefined,
+    teamMemberId: string | undefined, 
     deviceInfo: DeviceInfo
   ): Promise<string | null> {
     try {
@@ -86,8 +86,13 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Call device service with properly typed parameter
-      return await deviceService.registerDevice(finalTeamMemberId, deviceInfo);
+      // Pass the device info object with explicit casting if needed
+      return await deviceService.registerDevice(finalTeamMemberId, {
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName,
+        deviceType: deviceInfo.deviceType,
+        publicKey: deviceInfo.publicKey
+      });
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');

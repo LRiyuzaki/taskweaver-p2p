@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -5,6 +6,7 @@ import { p2pAuthService } from '@/services/auth/p2pAuthService';
 import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
+// Explicit device info interface matching p2pAuthService
 interface DeviceInfo {
   deviceId: string;
   deviceName?: string;
@@ -139,12 +141,14 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
+  // Fix the registerDevice function to pass the correct type
   const registerDevice = async (deviceInfo: DeviceInfo): Promise<string | null> => {
     if (!teamMember) {
       toast.error('You must be logged in to register a device');
       return null;
     }
     
+    // Pass deviceInfo as a proper object with the deviceId property
     const deviceId = await p2pAuthService.registerDevice(teamMember.id, deviceInfo);
     
     if (deviceId) {

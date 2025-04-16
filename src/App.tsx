@@ -8,6 +8,7 @@ import { ClientProvider } from './contexts/ClientContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatabaseProvider } from './contexts/DatabaseContext';
 import { P2PProvider } from './contexts/P2PContext';
+import { P2PAuthProvider } from './contexts/P2PAuthContext';
 import { useEffect } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
 
@@ -32,10 +33,12 @@ function App() {
         <TaskProvider>
           <ClientProvider>
             <DatabaseProvider>
-              <P2PProvider>
-                <RouterProvider router={router} />
-                <Toaster />
-              </P2PProvider>
+              <P2PAuthProvider>
+                <P2PProvider>
+                  <RouterProvider router={router} />
+                  <Toaster />
+                </P2PProvider>
+              </P2PAuthProvider>
             </DatabaseProvider>
           </ClientProvider>
         </TaskProvider>
