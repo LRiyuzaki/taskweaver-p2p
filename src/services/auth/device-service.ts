@@ -15,8 +15,8 @@ export const deviceService = {
     }
   ): Promise<string | null> {
     try {
-      // Type annotate the makeRpcRequest explicitly to avoid deep type inference
-      await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.INSERT_DEVICE, {
+      // Use explicit type annotation for the response
+      const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.INSERT_DEVICE, {
         body: {
           p_team_member_id: teamMemberId,
           p_device_id: deviceInfo.deviceId,
@@ -26,8 +26,13 @@ export const deviceService = {
         }
       });
       
-      toast.success(`Device ${deviceInfo.deviceName || deviceInfo.deviceId} registered successfully`);
-      return deviceInfo.deviceId;
+      // Check response for validation if needed
+      if (response && response.success) {
+        toast.success(`Device ${deviceInfo.deviceName || deviceInfo.deviceId} registered successfully`);
+        return deviceInfo.deviceId;
+      } else {
+        throw new Error('Device registration failed');
+      }
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
@@ -37,16 +42,20 @@ export const deviceService = {
 
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      // Type annotate the makeRpcRequest explicitly
-      await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
+      // Use explicit type annotation for the response
+      const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
         body: {
           p_device_id: deviceId,
           p_trusted: trusted
         }
       });
       
-      toast.success(`Device trust status updated to ${trusted ? 'trusted' : 'untrusted'}`);
-      return true;
+      if (response && response.success) {
+        toast.success(`Device trust status updated to ${trusted ? 'trusted' : 'untrusted'}`);
+        return true;
+      } else {
+        throw new Error('Failed to update device trust status');
+      }
     } catch (error) {
       console.error('Error updating device trust status:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update device trust status');
@@ -56,7 +65,7 @@ export const deviceService = {
 
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      // Explicitly define the response type to avoid type recursion
+      // Use explicit type annotation for the database response
       const data = await makeRpcRequest<DatabaseDevice[]>(API_ENDPOINTS.GET_DEVICES, {
         body: {
           p_team_member_id: teamMemberId

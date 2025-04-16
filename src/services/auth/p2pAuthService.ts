@@ -48,7 +48,7 @@ export const p2pAuthService = {
     }
   },
   
-  // Use a simple object type for deviceInfo to avoid complex type instantiation
+  // Define a simple device info interface to avoid complex type instantiation
   async registerDevice(
     deviceInfo: {
       deviceId: string;
@@ -60,13 +60,14 @@ export const p2pAuthService = {
   ): Promise<string | null> {
     try {
       if (!teamMemberId) {
+        // Get current user
         const { data } = await supabase.auth.getUser();
         
         if (!data?.user) {
           throw new Error('User not authenticated');
         }
         
-        // Use simpler query with maybeSingle() to avoid type complexity
+        // Find team member associated with user
         const { data: teamMember } = await supabase
           .from('team_members')
           .select('id')
@@ -80,9 +81,13 @@ export const p2pAuthService = {
         teamMemberId = teamMember.id;
       }
       
-      // Use explicit await to break potential type dependency chain
-      const result: string | null = await deviceService.registerDevice(teamMemberId, deviceInfo);
-      return result;
+      // Call device service with explicit return type to break type recursion
+      return deviceService.registerDevice(teamMemberId, {
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName,
+        deviceType: deviceInfo.deviceType,
+        publicKey: deviceInfo.publicKey
+      });
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
