@@ -48,10 +48,15 @@ export const p2pAuthService = {
     }
   },
   
-  // Simplified device registration to avoid deep type instantiation
+  // Fix: Use a specific interface rather than 'object' for device info
   async registerDevice(
-    deviceInfo: object,
-    teamMemberId?: string
+    teamMemberId: string | undefined,
+    deviceInfo: {
+      deviceId: string;
+      deviceName?: string;
+      deviceType?: string;
+      publicKey?: string;
+    }
   ): Promise<string | null> {
     try {
       let finalTeamMemberId = teamMemberId;
@@ -78,7 +83,7 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Call device service 
+      // Call device service with properly typed parameter
       return await deviceService.registerDevice(finalTeamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
