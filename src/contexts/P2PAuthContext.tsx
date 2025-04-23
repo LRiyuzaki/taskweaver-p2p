@@ -6,12 +6,13 @@ import { p2pAuthService } from '@/services/auth/p2pAuthService';
 import { TeamMemberWithDevices, DeviceRegistration, TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
-interface DeviceInfo {
+// Simple device info type that matches p2pAuthService
+type SimpleDeviceInfo = {
   deviceId: string;
   deviceName?: string;
   deviceType?: string;
   publicKey?: string;
-}
+};
 
 interface P2PAuthContextType {
   user: User | null;
@@ -21,7 +22,7 @@ interface P2PAuthContextType {
   devices: DeviceRegistration[];
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  registerDevice: (deviceInfo: DeviceInfo) => Promise<string | null>;
+  registerDevice: (deviceInfo: SimpleDeviceInfo) => Promise<string | null>;
   updateDeviceTrustStatus: (deviceId: string, trusted: boolean) => Promise<boolean>;
   hasRole: (role: TeamMemberRole) => boolean;
 }
@@ -140,13 +141,13 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
   
-  const registerDevice = async (deviceInfo: DeviceInfo): Promise<string | null> => {
+  const registerDevice = async (deviceInfo: SimpleDeviceInfo): Promise<string | null> => {
     if (!teamMember) {
       toast.error('You must be logged in to register a device');
       return null;
     }
     
-    // Pass a simple object with basic properties to avoid type inference issues
+    // Pass a simple object with basic properties
     const result = await p2pAuthService.registerDevice(
       teamMember.id, 
       {

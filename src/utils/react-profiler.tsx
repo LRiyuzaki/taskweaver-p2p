@@ -1,5 +1,5 @@
 
-import React, { ProfilerOnRenderCallback, Profiler, useRef } from 'react';
+import React, { ProfilerOnRenderCallback, Profiler, useRef, useEffect } from 'react';
 
 interface ProfilerProps {
   id: string;

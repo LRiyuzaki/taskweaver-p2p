@@ -4,13 +4,13 @@ import { makeRpcRequest } from './api-helpers';
 import { API_ENDPOINTS } from './constants';
 import { toast } from '@/hooks/use-toast-extensions';
 
-// Use a simple interface definition to avoid complex type inference
-interface SimpleDeviceInfo {
+// Simple device info type
+type SimpleDeviceInfo = {
   deviceId: string;
-  deviceName?: string;
-  deviceType?: string;
-  publicKey?: string;
-}
+  deviceName?: string | undefined;
+  deviceType?: string | undefined;
+  publicKey?: string | undefined;
+};
 
 export const deviceService = {
   async registerDevice(
@@ -43,14 +43,13 @@ export const deviceService = {
     }
   },
 
-  // Update method to accept boolean instead of string
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
       // Use explicit type annotation for the response
       const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
         body: {
           p_device_id: deviceId,
-          p_trusted: trusted // This now correctly passes a boolean
+          p_trusted: trusted
         }
       });
       

@@ -4,13 +4,13 @@ import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistra
 import { toast } from '@/hooks/use-toast-extensions';
 import { deviceService } from './device-service';
 
-// Define a concrete type for device info
-interface DeviceInfo {
+// Define a simple device info type
+type SimpleDeviceInfo = {
   deviceId: string;
-  deviceName?: string;
-  deviceType?: string;
-  publicKey?: string;
-}
+  deviceName?: string | undefined;
+  deviceType?: string | undefined;
+  publicKey?: string | undefined;
+};
 
 export const p2pAuthService = {
   async authenticateTeamMember(email: string, password: string): Promise<{ success: boolean; teamMember?: TeamMemberWithDevices }> {
@@ -56,10 +56,10 @@ export const p2pAuthService = {
     }
   },
   
-  // Completely rewrite the registerDevice function to avoid type instantiation issues
+  // Completely rewrite to use simpler types
   async registerDevice(
     teamMemberId: string | undefined, 
-    deviceInfo: { deviceId: string; deviceName?: string; deviceType?: string; publicKey?: string; }
+    deviceInfo: SimpleDeviceInfo
   ): Promise<string | null> {
     try {
       let finalTeamMemberId = teamMemberId;
@@ -86,16 +86,13 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Use a simple, flat object structure to avoid complex type inference
-      const deviceData = {
+      // Call device service with simplified parameters
+      return deviceService.registerDevice(finalTeamMemberId, {
         deviceId: deviceInfo.deviceId,
-        deviceName: deviceInfo.deviceName || undefined,
-        deviceType: deviceInfo.deviceType || undefined,
-        publicKey: deviceInfo.publicKey || undefined
-      };
-      
-      // Call the device service with the simplified object
-      return deviceService.registerDevice(finalTeamMemberId, deviceData);
+        deviceName: deviceInfo.deviceName,
+        deviceType: deviceInfo.deviceType,
+        publicKey: deviceInfo.publicKey
+      });
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
