@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -145,6 +146,7 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return null;
     }
     
+    // Pass a simple object with basic properties to avoid type inference issues
     const result = await p2pAuthService.registerDevice(
       teamMember.id, 
       {

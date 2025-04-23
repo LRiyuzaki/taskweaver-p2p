@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistration } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
