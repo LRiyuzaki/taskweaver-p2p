@@ -1,84 +1,101 @@
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
-import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 
-import Dashboard from './pages/Dashboard';
-import TasksPage from './pages/TasksPage';
-import ClientManagementPage from './pages/ClientManagementPage';
-import ClientPage from './pages/ClientPage';
-import AdvancedSettings from './pages/AdvancedSettings';
-import TaskTemplatesPage from './pages/TaskTemplatesPage';
-import ReportsPage from './pages/ReportsPage';
-import HelpPage from './pages/HelpPage';
-import Database from './pages/Database';
-import Settings from './pages/Settings';
-import BulkTaskCreationPage from './pages/BulkTaskCreationPage';
-import ClientManagement from './pages/ClientManagement';
-import ReportListPage from './pages/ReportListPage';
+// Lazy load components to improve initial loading performance
+const Index = lazy(() => import('./pages/Index'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const TasksPage = lazy(() => import('./pages/TasksPage'));
+const ClientManagementPage = lazy(() => import('./pages/ClientManagementPage'));
+const ClientPage = lazy(() => import('./pages/ClientPage'));
+const AdvancedSettings = lazy(() => import('./pages/AdvancedSettings'));
+const TaskTemplatesPage = lazy(() => import('./pages/TaskTemplatesPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
+const Database = lazy(() => import('./pages/Database'));
+const Settings = lazy(() => import('./pages/Settings'));
+const BulkTaskCreationPage = lazy(() => import('./pages/BulkTaskCreationPage'));
+const ClientManagement = lazy(() => import('./pages/ClientManagement'));
+const ReportListPage = lazy(() => import('./pages/ReportListPage'));
+
+// Loading fallback for routes
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Wrap lazy components with Suspense
+const withSuspense = (Component: React.LazyExoticComponent<any>) => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <Component />
+    </Suspense>
+  );
+};
 
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <Index />,
+    element: withSuspense(Index),
     errorElement: <NotFound />,
   },
   {
     path: '/dashboard',
-    element: <Dashboard />,
+    element: withSuspense(Dashboard),
   },
   {
     path: '/tasks',
-    element: <TasksPage />,
+    element: withSuspense(TasksPage),
   },
   {
     path: '/task-templates',
-    element: <TaskTemplatesPage />,
+    element: withSuspense(TaskTemplatesPage),
   },
   {
     path: '/client-management',
-    element: <ClientManagementPage />,
+    element: withSuspense(ClientManagementPage),
   },
   {
     path: '/client/:clientId',
-    element: <ClientPage />,
+    element: withSuspense(ClientPage),
   },
   {
     path: '/advanced-settings',
-    element: <AdvancedSettings />,
+    element: withSuspense(AdvancedSettings),
   },
   {
     path: '/help',
-    element: <HelpPage />,
+    element: withSuspense(HelpPage),
   },
   {
     path: '/reports',
-    element: <ReportsPage />,
+    element: withSuspense(ReportsPage),
   },
   {
     path: '/reports-list',
-    element: <ReportListPage />,
+    element: withSuspense(ReportListPage),
   },
   {
     path: '/database',
-    element: <Database />,
+    element: withSuspense(Database),
   },
   {
     path: '/task-column',
-    element: <TasksPage />, /* Redirecting to TasksPage instead of non-existent TaskColumn */
+    element: withSuspense(TasksPage), /* Redirecting to TasksPage instead of non-existent TaskColumn */
   },
   {
     path: '/settings',
-    element: <Settings />,
+    element: withSuspense(Settings),
   },
   {
     path: '/bulk-task-creation',
-    element: <BulkTaskCreationPage />,
+    element: withSuspense(BulkTaskCreationPage),
   },
   {
     path: '/client-management-db',
-    element: <ClientManagement />,
+    element: withSuspense(ClientManagement),
   }
 ];
 

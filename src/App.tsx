@@ -9,8 +9,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DatabaseProvider } from './contexts/DatabaseContext';
 import { P2PProvider } from './contexts/P2PContext';
 import { P2PAuthProvider } from './contexts/P2PAuthContext';
-import { useEffect } from 'react';
+import { PerformanceProvider } from './contexts/PerformanceContext';
+import { useEffect, lazy, Suspense } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
+
+// Create custom loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
 
 function App() {
   const queryClient = new QueryClient({
@@ -29,20 +37,24 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-        <TaskProvider>
-          <ClientProvider>
-            <DatabaseProvider>
-              <P2PAuthProvider>
-                <P2PProvider>
-                  <RouterProvider router={router} />
-                  <Toaster />
-                </P2PProvider>
-              </P2PAuthProvider>
-            </DatabaseProvider>
-          </ClientProvider>
-        </TaskProvider>
-      </ThemeProvider>
+      <PerformanceProvider>
+        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+          <TaskProvider>
+            <ClientProvider>
+              <DatabaseProvider>
+                <P2PAuthProvider>
+                  <P2PProvider>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <RouterProvider router={router} />
+                    </Suspense>
+                    <Toaster />
+                  </P2PProvider>
+                </P2PAuthProvider>
+              </DatabaseProvider>
+            </ClientProvider>
+          </TaskProvider>
+        </ThemeProvider>
+      </PerformanceProvider>
     </QueryClientProvider>
   );
 }

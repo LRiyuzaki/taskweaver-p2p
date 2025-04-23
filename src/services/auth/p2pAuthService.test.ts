@@ -18,7 +18,7 @@ vi.mock('@/integrations/supabase/client', () => ({
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(() => ({ data: { id: 'tm1', email: 'a@b.com', name: 'ABC', role: 'admin', status: 'active' }, error: null }),
+          single: vi.fn(() => ({ data: { id: 'tm1', email: 'a@b.com', name: 'ABC', role: 'admin', status: 'active' }, error: null }))
         }))
       })),
       update: vi.fn(() => ({
