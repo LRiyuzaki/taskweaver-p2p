@@ -7,9 +7,9 @@ import { deviceService } from './device-service';
 // Define a simple device info type
 type SimpleDeviceInfo = {
   deviceId: string;
-  deviceName?: string | undefined;
-  deviceType?: string | undefined;
-  publicKey?: string | undefined;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
 };
 
 export const p2pAuthService = {
@@ -56,7 +56,6 @@ export const p2pAuthService = {
     }
   },
   
-  // Completely rewrite to use simpler types
   async registerDevice(
     teamMemberId: string | undefined, 
     deviceInfo: SimpleDeviceInfo
@@ -86,7 +85,7 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Call device service with simplified parameters
+      // Call device service with the simplified device info
       return deviceService.registerDevice(finalTeamMemberId, {
         deviceId: deviceInfo.deviceId,
         deviceName: deviceInfo.deviceName,

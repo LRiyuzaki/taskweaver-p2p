@@ -7,9 +7,9 @@ import { toast } from '@/hooks/use-toast-extensions';
 // Simple device info type
 type SimpleDeviceInfo = {
   deviceId: string;
-  deviceName?: string | undefined;
-  deviceType?: string | undefined;
-  publicKey?: string | undefined;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
 };
 
 export const deviceService = {
