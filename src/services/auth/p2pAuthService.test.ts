@@ -24,16 +24,13 @@ vi.mock('@/integrations/supabase/client', () => ({
       })),
       update: vi.fn(() => ({
         eq: vi.fn(() => ({}))
+      })),
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => ({ data: { device_id: 'dev1' }, error: null }))
+        }))
       }))
     }))
-  }
-}));
-
-vi.mock('./device-service', () => ({
-  deviceService: {
-    getTeamMemberDevices: vi.fn(() => Promise.resolve([{ deviceId: 'dev1', deviceName: 'X', trusted: true }])),
-    registerDevice: vi.fn(() => Promise.resolve('dev1')),
-    updateDeviceTrustStatus: vi.fn(() => Promise.resolve(true))
   }
 }));
 
@@ -67,8 +64,18 @@ describe('p2pAuthService', () => {
   });
 
   it('should get team member devices', async () => {
+    // Mock supabase.from().select().eq() response for team_member_devices
+    vi.mocked(supabase.from).mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          data: [{ id: 'd1', team_member_id: 'tm1', device_id: 'dev1', device_name: 'X', trusted: true }],
+          error: null
+        })
+      })
+    } as any);
+    
     const devices = await p2pAuthService.getTeamMemberDevices('tm1');
-    expect(devices).not.toHaveLength(0);
+    expect(devices).toHaveLength(1);
     expect(devices[0].deviceId).toBe('dev1');
   });
 
