@@ -9,8 +9,18 @@
 // Check if we're in a browser environment
 const isBrowserEnv = typeof window !== 'undefined';
 
+// Define base environment configuration type
+interface EnvironmentConfig {
+  apiUrl: string;
+  isDevelopment: boolean;
+  isProduction: boolean;
+  isTest: boolean;
+  logLevel: string;
+  isBrowser: boolean;
+}
+
 // Default environment values when not in production
-const defaultConfig = {
+const defaultConfig: EnvironmentConfig = {
   apiUrl: 'https://wweihgiklnxetpqcpyyf.supabase.co',
   isDevelopment: true,
   isProduction: false,
@@ -20,7 +30,7 @@ const defaultConfig = {
 };
 
 // Production environment configuration
-const productionConfig = {
+const productionConfig: EnvironmentConfig = {
   ...defaultConfig,
   isDevelopment: false,
   isProduction: true,
@@ -28,7 +38,7 @@ const productionConfig = {
 };
 
 // Test environment configuration
-const testConfig = {
+const testConfig: EnvironmentConfig = {
   ...defaultConfig,
   isDevelopment: false,
   isTest: true,
@@ -36,7 +46,7 @@ const testConfig = {
 };
 
 // Determine which environment we're in
-const getEnvironment = () => {
+const getEnvironment = (): EnvironmentConfig => {
   const mode = import.meta.env.MODE || 'development';
   
   switch (mode) {
