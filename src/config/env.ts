@@ -6,6 +6,9 @@
  * consistent validation and access throughout the application.
  */
 
+// Check if we're in a browser environment
+const isBrowserEnv = typeof window !== 'undefined';
+
 // Default environment values when not in production
 const defaultConfig = {
   apiUrl: 'https://wweihgiklnxetpqcpyyf.supabase.co',
@@ -13,6 +16,7 @@ const defaultConfig = {
   isProduction: false,
   isTest: false,
   logLevel: 'debug',
+  isBrowser: isBrowserEnv,
 };
 
 // Production environment configuration
@@ -48,5 +52,5 @@ const getEnvironment = () => {
 // Export the configuration based on current environment
 export const env = getEnvironment();
 
-// Helper function to check if we're in a browser environment
-export const isBrowser = typeof window !== 'undefined';
+// Helper function to check if we're in a browser environment - Exported for backwards compatibility
+export const isBrowser = isBrowserEnv;
