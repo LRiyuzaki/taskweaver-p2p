@@ -3,35 +3,37 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { p2pAuthService } from './p2pAuthService';
 
 // Mock the dependencies used in the service
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: vi.fn(() => ({
-        data: { user: { id: 'u1' } },
-        error: null,
-      })),
-      getUser: vi.fn(() => ({
-        data: { user: { id: 'u1', email: 'a@b.com' } }
-      })),
-      signOut: vi.fn(() => ({ error: null }))
-    },
-    from: vi.fn(() => ({
+const mockSupabase = {
+  auth: {
+    signInWithPassword: vi.fn(() => ({
+      data: { user: { id: 'u1' } },
+      error: null,
+    })),
+    getUser: vi.fn(() => ({
+      data: { user: { id: 'u1', email: 'a@b.com' } }
+    })),
+    signOut: vi.fn(() => ({ error: null }))
+  },
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: vi.fn(() => ({ data: { id: 'tm1', email: 'a@b.com', name: 'ABC', role: 'admin', status: 'active' }, error: null })),
+        maybeSingle: vi.fn(() => ({ data: { id: 'tm1' } }))
+      }))
+    })),
+    update: vi.fn(() => ({
+      eq: vi.fn(() => ({}))
+    })),
+    insert: vi.fn(() => ({
       select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => ({ data: { id: 'tm1', email: 'a@b.com', name: 'ABC', role: 'admin', status: 'active' }, error: null })),
-          maybeSingle: vi.fn(() => ({ data: { id: 'tm1' } }))
-        }))
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({}))
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({ data: { peer_id: 'dev1' }, error: null }))
-        }))
+        single: vi.fn(() => ({ data: { peer_id: 'dev1' }, error: null }))
       }))
     }))
-  }
+  }))
+};
+
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: mockSupabase
 }));
 
 vi.mock('@/hooks/use-toast-extensions', () => ({
@@ -64,8 +66,8 @@ describe('p2pAuthService', () => {
   });
 
   it('should get team member devices', async () => {
-    // Mock the response for sync_peers
-    vi.mocked(supabase.from).mockReturnValueOnce({
+    // Use the mockSupabase variable directly instead of the global supabase
+    mockSupabase.from.mockReturnValueOnce({
       select: vi.fn().mockReturnValue({
         data: [{ id: 'd1', peer_id: 'dev1', name: 'X', device_type: 'desktop', last_seen: new Date().toISOString(), status: 'connected' }],
         error: null
