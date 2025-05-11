@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -7,7 +8,7 @@ import { UserNav } from "@/components/UserNav";
 const navLinkClass = "text-sm font-medium transition-colors hover:text-primary";
 const activeClass = "text-primary";
 
-const Header = () => {
+export function Header() {
   const location = useLocation();
   
   return (
@@ -34,6 +35,6 @@ const Header = () => {
       </div>
     </header>
   );
-};
+}
 
 export default Header;
