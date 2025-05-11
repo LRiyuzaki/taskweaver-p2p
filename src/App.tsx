@@ -12,6 +12,8 @@ import { P2PAuthProvider } from './contexts/P2PAuthContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
 import { useEffect, lazy, Suspense } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
+import { performanceService } from './services/monitoring/performance-service';
+import { env } from './config/env';
 
 // Create custom loading component
 const LoadingFallback = () => (
@@ -29,6 +31,20 @@ function App() {
       }
     }
   });
+  
+  // Initialize performance monitoring
+  useEffect(() => {
+    performanceService.init();
+    
+    if (env.isDevelopment) {
+      console.log(`Application initialized in ${env.isDevelopment ? 'development' : 'production'} mode`);
+      console.log(`Connected to Supabase project: ${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}`);
+    }
+    
+    return () => {
+      performanceService.dispose();
+    };
+  }, []);
   
   // Initialize app with seed data if needed
   useEffect(() => {
