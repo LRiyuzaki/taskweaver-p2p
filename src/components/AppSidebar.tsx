@@ -73,7 +73,7 @@ export function AppSidebar() {
                   onClick={() => navigate('/accounting')}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  <span>Practice Management</span>
+                  <span>Case Management</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 

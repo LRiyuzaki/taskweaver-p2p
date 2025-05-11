@@ -44,7 +44,7 @@ export default function AppSidebarLinks() {
       </LinkItem>
 
       <LinkItem to="/tasks" icon={<ClipboardList className="h-4 w-4" />}>
-        Tasks
+        Case Management
       </LinkItem>
 
       <LinkItem to="/task-templates" icon={<PlusSquare className="h-4 w-4" />}>
