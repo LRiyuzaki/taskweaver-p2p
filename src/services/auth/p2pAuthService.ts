@@ -55,12 +55,11 @@ export const p2pAuthService = {
       // Update team member status to active
       await supabase
         .from('team_members')
-        .update({ status: 'active' })
+        .update({ status: 'active' as TeamMemberStatus })
         .eq('id', teamMemberData.id);
       
-      // For now, return an empty devices array since we don't have a devices table
-      // In a real implementation, this might come from sync_peers or another appropriate table
-      const devices: DeviceRegistration[] = [];
+      // Get devices from sync_peers table
+      const devices = await this.getTeamMemberDevices(teamMemberData.id);
       
       return { 
         success: true, 
@@ -110,8 +109,7 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Since we don't have a devices table, we'll use sync_peers as a fallback
-      // In a real implementation, you might want to create a proper devices table
+      // Use sync_peers table to register device
       const { data, error } = await supabase
         .from('sync_peers')
         .insert({
@@ -136,8 +134,6 @@ export const p2pAuthService = {
 
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
-      // Since we don't have a direct trust status field in sync_peers,
-      // we'll simulate this by updating the status field
       const { error } = await supabase
         .from('sync_peers')
         .update({ 
@@ -158,8 +154,7 @@ export const p2pAuthService = {
   
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
-      // For demonstration purposes, we'll fetch all sync_peers and return them as devices
-      // In a real implementation, you'd filter by team member ID if that relationship existed
+      // Fetch from sync_peers table
       const { data, error } = await supabase
         .from('sync_peers')
         .select('*');

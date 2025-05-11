@@ -72,7 +72,7 @@ describe('p2pAuthService', () => {
         data: [{ id: 'd1', peer_id: 'dev1', name: 'X', device_type: 'desktop', last_seen: new Date().toISOString(), status: 'connected' }],
         error: null
       })
-    } as any);
+    });
     
     const devices = await p2pAuthService.getTeamMemberDevices('tm1');
     expect(devices).toHaveLength(1);
