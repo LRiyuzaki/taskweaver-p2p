@@ -66,13 +66,17 @@ describe('p2pAuthService', () => {
   });
 
   it('should get team member devices', async () => {
-    // Use the mockSupabase variable directly instead of the global supabase
-    mockSupabase.from.mockReturnValueOnce({
+    // Create a complete mock that matches the expected structure
+    const mockFromReturn = {
       select: vi.fn().mockReturnValue({
         data: [{ id: 'd1', peer_id: 'dev1', name: 'X', device_type: 'desktop', last_seen: new Date().toISOString(), status: 'connected' }],
         error: null
-      })
-    });
+      }),
+      update: vi.fn(),
+      insert: vi.fn()
+    };
+    
+    mockSupabase.from.mockReturnValueOnce(mockFromReturn);
     
     const devices = await p2pAuthService.getTeamMemberDevices('tm1');
     expect(devices).toHaveLength(1);
