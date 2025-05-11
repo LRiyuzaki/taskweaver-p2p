@@ -1,3 +1,4 @@
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { p2pAuthService } from './p2pAuthService';
 
@@ -47,25 +48,30 @@ describe('p2pAuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
   it('should authenticate a team member and return their data', async () => {
     const result = await p2pAuthService.authenticateTeamMember('a@b.com', 'pass');
     expect(result.success).toBe(true);
     expect(result.teamMember).toBeDefined();
     expect(result.teamMember?.email).toBe('a@b.com');
   });
+
   it('should return a device id after device registration', async () => {
     const devId = await p2pAuthService.registerDevice('tm1', { deviceId: 'dev1', deviceName: 'X' });
     expect(devId).toBe('dev1');
   });
+
   it('should update device trust status', async () => {
     const result = await p2pAuthService.updateDeviceTrustStatus('dev1', true);
     expect(result).toBe(true);
   });
+
   it('should get team member devices', async () => {
     const devices = await p2pAuthService.getTeamMemberDevices('tm1');
     expect(devices).not.toHaveLength(0);
     expect(devices[0].deviceId).toBe('dev1');
   });
+
   it('should handle logout', async () => {
     const result = await p2pAuthService.logout();
     expect(result).toBe(true);

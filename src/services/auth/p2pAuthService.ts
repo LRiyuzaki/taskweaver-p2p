@@ -4,7 +4,7 @@ import { TeamMemberRole, TeamMemberWithDevices, TeamMemberStatus, DeviceRegistra
 import { toast } from '@/hooks/use-toast-extensions';
 import { deviceService } from './device-service';
 
-// Define a simple device info type
+// Define a simple device info type with clear, non-recursive properties
 type SimpleDeviceInfo = {
   deviceId: string;
   deviceName?: string;
@@ -85,7 +85,7 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Call device service with the simplified device info
+      // Call device service with the device info
       return deviceService.registerDevice(finalTeamMemberId, deviceInfo);
     } catch (error) {
       console.error('Device registration error:', error);
