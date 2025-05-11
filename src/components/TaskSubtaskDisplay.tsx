@@ -8,8 +8,8 @@ import { useTaskContext } from '@/contexts/TaskContext';
 interface TaskSubtaskDisplayProps {
   task: Task;
   showCheckboxes?: boolean;
-  showAll?: boolean; // Added showAll prop
-  editable?: boolean; // Added editable prop
+  showAll?: boolean;
+  editable?: boolean;
 }
 
 export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({ 
@@ -55,15 +55,19 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({
         >
           {showCheckboxes && (
             <Checkbox
+              id={`subtask-${subtask.id}`}
               checked={subtask.completed}
               onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked === true)}
               className="mr-1.5 mt-0.5 h-3 w-3"
             />
           )}
           <div>
-            <span className={cn(subtask.completed && "line-through text-muted-foreground")}>
+            <label 
+              htmlFor={`subtask-${subtask.id}`}
+              className={cn("cursor-pointer", subtask.completed && "line-through text-muted-foreground")}
+            >
               {subtask.title}
-            </span>
+            </label>
             {subtask.description && (
               <p className="text-xs text-muted-foreground mt-0.5">{subtask.description}</p>
             )}

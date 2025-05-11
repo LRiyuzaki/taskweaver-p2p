@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Check, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -50,11 +50,6 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
   const totalServices = serviceTypes.length;
   const selectionProgress = totalServices > 0 ? (selectedCount / totalServices) * 100 : 0;
   
-  // Handle checkbox click to ensure it always works
-  const handleCheckboxChange = (serviceName: string, isChecked: boolean) => {
-    onServiceChange(serviceName, isChecked);
-  };
-  
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -98,17 +93,14 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                         <Checkbox
                           id={`service-${service.id}`}
                           checked={selectedServices[service.name] || false}
-                          onCheckedChange={(checked) => 
-                            handleCheckboxChange(service.name, checked === true)
-                          }
+                          onCheckedChange={(checked) => {
+                            // Only use onCheckedChange, not both this and onClick on label
+                            onServiceChange(service.name, checked === true);
+                          }}
                         />
                         <Label 
                           htmlFor={`service-${service.id}`}
                           className="cursor-pointer flex-1 text-sm"
-                          onClick={() => {
-                            // Handle label click to toggle checkbox
-                            handleCheckboxChange(service.name, !selectedServices[service.name]);
-                          }}
                         >
                           {service.name}
                         </Label>
