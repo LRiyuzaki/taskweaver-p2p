@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { TeamMemberRole, TeamMemberStatus, DeviceRegistration } from '@/types/p2p-auth';
+import { TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
 // Simple device info type without recursive references
@@ -21,6 +21,19 @@ export type TeamMember = {
   status: TeamMemberStatus;
 };
 
+// Device registration for frontend use
+export interface DeviceRegistration {
+  id?: string;
+  teamMemberId?: string;
+  deviceId: string;
+  deviceName?: string;
+  deviceType?: string;
+  publicKey?: string;
+  registeredAt?: Date;
+  lastActive?: Date;
+  trusted: boolean;
+}
+
 export const p2pAuthService = {
   async authenticateTeamMember(email: string, password: string): Promise<{ success: boolean; teamMember?: TeamMember & { devices: DeviceRegistration[] } }> {
     try {
@@ -39,32 +52,15 @@ export const p2pAuthService = {
       
       if (teamError) throw new Error(`Team member not found: ${teamError.message}`);
       
-      // Fetch devices
-      const { data: devices, error: devicesError } = await supabase
-        .from('team_member_devices')
-        .select('*')
-        .eq('team_member_id', teamMemberData.id);
-      
-      if (devicesError) throw new Error(`Failed to fetch devices: ${devicesError.message}`);
-      
-      // Map database devices to DeviceRegistration format
-      const mappedDevices: DeviceRegistration[] = devices.map(device => ({
-        id: device.id,
-        team_member_id: device.team_member_id,
-        deviceId: device.device_id,
-        deviceName: device.device_name,
-        deviceType: device.device_type,
-        publicKey: device.public_key,
-        registeredAt: device.registered_at ? new Date(device.registered_at) : undefined,
-        lastActive: device.updated_at ? new Date(device.updated_at) : undefined,
-        trusted: device.trusted
-      }));
-      
       // Update team member status to active
       await supabase
         .from('team_members')
         .update({ status: 'active' })
         .eq('id', teamMemberData.id);
+      
+      // For now, return an empty devices array since we don't have a devices table
+      // In a real implementation, this might come from sync_peers or another appropriate table
+      const devices: DeviceRegistration[] = [];
       
       return { 
         success: true, 
@@ -75,7 +71,7 @@ export const p2pAuthService = {
           name: teamMemberData.name,
           role: teamMemberData.role as TeamMemberRole,
           status: teamMemberData.status as TeamMemberStatus,
-          devices: mappedDevices
+          devices: devices
         }
       };
     } catch (error) {
@@ -104,7 +100,7 @@ export const p2pAuthService = {
         const { data: teamMember } = await supabase
           .from('team_members')
           .select('id')
-          .eq('user_id', data.user.id)
+          .eq('email', data.user.email)
           .maybeSingle();
         
         if (!teamMember) {
@@ -114,24 +110,23 @@ export const p2pAuthService = {
         finalTeamMemberId = teamMember.id;
       }
       
-      // Create device record directly in Supabase
+      // Since we don't have a devices table, we'll use sync_peers as a fallback
+      // In a real implementation, you might want to create a proper devices table
       const { data, error } = await supabase
-        .from('team_member_devices')
+        .from('sync_peers')
         .insert({
-          team_member_id: finalTeamMemberId,
-          device_id: deviceInfo.deviceId,
-          device_name: deviceInfo.deviceName,
+          peer_id: deviceInfo.deviceId,
+          name: deviceInfo.deviceName,
           device_type: deviceInfo.deviceType,
-          public_key: deviceInfo.publicKey,
-          trusted: false
+          status: 'connected'
         })
-        .select('device_id')
+        .select('peer_id')
         .single();
       
       if (error) throw new Error(`Failed to register device: ${error.message}`);
       
       toast.success('Device registered successfully');
-      return data.device_id;
+      return data.peer_id;
     } catch (error) {
       console.error('Device registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to register device');
@@ -141,10 +136,14 @@ export const p2pAuthService = {
 
   async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
     try {
+      // Since we don't have a direct trust status field in sync_peers,
+      // we'll simulate this by updating the status field
       const { error } = await supabase
-        .from('team_member_devices')
-        .update({ trusted })
-        .eq('device_id', deviceId);
+        .from('sync_peers')
+        .update({ 
+          status: trusted ? 'connected' : 'disconnected' 
+        })
+        .eq('peer_id', deviceId);
       
       if (error) throw new Error(`Failed to update device trust status: ${error.message}`);
       
@@ -159,23 +158,23 @@ export const p2pAuthService = {
   
   async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
     try {
+      // For demonstration purposes, we'll fetch all sync_peers and return them as devices
+      // In a real implementation, you'd filter by team member ID if that relationship existed
       const { data, error } = await supabase
-        .from('team_member_devices')
-        .select('*')
-        .eq('team_member_id', teamMemberId);
+        .from('sync_peers')
+        .select('*');
       
       if (error) throw new Error(`Failed to fetch devices: ${error.message}`);
       
-      return data.map(device => ({
-        id: device.id,
-        team_member_id: device.team_member_id,
-        deviceId: device.device_id,
-        deviceName: device.device_name,
-        deviceType: device.device_type,
-        publicKey: device.public_key,
-        registeredAt: device.registered_at ? new Date(device.registered_at) : undefined,
-        lastActive: device.updated_at ? new Date(device.updated_at) : undefined,
-        trusted: device.trusted
+      return data.map(peer => ({
+        id: peer.id,
+        teamMemberId: teamMemberId, // Assuming all devices belong to this team member
+        deviceId: peer.peer_id,
+        deviceName: peer.name,
+        deviceType: peer.device_type,
+        registeredAt: new Date(peer.last_seen),
+        lastActive: new Date(peer.last_seen),
+        trusted: peer.status === 'connected'
       }));
     } catch (error) {
       console.error('Error fetching team member devices:', error);

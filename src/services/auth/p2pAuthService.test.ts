@@ -11,7 +11,7 @@ vi.mock('@/integrations/supabase/client', () => ({
         error: null,
       })),
       getUser: vi.fn(() => ({
-        data: { user: { id: 'u1' } }
+        data: { user: { id: 'u1', email: 'a@b.com' } }
       })),
       signOut: vi.fn(() => ({ error: null }))
     },
@@ -27,7 +27,7 @@ vi.mock('@/integrations/supabase/client', () => ({
       })),
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => ({ data: { device_id: 'dev1' }, error: null }))
+          single: vi.fn(() => ({ data: { peer_id: 'dev1' }, error: null }))
         }))
       }))
     }))
@@ -64,13 +64,11 @@ describe('p2pAuthService', () => {
   });
 
   it('should get team member devices', async () => {
-    // Mock supabase.from().select().eq() response for team_member_devices
+    // Mock the response for sync_peers
     vi.mocked(supabase.from).mockReturnValueOnce({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          data: [{ id: 'd1', team_member_id: 'tm1', device_id: 'dev1', device_name: 'X', trusted: true }],
-          error: null
-        })
+        data: [{ id: 'd1', peer_id: 'dev1', name: 'X', device_type: 'desktop', last_seen: new Date().toISOString(), status: 'connected' }],
+        error: null
       })
     } as any);
     

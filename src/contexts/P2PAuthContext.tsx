@@ -2,8 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { p2pAuthService, DeviceInfo, TeamMember } from '@/services/auth/p2pAuthService';
-import { DeviceRegistration, TeamMemberRole } from '@/types/p2p-auth';
+import { p2pAuthService, DeviceInfo, TeamMember, DeviceRegistration } from '@/services/auth/p2pAuthService';
+import { TeamMemberRole, TeamMemberStatus } from '@/types/p2p-auth';
 import { toast } from '@/hooks/use-toast-extensions';
 
 interface AuthContextType {
@@ -49,7 +49,7 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const { data: teamMemberData } = await supabase
               .from('team_members')
               .select('*')
-              .eq('user_id', sessionData.session.user.id)
+              .eq('email', sessionData.session.user.email)
               .single();
             
             if (teamMemberData) {
@@ -61,7 +61,7 @@ export const P2PAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 email: teamMemberData.email,
                 name: teamMemberData.name,
                 role: teamMemberData.role as TeamMemberRole,
-                status: teamMemberData.status,
+                status: teamMemberData.status as TeamMemberStatus,
                 devices: devicesList
               });
               
