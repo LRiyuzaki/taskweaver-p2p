@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -112,6 +111,11 @@ const ReportListPage = () => {
     ? Math.round((tasks.filter(task => task.status === 'done').length / tasks.length) * 100)
     : 0;
 
+  // When navigating to the reports page with specific report type
+  const handleGenerateDetailedReport = (reportType: string) => {
+    navigate('/reports', { state: { initialTab: 'tasks', reportType } });
+  };
+  
   return (
     <div className="flex flex-col h-screen">
       <Header />
@@ -136,7 +140,7 @@ const ReportListPage = () => {
                 title="Task Status Report"
                 description="Overview of all tasks by status and priority"
                 icon={<FileText className="h-5 w-5" />}
-                onGenerate={() => handleGenerateReport("Task Status")}
+                onGenerate={() => handleGenerateDetailedReport("Task Status")}
                 bgClass="bg-blue-50"
               />
               

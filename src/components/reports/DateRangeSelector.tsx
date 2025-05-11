@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { 
   Select,
   SelectContent,
@@ -21,7 +20,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
 }) => {
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-sm">Time Period:</span>
+      <span className="text-sm whitespace-nowrap">Time Period:</span>
       <Select
         value={dateRange}
         onValueChange={onDateRangeChange}
