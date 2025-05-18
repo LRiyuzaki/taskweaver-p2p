@@ -21,10 +21,16 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   
   const availableServices = getAvailableServiceNames();
   
-  // Initialize selected services from client data
-  const [selectedServices, setSelectedServices] = useState<Record<string, boolean>>(
-    client.requiredServices || {}
-  );
+  // Initialize selected services from client data with proper defaults
+  const [selectedServices, setSelectedServices] = useState<Record<string, boolean>>(() => {
+    // Ensure client.requiredServices is an object and not null/undefined
+    const services = client.requiredServices || {};
+    
+    // Log the initial services
+    console.log("Initial client services:", services);
+    
+    return services;
+  });
   
   // Initialize renewal settings
   const [renewalSettings, setRenewalSettings] = useState<Record<string, {
@@ -32,21 +38,26 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     reminderDays: number;
     reminderDate?: Date;
     reminderType: 'days' | 'date';
-  }>>(
-    availableServices.reduce((acc, serviceName) => {
+  }>>(() => {
+    return availableServices.reduce((acc, serviceName) => {
       acc[serviceName] = {
         isRequired: false,
         reminderDays: 30,
         reminderType: 'days'
       };
       return acc;
-    }, {} as Record<string, any>)
-  );
+    }, {} as Record<string, any>);
+  });
   
   // Update local state when client prop changes
   useEffect(() => {
     console.log("Client requiredServices updated:", client.requiredServices);
-    setSelectedServices(client.requiredServices || {});
+    if (client.requiredServices) {
+      setSelectedServices(client.requiredServices);
+    } else {
+      // Initialize with empty object if client.requiredServices is null/undefined
+      setSelectedServices({});
+    }
   }, [client.id, client.requiredServices]);
   
   const handleServiceChange = (serviceName: string, isSelected: boolean) => {
@@ -152,6 +163,11 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
       description: "Client services have been updated successfully.",
     });
   };
+  
+  // Log selected services whenever they change
+  useEffect(() => {
+    console.log("Current selectedServices state:", selectedServices);
+  }, [selectedServices]);
   
   return (
     <div className="space-y-6">

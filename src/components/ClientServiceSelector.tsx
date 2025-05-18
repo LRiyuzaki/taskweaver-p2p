@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -57,6 +57,10 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
     onServiceChange(serviceName, checked);
   };
   
+  useEffect(() => {
+    console.log("ClientServiceSelector - Current selectedServices:", selectedServices);
+  }, [selectedServices]);
+  
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -95,23 +99,28 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                       searchTerm === '' || 
                       service.name.toLowerCase().includes(searchTerm.toLowerCase())
                     )
-                    .map((service) => (
-                      <div key={service.id} className="flex items-center space-x-2 py-1.5">
-                        <Checkbox
-                          id={`service-${service.id}`}
-                          checked={selectedServices[service.name] === true}
-                          onCheckedChange={(checked) => {
-                            handleCheckboxChange(service.name, checked === true);
-                          }}
-                        />
-                        <Label 
-                          htmlFor={`service-${service.id}`}
-                          className="cursor-pointer flex-1 text-sm"
-                        >
-                          {service.name}
-                        </Label>
-                      </div>
-                    ))}
+                    .map((service) => {
+                      // Explicitly check if the service is selected (true)
+                      const isChecked = selectedServices[service.name] === true;
+                      
+                      return (
+                        <div key={service.id} className="flex items-center space-x-2 py-1.5">
+                          <Checkbox
+                            id={`service-${service.id}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              handleCheckboxChange(service.name, checked === true);
+                            }}
+                          />
+                          <Label 
+                            htmlFor={`service-${service.id}`}
+                            className="cursor-pointer flex-1 text-sm"
+                          >
+                            {service.name}
+                          </Label>
+                        </div>
+                      );
+                    })}
                 </CardContent>
               </Card>
             </div>

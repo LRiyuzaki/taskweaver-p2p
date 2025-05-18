@@ -168,6 +168,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         .map(([serviceName]) => serviceName)
     : [];
   
+  // For debugging
+  console.log("Client requiredServices:", client.requiredServices);
+  console.log("Active services:", activeServices);
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
