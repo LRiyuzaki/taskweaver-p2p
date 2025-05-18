@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -261,7 +260,7 @@ export const RecurringTasksPanel = () => {
       
       // Filter directors
       const directorClients = activeClients.filter(client => 
-        client.entityType === 'Individual' && client.isDirector || 
+        client.isDirector || 
         (client.requiredServices && client.requiredServices['DIR-3 KYC'])
       );
       
@@ -892,7 +891,7 @@ export const RecurringTasksPanel = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <Badge variant={
-                          task.status === 'done' ? "success" : 
+                          task.status === 'done' ? "secondary" : 
                           task.status === 'inProgress' ? "default" : 
                           "outline"
                         }>
@@ -924,4 +923,3 @@ export const RecurringTasksPanel = () => {
     </div>
   );
 };
-

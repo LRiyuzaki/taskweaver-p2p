@@ -1,3 +1,4 @@
+
 import { Task } from './task';
 
 export interface Client {
@@ -65,6 +66,15 @@ export interface Client {
       q4: Date;
     };
   };
+  
+  // Additional properties for compliance and services
+  isDirector?: boolean;
+  hasIECode?: boolean;
+  hasDSC?: boolean;
+  dscStartDate?: Date;
+  hasTrademark?: boolean;
+  trademarkDate?: Date;
+  licenseDate?: Date;
 }
 
 export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks' | 'active' | 'services' | 'notes' | 'documents'> {}
