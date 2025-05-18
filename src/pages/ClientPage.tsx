@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "@/components/Header";
@@ -17,6 +18,7 @@ import { ClientServiceManager } from '@/components/ClientServiceManager';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast-extensions';
+import { supabase } from '@/integrations/supabase/client';
 
 const formatAddress = (address: any): ReactNode => {
   if (!address) return null;
@@ -37,6 +39,8 @@ const ClientPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isUpdateConfirmDialogOpen, setIsUpdateConfirmDialogOpen] = useState(false);
+  const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [updatedClientData, setUpdatedClientData] = useState<any>(null);
   
   const client = getClientById(clientId || '');
@@ -81,17 +85,26 @@ const ClientPage = () => {
     }
   };
 
-  const handleDeleteClient = () => {
-    // Delete all associated tasks first
-    const clientTasks = tasks.filter(task => task.clientId === clientId);
-    if (clientTasks.length > 0) {
-      deleteTasks(clientTasks.map(task => task.id));
+  const handleDeleteClient = async () => {
+    try {
+      // Use the helper function to delete a client and all related data
+      const { error } = await supabase.deleteClientWithRelatedData(clientId || '');
+      
+      if (error) {
+        console.error('Error deleting client:', error);
+        toast.error("Failed to delete client. Please try again.");
+        return;
+      }
+      
+      // Delete the client from local state
+      deleteClient(clientId || '');
+      
+      navigate('/client-management');
+      toast.success("Client and all associated data deleted successfully");
+    } catch (error) {
+      console.error('Error in handleDeleteClient:', error);
+      toast.error("An unexpected error occurred while deleting the client.");
     }
-    
-    // Then delete the client
-    deleteClient(clientId || '');
-    navigate('/client-management');
-    toast.success("Client and all associated data deleted successfully");
   };
   
   const handleCreateReminder = () => {
@@ -118,15 +131,26 @@ const ClientPage = () => {
     toast.success("Client data exported successfully");
   };
 
-  const getActiveServices = () => {
-    if (!client.requiredServices) return [];
-    
-    return Object.entries(client.requiredServices)
-      .filter(([_, isRequired]) => isRequired)
-      .map(([serviceName]) => serviceName);
+  const handleDeleteTask = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setIsDeleteTaskDialogOpen(true);
   };
   
-  const activeServices = getActiveServices();
+  const confirmDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTasks([taskToDelete]);
+      setTaskToDelete(null);
+      setIsDeleteTaskDialogOpen(false);
+      toast.success("Task deleted successfully");
+    }
+  };
+
+  // Only get services that are actually selected (true)
+  const activeServices = client && client.requiredServices 
+    ? Object.entries(client.requiredServices)
+        .filter(([_, isRequired]) => isRequired)
+        .map(([serviceName]) => serviceName)
+    : [];
   
   const clientTasks = tasks.filter(task => task.clientId === clientId);
   const pendingTasks = clientTasks.filter(task => task.status !== 'done').length;
@@ -297,9 +321,14 @@ const ClientPage = () => {
           <TabsContent value="tasks" className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Client Tasks</h2>
-              <Button onClick={() => navigate(`/tasks?clientId=${clientId}`)}>
-                View All Tasks
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate(`/tasks?clientId=${clientId}`)}>
+                  View All Tasks
+                </Button>
+                <Button onClick={() => navigate(`/tasks/new?clientId=${clientId}`)}>
+                  Create Task
+                </Button>
+              </div>
             </div>
             
             {clientTasks.length > 0 ? (
@@ -341,13 +370,22 @@ const ClientPage = () => {
                           </div>
                         </div>
                         
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => navigate(`/tasks/${task.id}`)}
-                        >
-                          View
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => navigate(`/tasks/${task.id}`)}
+                          >
+                            View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDeleteTask(task.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -434,6 +472,25 @@ const ClientPage = () => {
               </Button>
               <Button onClick={handleCreateReminder}>
                 Create Reminder
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isDeleteTaskDialogOpen} onOpenChange={setIsDeleteTaskDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Task</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this task? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setIsDeleteTaskDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteTask}>
+                Delete Task
               </Button>
             </DialogFooter>
           </DialogContent>

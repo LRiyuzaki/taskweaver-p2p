@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { ClientServicesTab } from './ClientServicesTab';
 import { ProgressBar } from './ui/progress-bar';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientDetailProps {
   clientId: string;
@@ -28,6 +30,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUpdateConfirmDialogOpen, setIsUpdateConfirmDialogOpen] = useState(false);
+  const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [updatedClientData, setUpdatedClientData] = useState<any>(null);
   
   const client = getClientById(clientId);
@@ -60,7 +64,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
     setIsUpdateConfirmDialogOpen(true);
   };
 
-  const confirmUpdate = () => {
+  const confirmUpdate = async () => {
     if (updatedClientData) {
       updateClient(clientId, updatedClientData);
       setIsUpdateConfirmDialogOpen(false);
@@ -72,22 +76,63 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
     }
   };
   
-  const handleDelete = () => {
-    // Delete all associated tasks first
-    const tasksToDelete = tasks.filter(task => task.clientId === clientId);
-    if (tasksToDelete.length > 0) {
-      deleteTasks(tasksToDelete.map(task => task.id));
+  const handleDelete = async () => {
+    try {
+      // Use the helper function to delete a client and all related data
+      const { error } = await supabase.deleteClientWithRelatedData(clientId);
+      
+      if (error) {
+        console.error('Error deleting client:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete client. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Delete the client from local state
+      deleteClient(clientId);
+      
+      setIsDeleteDialogOpen(false);
+      onBack();
+      toast({
+        title: "Client Deleted",
+        description: "The client and all associated data have been deleted successfully."
+      });
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while deleting the client.",
+        variant: "destructive"
+      });
     }
-    
-    // Then delete the client
-    deleteClient(clientId);
-    setIsDeleteDialogOpen(false);
-    onBack();
-    toast({
-      title: "Client Deleted",
-      description: "The client and all associated data have been deleted successfully."
-    });
   };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setIsDeleteTaskDialogOpen(true);
+  };
+  
+  const confirmDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTasks([taskToDelete]);
+      setTaskToDelete(null);
+      setIsDeleteTaskDialogOpen(false);
+      toast({
+        title: "Task Deleted",
+        description: "The task has been deleted successfully."
+      });
+    }
+  };
+  
+  // Get only the services that are actually selected (true)
+  const activeServices = client && client.requiredServices 
+    ? Object.entries(client.requiredServices)
+        .filter(([_, isRequired]) => isRequired)
+        .map(([serviceName]) => serviceName)
+    : [];
   
   return (
     <div className="space-y-6">
@@ -116,12 +161,9 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               <CardDescription>{client?.company}</CardDescription>
             </div>
             <div className="flex space-x-1">
-              {client && Object.entries(client.requiredServices)
-                .filter(([_, isRequired]) => isRequired)
-                .map(([serviceName]) => (
-                  <Badge key={serviceName}>{serviceName}</Badge>
-                ))
-              }
+              {activeServices.map(serviceName => (
+                <Badge key={serviceName}>{serviceName}</Badge>
+              ))}
             </div>
           </div>
         </CardHeader>
@@ -225,8 +267,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                   </div>
                   <ProgressBar 
                     value={taskCompletionPercent} 
-                    variant={taskCompletionPercent === 100 ? "success" : 
-                             taskCompletionPercent >= 50 ? "warning" : "default"}
+                    variant={taskCompletionPercent === 100 ? "secondary" : 
+                             taskCompletionPercent >= 50 ? "default" : "default"}
                     className="h-2"
                   />
                 </div>
@@ -313,9 +355,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                           <p className="text-sm mt-1">{task.description}</p>
                         )}
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         <Badge className={cn(
-                          "mr-2",
                           task.status === 'todo' ? "bg-slate-500" :
                           task.status === 'inProgress' ? "bg-blue-500" : 
                           "bg-green-500"
@@ -324,6 +365,13 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                            task.status === 'inProgress' ? 'In Progress' : 'Done'}
                         </Badge>
                         <Button size="sm" variant="outline">View</Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -380,7 +428,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             <DialogTitle>Delete Client</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this client? This action cannot be undone.
-              All associated tasks, documents, and data will also be deleted.
+              All associated tasks, documents, and service records will also be deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -389,6 +437,25 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete Client and All Related Data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isDeleteTaskDialogOpen} onOpenChange={setIsDeleteTaskDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteTaskDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteTask}>
+              Delete Task
             </Button>
           </DialogFooter>
         </DialogContent>
