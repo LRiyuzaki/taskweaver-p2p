@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -46,20 +46,16 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
   });
   
   // Count only services explicitly set to true
-  const selectedCount = Object.entries(selectedServices)
-    .filter(([_, isSelected]) => isSelected === true)
+  const selectedCount = Object.values(selectedServices)
+    .filter(isSelected => isSelected === true)
     .length;
+    
   const totalServices = serviceTypes.length;
   const selectionProgress = totalServices > 0 ? (selectedCount / totalServices) * 100 : 0;
   
   const handleCheckboxChange = (serviceName: string, checked: boolean) => {
-    console.log(`Service checkbox change: ${serviceName} -> ${checked}`);
     onServiceChange(serviceName, checked);
   };
-  
-  useEffect(() => {
-    console.log("ClientServiceSelector - Current selectedServices:", selectedServices);
-  }, [selectedServices]);
   
   return (
     <div className="space-y-4">
@@ -100,7 +96,7 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                       service.name.toLowerCase().includes(searchTerm.toLowerCase())
                     )
                     .map((service) => {
-                      // Explicitly check if the service is selected (true)
+                      // Explicitly check if the service is selected
                       const isChecked = selectedServices[service.name] === true;
                       
                       return (

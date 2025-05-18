@@ -21,15 +21,20 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   
   const availableServices = getAvailableServiceNames();
   
-  // Initialize selected services from client data with proper defaults
+  // Initialize selected services with proper defaults from client data
   const [selectedServices, setSelectedServices] = useState<Record<string, boolean>>(() => {
-    // Ensure client.requiredServices is an object and not null/undefined
-    const services = client.requiredServices || {};
+    // Create a default object with all services set to false
+    const defaultServices = availableServices.reduce((acc, serviceName) => {
+      acc[serviceName] = false;
+      return acc;
+    }, {} as Record<string, boolean>);
     
-    // Log the initial services
-    console.log("Initial client services:", services);
+    // Override with client's required services if they exist
+    if (client.requiredServices) {
+      return { ...defaultServices, ...client.requiredServices };
+    }
     
-    return services;
+    return defaultServices;
   });
   
   // Initialize renewal settings
@@ -51,23 +56,32 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   
   // Update local state when client prop changes
   useEffect(() => {
-    console.log("Client requiredServices updated:", client.requiredServices);
     if (client.requiredServices) {
-      setSelectedServices(client.requiredServices);
+      // Create a default object with all services set to false
+      const defaultServices = availableServices.reduce((acc, serviceName) => {
+        acc[serviceName] = false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      // Merge with client's required services
+      setSelectedServices({ ...defaultServices, ...client.requiredServices });
     } else {
-      // Initialize with empty object if client.requiredServices is null/undefined
-      setSelectedServices({});
+      // Initialize with all services set to false
+      const defaultServices = availableServices.reduce((acc, serviceName) => {
+        acc[serviceName] = false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      setSelectedServices(defaultServices);
     }
-  }, [client.id, client.requiredServices]);
+  }, [client.id, client.requiredServices, availableServices]);
   
   const handleServiceChange = (serviceName: string, isSelected: boolean) => {
-    console.log(`Service change in ClientServicesTab: ${serviceName} -> ${isSelected}`);
     setSelectedServices(prev => {
       const updated = {
         ...prev,
         [serviceName]: isSelected
       };
-      console.log("Updated selectedServices:", updated);
       return updated;
     });
   };
@@ -113,8 +127,6 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   };
   
   const handleSaveServices = () => {
-    console.log("Saving services:", selectedServices);
-    
     // Update client with selected services
     updateClient(client.id, {
       requiredServices: selectedServices
@@ -124,8 +136,6 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     const selectedServiceNames = Object.entries(selectedServices)
       .filter(([_, isSelected]) => isSelected === true)
       .map(([name]) => name);
-    
-    console.log("Selected service names:", selectedServiceNames);
     
     for (const serviceName of selectedServiceNames) {
       const renewalSetting = renewalSettings[serviceName];
@@ -163,11 +173,6 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
       description: "Client services have been updated successfully.",
     });
   };
-  
-  // Log selected services whenever they change
-  useEffect(() => {
-    console.log("Current selectedServices state:", selectedServices);
-  }, [selectedServices]);
   
   return (
     <div className="space-y-6">

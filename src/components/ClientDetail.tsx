@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,8 +77,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   
   const handleDelete = async () => {
     try {
-      // Use direct database operations to delete client and related data
-      // 1. Delete tasks
+      // Delete tasks
       const { error: tasksError } = await supabase
         .from('tasks')
         .delete()
@@ -89,7 +87,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         console.error('Error deleting client tasks:', tasksError);
       }
       
-      // 2. Delete documents
+      // Delete documents
       const { error: documentsError } = await supabase
         .from('documents')
         .delete()
@@ -99,7 +97,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         console.error('Error deleting client documents:', documentsError);
       }
       
-      // 3. Delete service relationships
+      // Delete service relationships
       const { error: servicesError } = await supabase
         .from('client_services')
         .delete()
@@ -109,7 +107,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         console.error('Error deleting client services:', servicesError);
       }
       
-      // 4. Finally delete the client
+      // Finally delete the client
       const { error: clientError } = await supabase
         .from('clients')
         .delete()
@@ -161,16 +159,12 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
     }
   };
   
-  // Get only the services that are actually selected (true)
+  // Get only the services that are explicitly marked as true
   const activeServices = client && client.requiredServices 
     ? Object.entries(client.requiredServices)
-        .filter(([_, isRequired]) => isRequired === true) // Ensure we only include services that are explicitly true
+        .filter(([_, isRequired]) => isRequired === true)
         .map(([serviceName]) => serviceName)
     : [];
-  
-  // For debugging
-  console.log("Client requiredServices:", client.requiredServices);
-  console.log("Active services:", activeServices);
   
   return (
     <div className="space-y-6">
@@ -286,7 +280,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             <div>
               <h3 className="text-sm font-medium mb-2">Services</h3>
               <div className="space-y-2">
-                {client && availableServices.map(serviceName => (
+                {availableServices.map(serviceName => (
                   <div key={serviceName} className="flex items-center text-sm">
                     {client.requiredServices && client.requiredServices[serviceName] === true ? (
                       <Check className="h-4 w-4 mr-2 text-green-600" />
