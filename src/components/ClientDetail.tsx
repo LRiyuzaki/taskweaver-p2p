@@ -23,10 +23,12 @@ interface ClientDetailProps {
 
 export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) => {
   const { getClientById, updateClient, deleteClient, getAvailableServiceNames } = useClientContext();
-  const { tasks } = useTaskContext();
+  const { tasks, deleteTasks } = useTaskContext();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUpdateConfirmDialogOpen, setIsUpdateConfirmDialogOpen] = useState(false);
+  const [updatedClientData, setUpdatedClientData] = useState<any>(null);
   
   const client = getClientById(clientId);
   const availableServices = getAvailableServiceNames();
@@ -53,21 +55,37 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
     : 0;
   
   const handleEditSubmit = (formData: any) => {
-    updateClient(clientId, formData);
+    setUpdatedClientData(formData);
     setIsEditDialogOpen(false);
-    toast({
-      title: "Client Updated",
-      description: "Client information has been updated successfully."
-    });
+    setIsUpdateConfirmDialogOpen(true);
+  };
+
+  const confirmUpdate = () => {
+    if (updatedClientData) {
+      updateClient(clientId, updatedClientData);
+      setIsUpdateConfirmDialogOpen(false);
+      setUpdatedClientData(null);
+      toast({
+        title: "Client Updated",
+        description: "Client information has been updated successfully."
+      });
+    }
   };
   
   const handleDelete = () => {
+    // Delete all associated tasks first
+    const tasksToDelete = tasks.filter(task => task.clientId === clientId);
+    if (tasksToDelete.length > 0) {
+      deleteTasks(tasksToDelete.map(task => task.id));
+    }
+    
+    // Then delete the client
     deleteClient(clientId);
     setIsDeleteDialogOpen(false);
     onBack();
     toast({
       title: "Client Deleted",
-      description: "The client has been deleted successfully."
+      description: "The client and all associated data have been deleted successfully."
     });
   };
   
@@ -337,13 +355,32 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         </DialogContent>
       </Dialog>
       
+      <Dialog open={isUpdateConfirmDialogOpen} onOpenChange={setIsUpdateConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Update</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to update this client's information?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUpdateConfirmDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmUpdate}>
+              Update Client
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Client</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this client? This action cannot be undone.
-              All associated tasks and data will also be deleted.
+              All associated tasks, documents, and data will also be deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -351,7 +388,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              Delete Client and All Related Data
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -32,10 +32,12 @@ const ClientPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const { getClientById, updateClient, deleteClient } = useClientContext();
-  const { tasks, addTask } = useTaskContext();
+  const { tasks, addTask, deleteTasks } = useTaskContext();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [isUpdateConfirmDialogOpen, setIsUpdateConfirmDialogOpen] = useState(false);
+  const [updatedClientData, setUpdatedClientData] = useState<any>(null);
   
   const client = getClientById(clientId || '');
   
@@ -65,15 +67,31 @@ const ClientPage = () => {
   }
 
   const handleEditClient = (data: any) => {
-    updateClient(clientId || '', data);
+    setUpdatedClientData(data);
     setIsEditDialogOpen(false);
-    toast.success("Client updated successfully");
+    setIsUpdateConfirmDialogOpen(true);
+  };
+
+  const confirmUpdate = () => {
+    if (updatedClientData) {
+      updateClient(clientId || '', updatedClientData);
+      setIsUpdateConfirmDialogOpen(false);
+      setUpdatedClientData(null);
+      toast.success("Client updated successfully");
+    }
   };
 
   const handleDeleteClient = () => {
+    // Delete all associated tasks first
+    const clientTasks = tasks.filter(task => task.clientId === clientId);
+    if (clientTasks.length > 0) {
+      deleteTasks(clientTasks.map(task => task.id));
+    }
+    
+    // Then delete the client
     deleteClient(clientId || '');
     navigate('/client-management');
-    toast.success("Client deleted successfully");
+    toast.success("Client and all associated data deleted successfully");
   };
   
   const handleCreateReminder = () => {
@@ -360,12 +378,32 @@ const ClientPage = () => {
           </DialogContent>
         </Dialog>
         
+        <Dialog open={isUpdateConfirmDialogOpen} onOpenChange={setIsUpdateConfirmDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Update</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to update this client's information?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setIsUpdateConfirmDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={confirmUpdate}>
+                Update Client
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete Client</DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete this client? This action cannot be undone.
+                All associated tasks, documents, and service records will also be deleted.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-4">
@@ -373,7 +411,7 @@ const ClientPage = () => {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteClient}>
-                Delete Client
+                Delete Client and All Related Data
               </Button>
             </DialogFooter>
           </DialogContent>

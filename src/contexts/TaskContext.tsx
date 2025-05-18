@@ -31,6 +31,7 @@ interface TaskContextType {
   getTasksByProject: (projectId: string) => Task[];
   getTasksByClient: (clientId: string) => Task[];
   getActivityLogs: () => Array<{date: Date, action: string, details: string}>;
+  deleteTasks: (taskIds: string[]) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -552,35 +553,44 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActivityLogs(prev => [newLog, ...prev].slice(0, 200));
   };
 
+  const deleteTasks = (taskIds: string[]) => {
+    setTasks(prevTasks => prevTasks.filter(task => !taskIds.includes(task.id)));
+  };
+
+  const value = {
+    tasks, 
+    projects, 
+    subtasks,
+    templates,
+    addTask, 
+    updateTask, 
+    deleteTask, 
+    moveTask,
+    addProject,
+    updateProject,
+    deleteProject,
+    addSubtask,
+    updateSubtask,
+    deleteSubtask,
+    getTaskProgress,
+    addTaskTemplate,
+    updateTaskTemplate,
+    deleteTaskTemplate,
+    addBulkTasks,
+    createTaskFromTemplate,
+    deleteClientTasks,
+    getTasksByMonth,
+    getTasksByProject,
+    getTasksByClient,
+    getActivityLogs,
+    deleteTasks,
+  };
+
   return (
-    <TaskContext.Provider value={{ 
-      tasks, 
-      projects, 
-      subtasks,
-      templates,
-      addTask, 
-      updateTask, 
-      deleteTask, 
-      moveTask,
-      addProject,
-      updateProject,
-      deleteProject,
-      addSubtask,
-      updateSubtask,
-      deleteSubtask,
-      getTaskProgress,
-      addTaskTemplate,
-      updateTaskTemplate,
-      deleteTaskTemplate,
-      addBulkTasks,
-      createTaskFromTemplate,
-      deleteClientTasks,
-      getTasksByMonth,
-      getTasksByProject,
-      getTasksByClient,
-      getActivityLogs
-    }}>
+    <TaskContext.Provider value={value}>
       {children}
     </TaskContext.Provider>
   );
 };
+
+export default TaskContext;
