@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { ClientServicesTab } from './ClientServicesTab';
 import { ProgressBar } from './ui/progress-bar';
 import { cn } from '@/lib/utils';
-import { supabase, deleteClientWithRelatedData } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClientDetailProps {
   clientId: string;
@@ -77,11 +78,45 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   
   const handleDelete = async () => {
     try {
-      // Use the imported helper function to delete a client and all related data
-      const { error } = await deleteClientWithRelatedData(clientId);
+      // Use direct database operations to delete client and related data
+      // 1. Delete tasks
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('client_id', clientId);
       
-      if (error) {
-        console.error('Error deleting client:', error);
+      if (tasksError) {
+        console.error('Error deleting client tasks:', tasksError);
+      }
+      
+      // 2. Delete documents
+      const { error: documentsError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (documentsError) {
+        console.error('Error deleting client documents:', documentsError);
+      }
+      
+      // 3. Delete service relationships
+      const { error: servicesError } = await supabase
+        .from('client_services')
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (servicesError) {
+        console.error('Error deleting client services:', servicesError);
+      }
+      
+      // 4. Finally delete the client
+      const { error: clientError } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+      
+      if (clientError) {
+        console.error('Error deleting client:', clientError);
         toast({
           title: "Error",
           description: "Failed to delete client. Please try again.",
@@ -270,8 +305,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                   </div>
                   <ProgressBar 
                     value={taskCompletionPercent} 
-                    variant={taskCompletionPercent === 100 ? "default" : 
-                             taskCompletionPercent >= 50 ? "default" : "default"}
+                    variant={taskCompletionPercent === 100 ? "success" : "default"}
                     className="h-2"
                   />
                 </div>

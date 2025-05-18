@@ -52,6 +52,11 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
   const totalServices = serviceTypes.length;
   const selectionProgress = totalServices > 0 ? (selectedCount / totalServices) * 100 : 0;
   
+  const handleCheckboxChange = (serviceName: string, checked: boolean) => {
+    console.log(`Service checkbox change: ${serviceName} -> ${checked}`);
+    onServiceChange(serviceName, checked);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -96,7 +101,7 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                           id={`service-${service.id}`}
                           checked={selectedServices[service.name] === true}
                           onCheckedChange={(checked) => {
-                            onServiceChange(service.name, checked === true);
+                            handleCheckboxChange(service.name, checked === true);
                           }}
                         />
                         <Label 

@@ -45,16 +45,18 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   
   // Update local state when client prop changes
   useEffect(() => {
+    console.log("Client requiredServices updated:", client.requiredServices);
     setSelectedServices(client.requiredServices || {});
   }, [client.id, client.requiredServices]);
   
   const handleServiceChange = (serviceName: string, isSelected: boolean) => {
+    console.log(`Service change in ClientServicesTab: ${serviceName} -> ${isSelected}`);
     setSelectedServices(prev => {
       const updated = {
         ...prev,
         [serviceName]: isSelected
       };
-      console.log(`Service ${serviceName} is now ${isSelected ? 'selected' : 'unselected'}`);
+      console.log("Updated selectedServices:", updated);
       return updated;
     });
   };
@@ -100,6 +102,8 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
   };
   
   const handleSaveServices = () => {
+    console.log("Saving services:", selectedServices);
+    
     // Update client with selected services
     updateClient(client.id, {
       requiredServices: selectedServices
@@ -107,8 +111,10 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     
     // Create tasks for services with renewal required
     const selectedServiceNames = Object.entries(selectedServices)
-      .filter(([_, isSelected]) => isSelected)
+      .filter(([_, isSelected]) => isSelected === true)
       .map(([name]) => name);
+    
+    console.log("Selected service names:", selectedServiceNames);
     
     for (const serviceName of selectedServiceNames) {
       const renewalSetting = renewalSettings[serviceName];
@@ -178,7 +184,7 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
             <CardContent>
               <div className="space-y-4">
                 {Object.entries(selectedServices)
-                  .filter(([_, isSelected]) => isSelected)
+                  .filter(([_, isSelected]) => isSelected === true)
                   .map(([serviceName]) => (
                     <ServiceRenewalSelector
                       key={serviceName}
@@ -194,7 +200,7 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
                     />
                   ))}
                 
-                {Object.entries(selectedServices).filter(([_, isSelected]) => isSelected).length === 0 && (
+                {Object.entries(selectedServices).filter(([_, isSelected]) => isSelected === true).length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
                     No services selected. Please select services in the "Select Services" tab first.
                   </p>
