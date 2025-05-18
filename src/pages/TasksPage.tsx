@@ -5,11 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ClipboardList, 
   Calendar as CalendarIcon, 
-  ListFilter
+  ListFilter,
+  RepeatIcon
 } from 'lucide-react';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TaskListView } from '@/components/TaskListView';
 import { TaskCalendarView } from '@/components/TaskCalendarView';
+import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 
 const TasksPage = () => {
   const [activeView, setActiveView] = useState('board');
@@ -40,6 +42,10 @@ const TasksPage = () => {
                 <CalendarIcon className="h-4 w-4" />
                 Calendar View
               </TabsTrigger>
+              <TabsTrigger value="recurring" className="flex items-center gap-1">
+                <RepeatIcon className="h-4 w-4" />
+                Recurring Tasks
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="board" className="space-y-6">
@@ -52,6 +58,10 @@ const TasksPage = () => {
 
             <TabsContent value="calendar" className="space-y-6">
               <TaskCalendarView />
+            </TabsContent>
+            
+            <TabsContent value="recurring" className="space-y-6">
+              <RecurringTasksPanel />
             </TabsContent>
           </Tabs>
         </div>
