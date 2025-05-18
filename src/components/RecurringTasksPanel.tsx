@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,9 +29,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 export const RecurringTasksPanel = () => {
-  const { tasks, updateTask, addBulkTasks } = useTaskContext();
+  const { addBulkTasks } = useTaskContext();
   const { clients } = useClientContext();
-  const recurringTasks = tasks.filter(task => task.recurrence !== 'none');
   
   const [activeTab, setActiveTab] = useState<'statutory' | 'subscriptions'>('statutory');
   
@@ -66,16 +66,6 @@ export const RecurringTasksPanel = () => {
     statutory: 7,
     subscription: 30
   });
-  
-  // Toggle for enabling/disabling recurring tasks
-  const handleToggleRecurrence = (taskId: string, enabled: boolean) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    updateTask(taskId, { 
-      recurrence: enabled ? (task.recurrence || 'monthly') : 'none' 
-    });
-  };
   
   // Generate statutory filing tasks for all eligible clients
   const handleGenerateStatutoryTasks = () => {
@@ -469,7 +459,7 @@ export const RecurringTasksPanel = () => {
         <div className="flex items-center">
           <Clock className="h-4 w-4 mr-1.5" />
           <span className="text-sm text-muted-foreground">
-            {recurringTasks.length} Active Recurrences
+            Generate recurring tasks
           </span>
         </div>
       </div>
@@ -855,71 +845,6 @@ export const RecurringTasksPanel = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      {recurringTasks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Recurring Tasks</CardTitle>
-            <CardDescription>View and manage currently active recurring tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Task</th>
-                    <th className="px-6 py-3 text-center text-sm font-medium text-muted-foreground w-32">Frequency</th>
-                    <th className="px-6 py-3 text-center text-sm font-medium text-muted-foreground w-32">Status</th>
-                    <th className="px-6 py-3 text-center text-sm font-medium text-muted-foreground w-24">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-muted bg-background">
-                  {recurringTasks.map(task => (
-                    <tr key={task.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <span className="font-medium">{task.title}</span>
-                          {task.clientName && (
-                            <div className="text-sm text-muted-foreground">{task.clientName}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Badge variant="outline" className="capitalize">
-                          {task.recurrence}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Badge variant={
-                          task.status === 'done' ? "secondary" : 
-                          task.status === 'inProgress' ? "default" : 
-                          "outline"
-                        }>
-                          {task.status === 'inProgress' ? 'In Progress' : 
-                           task.status === 'todo' ? 'To Do' :
-                           task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Switch 
-                          checked={task.recurrence !== 'none'} 
-                          onCheckedChange={(checked) => handleToggleRecurrence(task.id, checked)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {recurringTasks.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No recurring tasks configured.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
