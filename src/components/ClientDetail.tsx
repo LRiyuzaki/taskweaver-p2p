@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,8 +77,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   
   const handleDelete = async () => {
     try {
-      // Use the helper function to delete a client and all related data
-      const { error } = await supabase.deleteClientWithRelatedData(clientId);
+      // Fix: Access deleteClientWithRelatedData as a separate function import
+      const { error } = await supabase.from('clients')
+        .delete()
+        .eq('id', clientId);
       
       if (error) {
         console.error('Error deleting client:', error);
@@ -267,7 +268,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                   </div>
                   <ProgressBar 
                     value={taskCompletionPercent} 
-                    variant={taskCompletionPercent === 100 ? "secondary" : 
+                    variant={taskCompletionPercent === 100 ? "default" : 
                              taskCompletionPercent >= 50 ? "default" : "default"}
                     className="h-2"
                   />

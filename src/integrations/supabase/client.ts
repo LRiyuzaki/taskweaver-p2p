@@ -62,3 +62,6 @@ export const deleteClientWithRelatedData = async (clientId: string) => {
     return { error };
   }
 };
+
+// Extend the supabase client with our custom methods - NOT USED because it causes TypeScript errors
+// supabase.deleteClientWithRelatedData = deleteClientWithRelatedData;

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "@/components/Header";
@@ -87,11 +86,47 @@ const ClientPage = () => {
 
   const handleDeleteClient = async () => {
     try {
-      // Use the helper function to delete a client and all related data
-      const { error } = await supabase.deleteClientWithRelatedData(clientId || '');
+      // Fix: Use direct database deletion with cascading effect instead of helper function
+      // Delete related records first (in correct order to avoid foreign key constraints)
       
-      if (error) {
-        console.error('Error deleting client:', error);
+      // 1. Delete tasks
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (tasksError) {
+        console.error('Error deleting client tasks:', tasksError);
+      }
+      
+      // 2. Delete documents
+      const { error: documentsError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (documentsError) {
+        console.error('Error deleting client documents:', documentsError);
+      }
+      
+      // 3. Delete service relationships
+      const { error: servicesError } = await supabase
+        .from('client_services')
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (servicesError) {
+        console.error('Error deleting client services:', servicesError);
+      }
+      
+      // 4. Finally delete the client
+      const { error: clientError } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+      
+      if (clientError) {
+        console.error('Error deleting client:', clientError);
         toast.error("Failed to delete client. Please try again.");
         return;
       }
