@@ -15,7 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { ClientServicesTab } from './ClientServicesTab';
 import { ProgressBar } from './ui/progress-bar';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, deleteClientWithRelatedData } from '@/integrations/supabase/client';
 
 interface ClientDetailProps {
   clientId: string;
@@ -77,10 +77,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   
   const handleDelete = async () => {
     try {
-      // Fix: Access deleteClientWithRelatedData as a separate function import
-      const { error } = await supabase.from('clients')
-        .delete()
-        .eq('id', clientId);
+      // Use the imported helper function to delete a client and all related data
+      const { error } = await deleteClientWithRelatedData(clientId);
       
       if (error) {
         console.error('Error deleting client:', error);
@@ -131,7 +129,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   // Get only the services that are actually selected (true)
   const activeServices = client && client.requiredServices 
     ? Object.entries(client.requiredServices)
-        .filter(([_, isRequired]) => isRequired)
+        .filter(([_, isRequired]) => isRequired === true) // Ensure we only include services that are explicitly true
         .map(([serviceName]) => serviceName)
     : [];
   
@@ -162,9 +160,13 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               <CardDescription>{client?.company}</CardDescription>
             </div>
             <div className="flex space-x-1">
-              {activeServices.map(serviceName => (
-                <Badge key={serviceName}>{serviceName}</Badge>
-              ))}
+              {activeServices && activeServices.length > 0 ? 
+                activeServices.map(serviceName => (
+                  <Badge key={serviceName}>{serviceName}</Badge>
+                ))
+                :
+                <Badge variant="outline">No services selected</Badge>
+              }
             </div>
           </div>
         </CardHeader>
@@ -247,7 +249,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               <div className="space-y-2">
                 {client && availableServices.map(serviceName => (
                   <div key={serviceName} className="flex items-center text-sm">
-                    {client.requiredServices[serviceName] ? (
+                    {client.requiredServices && client.requiredServices[serviceName] === true ? (
                       <Check className="h-4 w-4 mr-2 text-green-600" />
                     ) : (
                       <X className="h-4 w-4 mr-2 text-muted-foreground" />

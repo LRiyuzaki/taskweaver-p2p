@@ -45,8 +45,10 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
     );
   });
   
-  // Count selected services
-  const selectedCount = Object.values(selectedServices).filter(Boolean).length;
+  // Count only services explicitly set to true
+  const selectedCount = Object.entries(selectedServices)
+    .filter(([_, isSelected]) => isSelected === true)
+    .length;
   const totalServices = serviceTypes.length;
   const selectionProgress = totalServices > 0 ? (selectedCount / totalServices) * 100 : 0;
   
@@ -92,9 +94,8 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                       <div key={service.id} className="flex items-center space-x-2 py-1.5">
                         <Checkbox
                           id={`service-${service.id}`}
-                          checked={selectedServices[service.name] || false}
+                          checked={selectedServices[service.name] === true}
                           onCheckedChange={(checked) => {
-                            // Only use onCheckedChange, not both this and onClick on label
                             onServiceChange(service.name, checked === true);
                           }}
                         />
