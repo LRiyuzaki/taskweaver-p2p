@@ -100,17 +100,11 @@ const TasksPage = () => {
             </TabsContent>
 
             <TabsContent value="list" className="space-y-6">
-              <TaskListView onTaskSelect={(taskIds) => setSelectedTasks(taskIds)} />
+              <TaskListView filterClient={undefined} />
             </TabsContent>
 
             <TabsContent value="calendar" className="space-y-6">
-              <TaskCalendarView onTaskSelect={(taskId) => {
-                if (selectedTasks.includes(taskId)) {
-                  setSelectedTasks(selectedTasks.filter(id => id !== taskId));
-                } else {
-                  setSelectedTasks([...selectedTasks, taskId]);
-                }
-              }} />
+              <TaskCalendarView onSelectedTaskIdsChange={(taskIds) => setSelectedTasks(taskIds)} />
             </TabsContent>
             
             <TabsContent value="recurring" className="space-y-6">

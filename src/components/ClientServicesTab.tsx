@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -30,15 +31,17 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     
     // Override with client's required services if they exist
     if (client.requiredServices) {
-      // Only keep services that are explicitly true
-      const trueServices = Object.entries(client.requiredServices)
-        .filter(([_, isSelected]) => isSelected === true)
-        .reduce((acc, [name, value]) => {
-          acc[name] = value;
-          return acc;
-        }, {} as Record<string, boolean>);
+      // Create a copy of defaultServices
+      const updatedServices = { ...defaultServices };
       
-      return { ...defaultServices, ...trueServices };
+      // Only update services that are explicitly true
+      Object.entries(client.requiredServices).forEach(([name, value]) => {
+        if (value === true) {
+          updatedServices[name] = true;
+        }
+      });
+      
+      return updatedServices;
     }
     
     return defaultServices;
@@ -70,15 +73,17 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
         return acc;
       }, {} as Record<string, boolean>);
       
-      // Only merge services that are explicitly true
-      const trueServices = Object.entries(client.requiredServices)
-        .filter(([_, isSelected]) => isSelected === true)
-        .reduce((acc, [name, value]) => {
-          acc[name] = value;
-          return acc;
-        }, {} as Record<string, boolean>);
+      // Create a copy of defaultServices
+      const updatedServices = { ...defaultServices };
       
-      setSelectedServices({ ...defaultServices, ...trueServices });
+      // Only update services that are explicitly true
+      Object.entries(client.requiredServices).forEach(([name, value]) => {
+        if (value === true) {
+          updatedServices[name] = true;
+        }
+      });
+      
+      setSelectedServices(updatedServices);
     } else {
       // Initialize with all services set to false
       const defaultServices = availableServices.reduce((acc, serviceName) => {

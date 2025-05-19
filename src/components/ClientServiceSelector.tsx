@@ -67,8 +67,8 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
       <ProgressBar
         value={selectionProgress}
         max={100}
-        variant={selectedCount > 0 ? "success" : "default"}
         className="h-1.5"
+        style={{ backgroundColor: selectedCount > 0 ? '#10b981' : undefined }}
       />
       
       <div className="relative">

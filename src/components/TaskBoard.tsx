@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, GripVertical, GripVerticalIcon, Plus, X } from "lucide-react";
+import { Check, ChevronsUpDown, GripVerticalIcon, Plus, X, ListFilter } from "lucide-react";
 import { useTaskContext } from '@/contexts/TaskContext';
-import { Task } from '@/types/task';
+import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -49,7 +50,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
     } else {
       setSelectedTasks([...selectedTasks, taskId]);
     }
-    onTaskSelect(selectedTasks);
   };
 
   useEffect(() => {
@@ -107,7 +107,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
       }
 
       const taskId = draggableId;
-      const newStatus = destination.droppableId;
+      const newStatus = destination.droppableId as TaskStatus;
 
       updateTask(taskId, { status: newStatus });
     },
@@ -124,8 +124,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
     const newTask = {
       title: newTaskTitle,
       description: '',
-      status: 'todo',
-      priority: 'medium',
+      status: 'todo' as TaskStatus,
+      priority: 'medium' as TaskPriority,
       dueDate: new Date(),
       tags: [],
       clientId: clientId || '',
@@ -138,7 +138,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
     setIsAddingTask(false);
   };
 
-  const taskStatuses = ['todo', 'inProgress', 'done'];
+  const taskStatuses = ['todo', 'inProgress', 'review', 'done'];
 
   return (
     <div className="space-y-4">
@@ -236,7 +236,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {taskStatuses.map(status => (
             <Droppable key={status} droppableId={status}>
               {(provided, snapshot) => (
@@ -266,29 +266,34 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
                                 checked={selectedTasks.includes(task.id)}
                                 onCheckedChange={() => handleTaskSelect(task.id)}
                               />
-                              <div>
+                              <div className="flex-grow">
                                 <div className="flex items-center justify-between">
                                   <Label htmlFor={`select-${task.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
                                     {task.title}
                                   </Label>
                                   <GripVerticalIcon className="h-4 w-4 opacity-50 hover:opacity-100 cursor-grab" />
                                 </div>
-                                <div className="flex items-center justify-between">
-                                  <div className="space-y-1">
-                                    {task.description && (
-                                      <p className="text-sm text-muted-foreground">{task.description}</p>
-                                    )}
-                                    {task.dueDate && (
-                                      <div className="text-xs text-muted-foreground">
-                                        Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
-                                      </div>
-                                    )}
-                                  </div>
+                                <div className="flex flex-col gap-1 mt-1">
+                                  {task.description && (
+                                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                                  )}
+                                  {task.dueDate && (
+                                    <div className="text-xs text-muted-foreground">
+                                      Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex justify-between items-center mt-2">
                                   <div className="flex gap-1">
-                                    <Button size="sm" variant="outline" onClick={() => navigate(`/tasks/${task.id}`)}>
-                                      View
-                                    </Button>
+                                    {task.priority && (
+                                      <Badge variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'outline'}>
+                                        {task.priority}
+                                      </Badge>
+                                    )}
                                   </div>
+                                  <Button size="sm" variant="outline" onClick={() => navigate(`/tasks/${task.id}`)}>
+                                    View
+                                  </Button>
                                 </div>
                               </div>
                             </div>
