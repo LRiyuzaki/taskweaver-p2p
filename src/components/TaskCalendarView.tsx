@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,9 +109,28 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 </>
               )
             }}
-            // Fix the type error by using className directly instead of styles
+            // Fix the type error by using modifiersStyles for dynamic day styling
             classNames={{
-              day: (date) => `${getDayClassNames(date)} relative`
+              day: "relative"
+            }}
+            styles={{
+              day: (date) => ({
+                backgroundColor: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high') 
+                  ? "var(--red-100)" 
+                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
+                  ? "var(--blue-50)"
+                  : undefined,
+                fontWeight: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high')
+                  ? "bold"
+                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
+                  ? "500"
+                  : undefined,
+                borderColor: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high')
+                  ? "var(--red-200)"
+                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
+                  ? "var(--blue-100)"
+                  : undefined
+              })
             }}
           />
         </CardContent>
