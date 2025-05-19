@@ -4,7 +4,6 @@ import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ClipboardList, 
-  Calendar as CalendarIcon, 
   ListFilter,
   RepeatIcon,
   Plus,
@@ -12,7 +11,6 @@ import {
 } from 'lucide-react';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TaskListView } from '@/components/TaskListView';
-import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -85,10 +83,6 @@ const TasksPage = () => {
                 <ListFilter className="h-4 w-4" />
                 List View
               </TabsTrigger>
-              <TabsTrigger value="calendar" className="flex items-center gap-1">
-                <CalendarIcon className="h-4 w-4" />
-                Calendar View
-              </TabsTrigger>
               <TabsTrigger value="recurring" className="flex items-center gap-1">
                 <RepeatIcon className="h-4 w-4" />
                 Recurring Tasks
@@ -101,10 +95,6 @@ const TasksPage = () => {
 
             <TabsContent value="list" className="space-y-6">
               <TaskListView filterClient={undefined} />
-            </TabsContent>
-
-            <TabsContent value="calendar" className="space-y-6">
-              <TaskCalendarView onSelectedTaskIdsChange={(taskIds) => setSelectedTasks(taskIds)} />
             </TabsContent>
             
             <TabsContent value="recurring" className="space-y-6">

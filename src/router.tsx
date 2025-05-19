@@ -1,3 +1,4 @@
+
 import { createBrowserRouter } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -25,6 +26,14 @@ export const router = createBrowserRouter([
   },
   {
     path: "/tasks",
+    element: <TasksPage />,
+  },
+  {
+    path: "/tasks/new",
+    element: <TasksPage />,
+  },
+  {
+    path: "/tasks/:taskId",
     element: <TasksPage />,
   },
   {
