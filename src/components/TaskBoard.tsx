@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, GripVerticalIcon, Plus, X, ListFilter } from "lucide-react";
+import { Check, ChevronsUpDown, GripVerticalIcon, Plus, ListFilter } from "lucide-react";
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
 import { format } from 'date-fns';
@@ -139,6 +140,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
 
   const taskStatuses = ['todo', 'inProgress', 'review', 'done'];
 
+  const handleViewTaskClick = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/tasks/${taskId}`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -260,14 +266,21 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
                                 task.status === 'done' ? "border-green-200 bg-green-50/30" : ""
                               )}
                             >
-                              <Checkbox
-                                id={`select-${task.id}`}
-                                checked={selectedTasks.includes(task.id)}
-                                onCheckedChange={() => handleTaskSelect(task.id)}
-                              />
+                              <div className="flex-shrink-0 pt-1">
+                                <Checkbox
+                                  id={`select-${task.id}`}
+                                  checked={selectedTasks.includes(task.id)}
+                                  onCheckedChange={() => handleTaskSelect(task.id)}
+                                  className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                />
+                              </div>
                               <div className="flex-grow">
                                 <div className="flex items-center justify-between">
-                                  <Label htmlFor={`select-${task.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                                  <Label 
+                                    htmlFor={`select-${task.id}`} 
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed cursor-pointer"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     {task.title}
                                   </Label>
                                   <GripVerticalIcon className="h-4 w-4 opacity-50 hover:opacity-100 cursor-grab" />
@@ -290,7 +303,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
                                       </Badge>
                                     )}
                                   </div>
-                                  <Button size="sm" variant="outline" onClick={() => navigate(`/tasks/${task.id}`)}>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={(e) => handleViewTaskClick(task.id, e)}
+                                  >
                                     View
                                   </Button>
                                 </div>

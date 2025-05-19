@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -13,17 +13,29 @@ import { TaskBoard } from '@/components/TaskBoard';
 import { TaskListView } from '@/components/TaskListView';
 import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTaskContext } from "@/contexts/TaskContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
+import TaskDetails from '@/components/TaskDetails';
 
 const TasksPage = () => {
   const [activeView, setActiveView] = useState('board');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { deleteTasks } = useTaskContext();
+  const { taskId } = useParams();
+  const { deleteTasks, tasks } = useTaskContext();
+  const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
+  const currentTask = taskId ? tasks.find(task => task.id === taskId) : undefined;
+
+  useEffect(() => {
+    if (taskId && tasks.some(task => task.id === taskId)) {
+      setTaskDetailsOpen(true);
+    } else {
+      setTaskDetailsOpen(false);
+    }
+  }, [taskId, tasks]);
 
   const handleCreateTask = () => {
     navigate('/tasks/new');
@@ -49,6 +61,11 @@ const TasksPage = () => {
       title: "Tasks Deleted",
       description: `${selectedTasks.length} task(s) deleted successfully.`,
     });
+  };
+
+  const handleCloseTaskDetails = () => {
+    setTaskDetailsOpen(false);
+    navigate('/tasks');
   };
 
   return (
@@ -122,6 +139,15 @@ const TasksPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Task details dialog for individual task routes */}
+      {currentTask && (
+        <Dialog open={taskDetailsOpen} onOpenChange={setTaskDetailsOpen}>
+          <DialogContent className="max-w-3xl">
+            <TaskDetails task={currentTask} onClose={handleCloseTaskDetails} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

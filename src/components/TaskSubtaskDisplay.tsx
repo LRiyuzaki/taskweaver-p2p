@@ -38,7 +38,7 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({
     // Check if all subtasks are now completed
     const allCompleted = updatedSubtasks.every(subtask => subtask.completed);
     if (allCompleted && task.status !== 'done') {
-      // Optionally auto-complete the parent task when all subtasks are done
+      // Optional: auto-complete the parent task when all subtasks are done
       // updateTask(task.id, { status: 'done' });
     }
   };
@@ -54,12 +54,14 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({
           )}
         >
           {showCheckboxes && (
-            <Checkbox
-              id={`subtask-${subtask.id}`}
-              checked={subtask.completed}
-              onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked === true)}
-              className="mr-1.5 mt-0.5 h-3 w-3"
-            />
+            <div className="flex-shrink-0 mt-0.5 mr-1.5">
+              <Checkbox
+                id={`subtask-${subtask.id}`}
+                checked={subtask.completed}
+                onCheckedChange={(checked) => handleSubtaskToggle(subtask.id, checked === true)}
+                className="h-3 w-3 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
+            </div>
           )}
           <div>
             <label 
