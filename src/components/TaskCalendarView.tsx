@@ -111,11 +111,9 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
               )
             }}
             styles={{
-              day: (date) => {
-                return {
-                  className: `${getDayClassNames(date)} relative`
-                };
-              }
+              day: (date) => ({
+                className: `${getDayClassNames(date)} relative`
+              })
             }}
           />
         </CardContent>
@@ -172,7 +170,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                     )}
                     <div className="flex justify-between mt-2">
                       <Badge variant={
-                        task.status === 'done' ? 'success' :
+                        task.status === 'done' ? 'secondary' :
                         task.status === 'inProgress' ? 'default' :
                         'outline'
                       }>

@@ -25,6 +25,7 @@ const Index = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'projects'>('tasks');
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
   const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
@@ -99,7 +100,7 @@ const Index = () => {
           </div>
 
           <TabsContent value="tasks" className="mt-0">
-            {viewMode === 'board' ? <TaskBoard /> : <TaskListView />}
+            {viewMode === 'board' ? <TaskBoard onTaskSelect={setSelectedTaskIds} /> : <TaskListView />}
           </TabsContent>
           
           <TabsContent value="projects" className="mt-0">
