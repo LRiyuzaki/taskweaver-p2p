@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -31,7 +30,15 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     
     // Override with client's required services if they exist
     if (client.requiredServices) {
-      return { ...defaultServices, ...client.requiredServices };
+      // Only keep services that are explicitly true
+      const trueServices = Object.entries(client.requiredServices)
+        .filter(([_, isSelected]) => isSelected === true)
+        .reduce((acc, [name, value]) => {
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, boolean>);
+      
+      return { ...defaultServices, ...trueServices };
     }
     
     return defaultServices;
@@ -63,8 +70,15 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
         return acc;
       }, {} as Record<string, boolean>);
       
-      // Merge with client's required services
-      setSelectedServices({ ...defaultServices, ...client.requiredServices });
+      // Only merge services that are explicitly true
+      const trueServices = Object.entries(client.requiredServices)
+        .filter(([_, isSelected]) => isSelected === true)
+        .reduce((acc, [name, value]) => {
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, boolean>);
+      
+      setSelectedServices({ ...defaultServices, ...trueServices });
     } else {
       // Initialize with all services set to false
       const defaultServices = availableServices.reduce((acc, serviceName) => {

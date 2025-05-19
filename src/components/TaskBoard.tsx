@@ -1,263 +1,330 @@
-
-import React, { useState } from 'react';
-import { Task, TaskStatus } from '@/types/task';
-import { TaskColumn } from './TaskColumn';
-import { TaskForm } from './TaskForm';
+import React, { useState, useEffect, useCallback } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, GripVertical, GripVerticalIcon, Plus, X } from "lucide-react";
 import { useTaskContext } from '@/contexts/TaskContext';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Filter, Search, ClipboardCheck } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast-extensions';
+import { Task } from '@/types/task';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
 
-export const TaskBoard: React.FC = () => {
-  const { tasks, addTask, updateTask, moveTask } = useTaskContext();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+interface TaskBoardProps {
+  onTaskSelect: (taskIds: string[]) => void;
+}
+
+const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
+  const { tasks, updateTask, addTask } = useTaskContext();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const clientId = searchParams.get('clientId');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
-  const [selectedClient, setSelectedClient] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-
-  // Add filtering by service
-  const filteredTasks = tasks.filter((task) => {
-    // Apply search filter
-    const matchesSearch = !searchTerm || 
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (task.clientName && task.clientName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Apply priority filter
-    const matchesPriority = !selectedPriority || task.priority === selectedPriority;
-    
-    // Apply client filter
-    const matchesClient = !selectedClient || task.clientId === selectedClient;
-
-    // Apply service filter
-    const matchesService = !selectedService || task.serviceId === selectedService;
-    
-    return matchesSearch && matchesPriority && matchesClient && matchesService;
-  });
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   
-  const todoTasks = filteredTasks.filter((task) => task.status === 'todo');
-  const inProgressTasks = filteredTasks.filter((task) => task.status === 'inProgress');
-  const reviewTasks = filteredTasks.filter((task) => task.status === 'review'); // Add review tasks
-  const doneTasks = filteredTasks.filter((task) => task.status === 'done');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortColumn, setSortColumn] = useState<'dueDate' | 'priority'>('dueDate');
 
-  // Get unique clients for filter dropdown
-  const uniqueClients = Array.from(new Set(tasks
-    .filter(t => t.clientId && t.clientName)
-    .map(t => ({ id: t.clientId!, name: t.clientName! }))
-  ));
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isAddingTask, setIsAddingTask] = useState(false);
 
-  // Get unique services for filter dropdown
-  const uniqueServices = Array.from(new Set(tasks
-    .filter(t => t.serviceId && t.serviceName)
-    .map(t => ({ id: t.serviceId!, name: t.serviceName! }))
-  ));
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
 
-  const handleTaskClick = (task: Task) => {
-    setEditingTask(task);
-    setIsDialogOpen(true);
-  };
-
-  const handleAddTask = () => {
-    setEditingTask(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
-    const taskId = e.dataTransfer.getData('taskId');
-    moveTask(taskId, newStatus);
-    
-    // Provide visual feedback
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      toast.success(`Task "${task.title}" moved to ${
-        newStatus === 'todo' ? 'To Do' : 
-        newStatus === 'inProgress' ? 'In Progress' : 
-        newStatus === 'review' ? 'Review' : 'Done'
-      }`);
-    }
-  };
-
-  const handleFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
-    if (editingTask) {
-      updateTask(editingTask.id, formData);
-      toast.success('Task updated successfully');
+  const handleTaskSelect = (taskId: string) => {
+    if (selectedTasks.includes(taskId)) {
+      setSelectedTasks(selectedTasks.filter(id => id !== taskId));
     } else {
-      addTask(formData);
-      toast.success('New task created successfully');
+      setSelectedTasks([...selectedTasks, taskId]);
     }
-    setIsDialogOpen(false);
+    onTaskSelect(selectedTasks);
   };
-  
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedPriority(null);
-    setSelectedClient(null);
-    setSelectedService(null);
+
+  useEffect(() => {
+    onTaskSelect(selectedTasks);
+  }, [selectedTasks, onTaskSelect]);
+
+  const filteredTasks = tasks.filter(task => {
+    const searchTermLower = searchTerm.toLowerCase();
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchTermLower) ||
+      (task.description?.toLowerCase().includes(searchTermLower) ?? false);
+
+    const matchesStatus = statusFilter ? task.status === statusFilter : true;
+    const matchesPriority = priorityFilter ? task.priority === priorityFilter : true;
+
+    const matchesClient = clientId ? task.clientId === clientId : true;
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesClient;
+  });
+
+  const sortTasks = (tasksToSort: Task[]): Task[] => {
+    return [...tasksToSort].sort((a, b) => {
+      const order = sortOrder === 'asc' ? 1 : -1;
+
+      if (sortColumn === 'dueDate') {
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+        return order * (dateA - dateB);
+      } else if (sortColumn === 'priority') {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityA = priorityOrder[a.priority] || 0;
+        const priorityB = priorityOrder[b.priority] || 0;
+        return order * (priorityA - priorityB);
+      }
+
+      return 0;
+    });
   };
+
+  const sortedTasks = sortTasks(filteredTasks);
+
+  const handleDragEnd = useCallback(
+    (result: DropResult) => {
+      const { destination, source, draggableId } = result;
+
+      if (!destination) {
+        return;
+      }
+
+      if (
+        destination.droppableId === source.droppableId &&
+        destination.index === source.index
+      ) {
+        return;
+      }
+
+      const taskId = draggableId;
+      const newStatus = destination.droppableId;
+
+      updateTask(taskId, { status: newStatus });
+    },
+    [updateTask]
+  );
+
+  const getTasksByStatus = (status: string) => {
+    return sortedTasks.filter(task => task.status === status);
+  };
+
+  const handleCreateNewTask = async () => {
+    if (newTaskTitle.trim() === '') return;
+
+    const newTask = {
+      title: newTaskTitle,
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      dueDate: new Date(),
+      tags: [],
+      clientId: clientId || '',
+      assignedTo: '',
+      recurrence: 'none'
+    };
+
+    addTask(newTask);
+    setNewTaskTitle('');
+    setIsAddingTask(false);
+  };
+
+  const taskStatuses = ['todo', 'inProgress', 'done'];
 
   return (
-    <div className="p-4">
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Task Board</h1>
-          <Badge variant="outline" className="font-normal">
-            {filteredTasks.length} Tasks
-          </Badge>
-        </div>
-        
-        <div className="flex gap-2 ml-auto">
-          <div className="relative max-w-xs">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 h-10"
-            />
-          </div>
-          
-          <Button variant="outline" size="icon" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4" />
-          </Button>
-          
-          {(searchTerm || selectedPriority || selectedClient || selectedService) && (
-            <Button variant="ghost" size="sm" onClick={handleClearFilters} className="text-xs">
-              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Clear
-            </Button>
-          )}
-          
-          <Button onClick={handleAddTask}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
-        </div>
-      </div>
-      
-      {showFilters && (
-        <div className="mb-6 p-4 bg-muted/30 rounded-md">
-          <h3 className="text-sm font-medium mb-3">Filter Tasks</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Priority</label>
-              <div className="flex gap-1">
-                <Badge 
-                  variant={selectedPriority === 'low' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'low' ? null : 'low')}
-                >
-                  Low
-                </Badge>
-                <Badge 
-                  variant={selectedPriority === 'medium' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'medium' ? null : 'medium')}
-                >
-                  Medium
-                </Badge>
-                <Badge 
-                  variant={selectedPriority === 'high' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'high' ? null : 'high')}
-                >
-                  High
-                </Badge>
-              </div>
-            </div>
-            
-            {uniqueClients.length > 0 && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Client</label>
-                <div className="flex flex-wrap gap-1">
-                  {uniqueClients.map(client => (
-                    <Badge 
-                      key={client.id}
-                      variant={selectedClient === client.id ? 'default' : 'outline'} 
-                      className="cursor-pointer hover:bg-primary/10"
-                      onClick={() => setSelectedClient(selectedClient === client.id ? null : client.id)}
-                    >
-                      {client.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Add service filter */}
-            {uniqueServices.length > 0 && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Service</label>
-                <div className="flex flex-wrap gap-1">
-                  {uniqueServices.map(service => (
-                    <Badge 
-                      key={service.id}
-                      variant={selectedService === service.id ? 'default' : 'outline'} 
-                      className="cursor-pointer hover:bg-primary/10"
-                      onClick={() => setSelectedService(selectedService === service.id ? null : service.id)}
-                    >
-                      {service.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <TaskColumn
-          title="To Do"
-          status="todo"
-          tasks={todoTasks}
-          onTaskClick={handleTaskClick}
-          onDrop={handleDrop}
-        />
-        <TaskColumn
-          title="In Progress"
-          status="inProgress"
-          tasks={inProgressTasks}
-          onTaskClick={handleTaskClick}
-          onDrop={handleDrop}
-        />
-        <TaskColumn
-          title="Review"
-          status="review"
-          tasks={reviewTasks}
-          onTaskClick={handleTaskClick}
-          onDrop={handleDrop}
-          icon={<ClipboardCheck className="h-4 w-4 mr-1" />}
-        />
-        <TaskColumn
-          title="Done"
-          status="done"
-          tasks={doneTasks}
-          onTaskClick={handleTaskClick}
-          onDrop={handleDrop}
-        />
-      </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Create Task'}</DialogTitle>
-            <DialogDescription>
-              {editingTask 
-                ? 'Make changes to your task here.'
-                : 'Add a new task to your board.'}
-            </DialogDescription>
-          </DialogHeader>
-          <TaskForm 
-            task={editingTask || undefined} 
-            onSubmit={handleFormSubmit} 
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <Input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-md"
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <ListFilter className="h-4 w-4" />
+                Filter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                <Check
+                  className={cn("mr-2 h-4 w-4", statusFilter === null ? "opacity-100" : "opacity-0")}
+                />
+                All
+              </DropdownMenuItem>
+              {taskStatuses.map(status => (
+                <DropdownMenuItem key={status} onClick={() => setStatusFilter(status)}>
+                  <Check
+                    className={cn("mr-2 h-4 w-4", statusFilter === status ? "opacity-100" : "opacity-0")}
+                  />
+                  {status}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Priority</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {['high', 'medium', 'low'].map(priority => (
+                <DropdownMenuItem key={priority} onClick={() => setPriorityFilter(priority)}>
+                  <Check
+                    className={cn("mr-2 h-4 w-4", priorityFilter === priority ? "opacity-100" : "opacity-0")}
+                  />
+                  {priority}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                setStatusFilter(null);
+                setPriorityFilter(null);
+              }}>
+                Reset Filters
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <ChevronsUpDown className="h-4 w-4" />
+                Sort
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                setSortColumn('dueDate');
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              }}>
+                Due Date
+                {sortColumn === 'dueDate' && (
+                  <span className="ml-auto">
+                    {sortOrder === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setSortColumn('priority');
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              }}>
+                Priority
+                {sortColumn === 'priority' && (
+                  <span className="ml-auto">
+                    {sortOrder === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {taskStatuses.map(status => (
+            <Droppable key={status} droppableId={status}>
+              {(provided, snapshot) => (
+                <Card
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className={cn("shadow-md rounded-md", snapshot.isDraggingOver ? "bg-secondary" : "")}
+                >
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold capitalize mb-2">{status}</h3>
+                    <ScrollArea className="h-[400px] pr-2">
+                      {getTasksByStatus(status).map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                "bg-muted rounded-md shadow-sm p-3 mb-2 flex items-start gap-2",
+                                snapshot.isDragging ? "ring-2 ring-primary" : "",
+                                task.status === 'done' ? "border-green-200 bg-green-50/30" : ""
+                              )}
+                            >
+                              <Checkbox
+                                id={`select-${task.id}`}
+                                checked={selectedTasks.includes(task.id)}
+                                onCheckedChange={() => handleTaskSelect(task.id)}
+                              />
+                              <div>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`select-${task.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed">
+                                    {task.title}
+                                  </Label>
+                                  <GripVerticalIcon className="h-4 w-4 opacity-50 hover:opacity-100 cursor-grab" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="space-y-1">
+                                    {task.description && (
+                                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                                    )}
+                                    {task.dueDate && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/tasks/${task.id}`)}>
+                                      View
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+            </Droppable>
+          ))}
+        </div>
+      </DragDropContext>
+
+      {isAddingTask ? (
+        <div className="flex items-center space-x-2">
+          <Input
+            type="text"
+            placeholder="New task title"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            className="flex-1"
+          />
+          <Button onClick={handleCreateNewTask}>Add Task</Button>
+          <Button variant="ghost" onClick={() => setIsAddingTask(false)}>Cancel</Button>
+        </div>
+      ) : (
+        <Button variant="outline" onClick={() => setIsAddingTask(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Task
+        </Button>
+      )}
     </div>
   );
 };
+
+export { TaskBoard };
