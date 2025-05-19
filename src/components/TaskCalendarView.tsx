@@ -97,10 +97,17 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 return tasks.some(task => 
                   task.dueDate && isSameDay(new Date(task.dueDate), date)
                 );
+              },
+              highPriorityDay: (date) => {
+                return tasks.some(task => 
+                  task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high'
+                );
               }
             }}
             modifiersClassNames={{
-              taskDay: "relative"
+              taskDay: "task-day",
+              highPriorityDay: "high-priority-day",
+              selected: "selected-day"
             }}
             components={{
               DayContent: ({ date }) => (
@@ -111,33 +118,13 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
               )
             }}
             classNames={{
-              day: "relative"
-            }}
-            styles={{
-              day: {
-                "&[aria-selected=true]": {
-                  backgroundColor: "var(--primary)",
-                  color: "var(--primary-foreground)",
-                  fontWeight: "bold"
-                },
-                "&[data-high-priority=true]": {
-                  backgroundColor: "var(--red-100)",
-                  fontWeight: "bold",
-                  borderColor: "var(--red-200)"
-                },
-                "&[data-has-tasks=true]": {
-                  backgroundColor: "var(--blue-50)",
-                  fontWeight: 500,
-                  borderColor: "var(--blue-100)"
-                }
-              }
-            }}
-            modifiersStyles={{
-              selected: {
-                fontWeight: "bold",
-                backgroundColor: "var(--primary)",
-                color: "var(--primary-foreground)"
-              }
+              day: "relative",
+              selected: "bg-primary text-primary-foreground font-bold",
+              today: "bg-accent text-accent-foreground",
+              // Add custom classes for our modifiers
+              "task-day": "bg-blue-50 font-medium border-blue-100",
+              "high-priority-day": "bg-red-100 font-bold border-red-200",
+              "selected-day": "!bg-primary !text-primary-foreground font-bold"
             }}
           />
         </CardContent>
