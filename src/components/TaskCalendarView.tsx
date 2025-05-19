@@ -110,10 +110,9 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 </>
               )
             }}
-            styles={{
-              day: (date) => ({
-                className: `${getDayClassNames(date)} relative`
-              })
+            // Fix the type error by using className directly instead of styles
+            classNames={{
+              day: (date) => `${getDayClassNames(date)} relative`
             }}
           />
         </CardContent>
