@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,28 +110,34 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 </>
               )
             }}
-            // Fix the type error by using modifiersStyles for dynamic day styling
             classNames={{
               day: "relative"
             }}
             styles={{
-              day: (date) => ({
-                backgroundColor: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high') 
-                  ? "var(--red-100)" 
-                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
-                  ? "var(--blue-50)"
-                  : undefined,
-                fontWeight: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high')
-                  ? "bold"
-                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
-                  ? "500"
-                  : undefined,
-                borderColor: tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high')
-                  ? "var(--red-200)"
-                  : tasks.some(task => task.dueDate && isSameDay(new Date(task.dueDate), date))
-                  ? "var(--blue-100)"
-                  : undefined
-              })
+              day: {
+                "&[aria-selected=true]": {
+                  backgroundColor: "var(--primary)",
+                  color: "var(--primary-foreground)",
+                  fontWeight: "bold"
+                },
+                "&[data-high-priority=true]": {
+                  backgroundColor: "var(--red-100)",
+                  fontWeight: "bold",
+                  borderColor: "var(--red-200)"
+                },
+                "&[data-has-tasks=true]": {
+                  backgroundColor: "var(--blue-50)",
+                  fontWeight: 500,
+                  borderColor: "var(--blue-100)"
+                }
+              }
+            }}
+            modifiersStyles={{
+              selected: {
+                fontWeight: "bold",
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)"
+              }
             }}
           />
         </CardContent>
