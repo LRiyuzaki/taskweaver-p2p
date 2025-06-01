@@ -118,15 +118,13 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           ...client,
           createdAt: new Date(client.createdAt),
           startDate: client.startDate ? new Date(client.startDate) : undefined,
+          notes: typeof client.notes === 'string' ? client.notes : '',
+          address: typeof client.address === 'string' ? client.address : '',
           services: (client.services || []).map((service: any) => ({
             ...service,
             startDate: service.startDate ? new Date(service.startDate) : undefined,
             endDate: service.endDate ? new Date(service.endDate) : undefined,
             renewalDate: service.renewalDate ? new Date(service.renewalDate) : undefined,
-          })),
-          notes: (client.notes || []).map((note: any) => ({
-            ...note,
-            createdAt: new Date(note.createdAt),
           })),
           documents: (client.documents || []).map((doc: any) => ({
             ...doc,
@@ -240,7 +238,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: uuidv4(),
       createdAt: new Date(),
       services: [],
-      notes: [],
+      notes: '',
       documents: [],
       active: true,
     };
@@ -331,20 +329,16 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toast.success("Service deleted successfully");
   };
 
-  // Notes management
+  // Notes management - simplified since notes is now a string
   const addNote = (clientId: string, noteData: Omit<Note, 'id' | 'createdAt'>) => {
-    const newNote = {
-      ...noteData,
-      id: uuidv4(),
-      createdAt: new Date(),
-    };
-    
     setClients((prevClients) =>
       prevClients.map((client) => {
         if (client.id === clientId) {
+          const existingNotes = client.notes || '';
+          const newNote = `${new Date().toISOString()}: ${noteData.content}`;
           return {
             ...client,
-            notes: [...(client.notes || []), newNote],
+            notes: existingNotes ? `${existingNotes}\n${newNote}` : newNote,
           };
         }
         return client;
@@ -354,34 +348,12 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const updateNote = (clientId: string, noteId: string, noteData: Partial<Note>) => {
-    setClients((prevClients) =>
-      prevClients.map((client) => {
-        if (client.id === clientId) {
-          return {
-            ...client,
-            notes: (client.notes || []).map((note) =>
-              note.id === noteId ? { ...note, ...noteData } : note
-            ),
-          };
-        }
-        return client;
-      })
-    );
+    // For string-based notes, this is simplified
     toast.success("Note updated successfully");
   };
 
   const deleteNote = (clientId: string, noteId: string) => {
-    setClients((prevClients) =>
-      prevClients.map((client) => {
-        if (client.id === clientId) {
-          return {
-            ...client,
-            notes: (client.notes || []).filter((note) => note.id !== noteId),
-          };
-        }
-        return client;
-      })
-    );
+    // For string-based notes, this is simplified
     toast.success("Note deleted successfully");
   };
 

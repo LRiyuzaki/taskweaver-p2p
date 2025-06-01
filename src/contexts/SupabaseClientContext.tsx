@@ -24,6 +24,15 @@ export const useSupabaseClientContext = () => {
   return context;
 };
 
+// Helper function to validate entity type
+const validateEntityType = (entityType: string): 'Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF' => {
+  const validTypes = ['Individual', 'Proprietorship', 'Company', 'LLP', 'Partnership', 'Trust', 'HUF'];
+  if (validTypes.includes(entityType)) {
+    return entityType as 'Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF';
+  }
+  return 'Individual'; // Default fallback
+};
+
 export const SupabaseClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,10 +48,10 @@ export const SupabaseClientProvider: React.FC<{ children: React.ReactNode }> = (
         email: dbClient.email,
         phone: dbClient.phone,
         company: dbClient.company,
-        address: dbClient.address,
+        address: dbClient.address || '',
         abn: dbClient.abn,
         gstRegistrationDate: dbClient.registration_date ? new Date(dbClient.registration_date) : undefined,
-        entityType: dbClient.entity_type,
+        entityType: validateEntityType(dbClient.entity_type || 'Individual'),
         active: dbClient.status === 'active',
         notes: dbClient.notes || '',
         whatsappNumber: dbClient.whatsapp_number,

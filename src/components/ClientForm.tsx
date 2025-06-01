@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Client, ClientFormData } from '@/types/client';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -29,14 +30,6 @@ interface ClientFormProps {
   onSubmit: (data: ClientFormData) => void;
 }
 
-// Function to ensure address is in the correct format
-const formatAddress = (address: string | { registered: string; business?: string }) => {
-  if (typeof address === 'string') {
-    return { registered: address, business: '' };
-  }
-  return address;
-};
-
 export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   const { getAvailableServiceNames } = useClientContext();
   
@@ -57,10 +50,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
     gstRegistrationDate: undefined,
     incorporationDate: undefined,
     financialYearEnd: 'March',
-    address: {
-      registered: '',
-      business: ''
-    },
+    address: '',
     isGSTRegistered: false,
     isMSME: false,
     msmeNumber: '',
@@ -88,7 +78,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         entityType: client.entityType,
         gstin: client.gstin || '',
         pan: client.pan || '',
-        address: formatAddress(client.address || { registered: '', business: '' }),
+        address: client.address || '',
         startDate: client.startDate ? new Date(client.startDate) : new Date(),
       });
     } else {
@@ -359,40 +349,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Address Information</h3>
         <div className="space-y-2">
-          <Label htmlFor="registeredAddress">Registered Address <span className="text-destructive">*</span></Label>
+          <Label htmlFor="address">Address <span className="text-destructive">*</span></Label>
           <Textarea
-            id="registeredAddress"
-            name="address.registered"
-            value={formData.address?.registered}
-            onChange={(e) => {
-              setFormData(prev => ({
-                ...prev,
-                address: {
-                  ...prev.address,
-                  registered: e.target.value
-                }
-              }));
-            }}
+            id="address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
             required
-            rows={3}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="businessAddress">Business Address (if different)</Label>
-          <Textarea
-            id="businessAddress"
-            name="address.business"
-            value={formData.address?.business}
-            onChange={(e) => {
-              setFormData(prev => ({
-                ...prev,
-                address: {
-                  ...prev.address,
-                  business: e.target.value
-                }
-              }));
-            }}
             rows={3}
           />
         </div>
