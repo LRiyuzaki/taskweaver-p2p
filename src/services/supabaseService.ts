@@ -34,17 +34,16 @@ export const clientService = {
         email: client.email,
         phone: client.phone,
         company: client.company,
-        // Map Client interface to database schema
         address: client.address || '',
-        city: client.address || '', // Using address field for now
-        state: client.address || '', // Using address field for now  
-        postal_code: client.address || '', // Using address field for now
+        city: client.address || '',
+        state: client.address || '',
+        postal_code: client.address || '',
         country: 'Australia',
         abn: client.abn || '',
         registration_date: client.gstRegistrationDate,
         entity_type: client.entityType || 'individual',
         status: client.active ? 'active' : 'inactive',
-        notes: Array.isArray(client.notes) ? JSON.stringify(client.notes) : client.notes,
+        notes: typeof client.notes === 'string' ? client.notes : JSON.stringify(client.notes || []),
         whatsapp_number: client.whatsappNumber || '',
         preferred_contact_method: client.preferredContactMethod || 'email'
       })
@@ -63,18 +62,18 @@ export const clientService = {
         email: updates.email,
         phone: updates.phone,
         company: updates.company,
-        address: updates.address,
-        city: updates.address, // Using address field for now
-        state: updates.address, // Using address field for now
-        postal_code: updates.address, // Using address field for now
+        address: updates.address || '',
+        city: updates.address || '',
+        state: updates.address || '',
+        postal_code: updates.address || '',
         country: 'Australia',
-        abn: updates.abn,
+        abn: updates.abn || '',
         registration_date: updates.gstRegistrationDate,
-        entity_type: updates.entityType,
+        entity_type: updates.entityType || 'individual',
         status: updates.active ? 'active' : 'inactive',
-        notes: Array.isArray(updates.notes) ? JSON.stringify(updates.notes) : updates.notes,
-        whatsapp_number: updates.whatsappNumber,
-        preferred_contact_method: updates.preferredContactMethod
+        notes: typeof updates.notes === 'string' ? updates.notes : JSON.stringify(updates.notes || []),
+        whatsapp_number: updates.whatsappNumber || '',
+        preferred_contact_method: updates.preferredContactMethod || 'email'
       })
       .eq('id', id)
       .select()
@@ -128,7 +127,7 @@ export const taskService = {
       recurrenceEndDate: task.recurrence_end_date ? new Date(task.recurrence_end_date) : undefined,
       timeSpentMinutes: task.time_spent_minutes || 0,
       requiresReview: task.requires_review || false,
-      reviewStatus: task.review_status,
+      reviewStatus: (task.review_status as 'pending' | 'approved' | 'rejected') || 'pending',
       reviewerId: task.reviewer_id,
       comments: task.comments,
       createdAt: new Date(task.created_at),
@@ -177,7 +176,7 @@ export const taskService = {
       recurrenceEndDate: data.recurrence_end_date ? new Date(data.recurrence_end_date) : undefined,
       timeSpentMinutes: data.time_spent_minutes || 0,
       requiresReview: data.requires_review || false,
-      reviewStatus: data.review_status,
+      reviewStatus: (data.review_status as 'pending' | 'approved' | 'rejected') || 'pending',
       reviewerId: data.reviewer_id,
       comments: data.comments,
       createdAt: new Date(data.created_at),
@@ -201,13 +200,13 @@ export const taskService = {
         description: task.description,
         status: task.status,
         priority: task.priority,
-        due_date: task.dueDate?.toISOString(),
+        due_date: task.dueDate?.toISOString().split('T')[0],
         assigned_to: task.assignedTo,
         client_id: task.clientId,
         project_id: task.projectId,
         tags: task.tags,
         recurrence: task.recurrence,
-        recurrence_end_date: task.recurrenceEndDate?.toISOString(),
+        recurrence_end_date: task.recurrenceEndDate?.toISOString().split('T')[0],
         requires_review: task.requiresReview,
         comments: task.comments
       })
@@ -244,13 +243,13 @@ export const taskService = {
         description: updates.description,
         status: updates.status,
         priority: updates.priority,
-        due_date: updates.dueDate?.toISOString(),
+        due_date: updates.dueDate?.toISOString().split('T')[0],
         assigned_to: updates.assignedTo,
         client_id: updates.clientId,
         project_id: updates.projectId,
         tags: updates.tags,
         recurrence: updates.recurrence,
-        recurrence_end_date: updates.recurrenceEndDate?.toISOString(),
+        recurrence_end_date: updates.recurrenceEndDate?.toISOString().split('T')[0],
         requires_review: updates.requiresReview,
         review_status: updates.reviewStatus,
         reviewer_id: updates.reviewerId,
@@ -356,7 +355,7 @@ export const projectService = {
     name: string;
     description?: string;
     client_id?: string;
-    status?: string;
+    status?: 'active' | 'completed' | 'onHold';
     start_date?: string;
     end_date?: string;
     color?: string;

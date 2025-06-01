@@ -6,6 +6,7 @@ import { PerformanceProvider } from '@/contexts/PerformanceContext';
 import { P2PProvider } from '@/contexts/P2PContext';
 import { P2PAuthProvider } from '@/contexts/P2PAuthContext';
 import { ThemeProvider } from '@/components/theme-provider';
+import { TaskProvider } from '@/contexts/TaskContext';
 import { SupabaseTaskProvider } from '@/contexts/SupabaseTaskContext';
 import { SupabaseClientProvider } from '@/contexts/SupabaseClientContext';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
@@ -42,12 +43,14 @@ function App() {
           <P2PAuthProvider>
             <P2PProvider>
               <DatabaseProvider>
-                <SupabaseClientProvider>
-                  <SupabaseTaskProvider>
-                    <AppContent />
-                    <Toaster />
-                  </SupabaseTaskProvider>
-                </SupabaseClientProvider>
+                <TaskProvider>
+                  <SupabaseClientProvider>
+                    <SupabaseTaskProvider>
+                      <AppContent />
+                      <Toaster />
+                    </SupabaseTaskProvider>
+                  </SupabaseClientProvider>
+                </TaskProvider>
               </DatabaseProvider>
             </P2PProvider>
           </P2PAuthProvider>

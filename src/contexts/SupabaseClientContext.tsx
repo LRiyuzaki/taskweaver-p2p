@@ -44,12 +44,12 @@ export const SupabaseClientProvider: React.FC<{ children: React.ReactNode }> = (
         gstRegistrationDate: dbClient.registration_date,
         entityType: dbClient.entity_type,
         active: dbClient.status === 'active',
-        notes: typeof dbClient.notes === 'string' ? JSON.parse(dbClient.notes || '[]') : [],
+        notes: typeof dbClient.notes === 'string' ? dbClient.notes : JSON.stringify(dbClient.notes || []),
         whatsappNumber: dbClient.whatsapp_number,
         preferredContactMethod: dbClient.preferred_contact_method,
         createdAt: new Date(dbClient.created_at),
-        // Default values for required properties
-        requiredServices: [],
+        // Default values for required properties that match Client interface
+        requiredServices: {},
         services: [],
         documents: []
       }));
