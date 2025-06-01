@@ -90,8 +90,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
             }}
             modifiersClassNames={{
               taskDay: "bg-blue-50 font-medium border-blue-100",
-              highPriorityDay: "bg-red-100 font-bold border-red-200",
-              selected: "bg-primary text-primary-foreground font-bold"
+              highPriorityDay: "bg-red-100 font-bold border-red-200"
             }}
             components={{
               DayContent: ({ date }) => (
@@ -100,11 +99,6 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                   {getDayContent(date)}
                 </>
               )
-            }}
-            classNames={{
-              day: "relative",
-              selected: "bg-primary text-primary-foreground font-bold",
-              today: "bg-accent text-accent-foreground"
             }}
           />
         </CardContent>
