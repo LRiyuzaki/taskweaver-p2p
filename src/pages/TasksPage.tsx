@@ -14,7 +14,7 @@ import { TaskListView } from '@/components/TaskListView';
 import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router-dom";
-import { useTaskContext } from "@/contexts/TaskContext";
+import { useSupabaseTaskContext } from "@/contexts/SupabaseTaskContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import TaskDetails from '@/components/TaskDetails';
@@ -25,7 +25,7 @@ const TasksPage = () => {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const navigate = useNavigate();
   const { taskId } = useParams();
-  const { deleteTasks, tasks } = useTaskContext();
+  const { deleteTasks, tasks, loading } = useSupabaseTaskContext();
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
   const currentTask = taskId ? tasks.find(task => task.id === taskId) : undefined;
 
@@ -53,20 +53,34 @@ const TasksPage = () => {
     }
   };
 
-  const confirmDelete = () => {
-    deleteTasks(selectedTasks);
-    setSelectedTasks([]);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: "Tasks Deleted",
-      description: `${selectedTasks.length} task(s) deleted successfully.`,
-    });
+  const confirmDelete = async () => {
+    try {
+      await deleteTasks(selectedTasks);
+      setSelectedTasks([]);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      // Error handling is done in the context
+    }
   };
 
   const handleCloseTaskDetails = () => {
     setTaskDetailsOpen(false);
     navigate('/tasks');
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-screen">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading tasks...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen">

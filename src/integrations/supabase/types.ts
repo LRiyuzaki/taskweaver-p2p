@@ -97,39 +97,123 @@ export type Database = {
       }
       clients: {
         Row: {
+          abn: string | null
+          address: string | null
+          city: string | null
           company: string | null
+          country: string | null
           created_at: string
           email: string
+          entity_type: string | null
           id: string
           name: string
           notes: string | null
           phone: string | null
+          postal_code: string | null
           preferred_contact_method: string | null
+          registration_date: string | null
+          state: string | null
+          status: string | null
           whatsapp_number: string | null
         }
         Insert: {
+          abn?: string | null
+          address?: string | null
+          city?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
           email: string
+          entity_type?: string | null
           id?: string
           name: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_contact_method?: string | null
+          registration_date?: string | null
+          state?: string | null
+          status?: string | null
           whatsapp_number?: string | null
         }
         Update: {
+          abn?: string | null
+          address?: string | null
+          city?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
           email?: string
+          entity_type?: string | null
           id?: string
           name?: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_contact_method?: string | null
+          registration_date?: string | null
+          state?: string | null
+          status?: string | null
           whatsapp_number?: string | null
         }
         Relationships: []
+      }
+      compliance_schedules: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          frequency: Database["public"]["Enums"]["recurrence_type"]
+          id: string
+          is_active: boolean | null
+          name: string
+          next_due_date: string | null
+          service_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          frequency: Database["public"]["Enums"]["recurrence_type"]
+          id?: string
+          is_active?: boolean | null
+          name: string
+          next_due_date?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          frequency?: Database["public"]["Enums"]["recurrence_type"]
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          next_due_date?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_schedules_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -286,6 +370,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           assigned_to: string | null
@@ -322,6 +442,89 @@ export type Database = {
           service_type?: string
           status?: string
           tags?: string[] | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          icon: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          filters: Json | null
+          id: string
+          last_generated: string | null
+          name: string
+          schedule: Json | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          last_generated?: string | null
+          name: string
+          schedule?: Json | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          last_generated?: string | null
+          name?: string
+          schedule?: Json | null
+          type?: string
         }
         Relationships: []
       }
@@ -507,6 +710,56 @@ export type Database = {
         }
         Relationships: []
       }
+      task_templates: {
+        Row: {
+          checklist_items: Json | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          requires_review: boolean | null
+          service_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          checklist_items?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          requires_review?: boolean | null
+          service_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          checklist_items?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          requires_review?: boolean | null
+          service_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -518,14 +771,19 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string
+          project_id: string | null
+          recurrence: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date: string | null
           requires_review: boolean | null
           review_status: string | null
           reviewer_id: string | null
           service_id: string | null
           started_at: string | null
           status: string
+          tags: string[] | null
           time_spent_minutes: number | null
           title: string
+          updated_at: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -537,14 +795,19 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
+          recurrence?: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date?: string | null
           requires_review?: boolean | null
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
           started_at?: string | null
           status?: string
+          tags?: string[] | null
           time_spent_minutes?: number | null
           title: string
+          updated_at?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -556,14 +819,19 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
+          recurrence?: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date?: string | null
           requires_review?: boolean | null
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
           started_at?: string | null
           status?: string
+          tags?: string[] | null
           time_spent_minutes?: number | null
           title?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -578,6 +846,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -626,6 +901,53 @@ export type Database = {
         }
         Relationships: []
       }
+      time_entries: {
+        Row: {
+          billable: boolean | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          rate_per_hour: number | null
+          start_time: string
+          task_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          rate_per_hour?: number | null
+          start_time: string
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          rate_per_hour?: number | null
+          start_time?: string
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -634,7 +956,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      contact_method: "email" | "phone" | "whatsapp"
+      project_status: "active" | "completed" | "onHold"
+      recurrence_type:
+        | "none"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "halfYearly"
+        | "yearly"
+      task_priority: "low" | "medium" | "high"
+      task_status: "todo" | "inProgress" | "review" | "done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -749,6 +1082,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      contact_method: ["email", "phone", "whatsapp"],
+      project_status: ["active", "completed", "onHold"],
+      recurrence_type: [
+        "none",
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "halfYearly",
+        "yearly",
+      ],
+      task_priority: ["low", "medium", "high"],
+      task_status: ["todo", "inProgress", "review", "done"],
+    },
   },
 } as const
