@@ -1,4 +1,3 @@
-
 import { Client, Service } from '@/types/client';
 import { Task } from '@/types/task';
 
@@ -23,7 +22,6 @@ export const sampleClients: Client[] = [
     abn: '12 345 678 901',
     gstRegistrationDate: new Date('2020-01-15'),
     entityType: 'Company',
-    companyType: 'Pty Ltd',
     active: true,
     notes: '',
     services: [
@@ -52,7 +50,6 @@ export const sampleClients: Client[] = [
     abn: '98 765 432 109',
     gstRegistrationDate: new Date('2019-06-20'),
     entityType: 'Partnership',
-    companyType: 'Partnership',
     active: true,
     notes: '',
     services: [
@@ -81,7 +78,6 @@ export const sampleClients: Client[] = [
     abn: '11 222 333 444',
     gstRegistrationDate: new Date('2021-03-10'),
     entityType: 'Individual',
-    companyType: 'Sole Trader',
     active: true,
     notes: '',
     services: [
