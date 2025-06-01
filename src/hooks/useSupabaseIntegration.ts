@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { taskService, clientService, teamMemberService, projectService, serviceService } from '@/services/supabaseService';
+import { taskService, clientService, teamMemberService } from '@/services/supabaseService';
 import { Task } from '@/types/task';
 import { Client } from '@/types/client';
 
@@ -27,7 +27,7 @@ export const useSupabaseIntegration = () => {
               status: task.status,
               priority: task.priority,
               dueDate: task.dueDate,
-              assigneeId: task.assigneeId,
+              assignedTo: task.assignedTo,
               assigneeName: task.assigneeName,
               clientId: task.clientId,
               clientName: task.clientName,
@@ -42,7 +42,7 @@ export const useSupabaseIntegration = () => {
               reviewerId: task.reviewerId,
               comments: task.comments,
               startedAt: task.startedAt,
-              completedAt: task.completedAt,
+              completedDate: task.completedDate,
               subtasks: task.subtasks || []
             });
           } catch (taskError) {
@@ -69,17 +69,16 @@ export const useSupabaseIntegration = () => {
               phone: client.phone,
               company: client.company,
               address: client.address,
-              city: client.city,
-              state: client.state,
-              postalCode: client.postalCode,
-              country: client.country,
               abn: client.abn,
-              registrationDate: client.registrationDate,
+              gstRegistrationDate: client.gstRegistrationDate,
               entityType: client.entityType,
-              status: client.status,
+              active: client.active,
               notes: client.notes,
               whatsappNumber: client.whatsappNumber,
-              preferredContactMethod: client.preferredContactMethod
+              preferredContactMethod: client.preferredContactMethod,
+              requiredServices: client.requiredServices,
+              services: client.services,
+              documents: client.documents
             });
           } catch (clientError) {
             console.error('Error migrating client:', client.name, clientError);

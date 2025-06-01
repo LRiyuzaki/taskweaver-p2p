@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { PerformanceProvider } from '@/contexts/PerformanceContext';
@@ -11,7 +11,7 @@ import { SupabaseClientProvider } from '@/contexts/SupabaseClientContext';
 import { DatabaseProvider } from '@/contexts/DatabaseContext';
 import { MigrationStatus } from '@/components/MigrationStatus';
 import { useSupabaseIntegration } from '@/hooks/useSupabaseIntegration';
-import AppRouter from '@/router';
+import { router } from '@/router';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -29,7 +29,7 @@ const AppContent = () => {
   return (
     <>
       {(!isInitialized || migrationStatus === 'in-progress') && <MigrationStatus />}
-      <AppRouter />
+      <RouterProvider router={router} />
     </>
   );
 };
@@ -38,22 +38,20 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <Router>
-          <PerformanceProvider>
-            <P2PAuthProvider>
-              <P2PProvider>
-                <DatabaseProvider>
-                  <SupabaseClientProvider>
-                    <SupabaseTaskProvider>
-                      <AppContent />
-                      <Toaster />
-                    </SupabaseTaskProvider>
-                  </SupabaseClientProvider>
-                </DatabaseProvider>
-              </P2PProvider>
-            </P2PAuthProvider>
-          </PerformanceProvider>
-        </Router>
+        <PerformanceProvider>
+          <P2PAuthProvider>
+            <P2PProvider>
+              <DatabaseProvider>
+                <SupabaseClientProvider>
+                  <SupabaseTaskProvider>
+                    <AppContent />
+                    <Toaster />
+                  </SupabaseTaskProvider>
+                </SupabaseClientProvider>
+              </DatabaseProvider>
+            </P2PProvider>
+          </P2PAuthProvider>
+        </PerformanceProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

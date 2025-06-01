@@ -34,18 +34,19 @@ export const clientService = {
         email: client.email,
         phone: client.phone,
         company: client.company,
-        address: client.address,
-        city: client.city,
-        state: client.state,
-        postal_code: client.postalCode,
-        country: client.country,
-        abn: client.abn,
-        registration_date: client.registrationDate,
-        entity_type: client.entityType,
-        status: client.status,
-        notes: client.notes,
-        whatsapp_number: client.whatsappNumber,
-        preferred_contact_method: client.preferredContactMethod
+        // Map Client interface to database schema
+        address: client.address || '',
+        city: client.address || '', // Using address field for now
+        state: client.address || '', // Using address field for now  
+        postal_code: client.address || '', // Using address field for now
+        country: 'Australia',
+        abn: client.abn || '',
+        registration_date: client.gstRegistrationDate,
+        entity_type: client.entityType || 'individual',
+        status: client.active ? 'active' : 'inactive',
+        notes: Array.isArray(client.notes) ? JSON.stringify(client.notes) : client.notes,
+        whatsapp_number: client.whatsappNumber || '',
+        preferred_contact_method: client.preferredContactMethod || 'email'
       })
       .select()
       .single();
@@ -63,15 +64,15 @@ export const clientService = {
         phone: updates.phone,
         company: updates.company,
         address: updates.address,
-        city: updates.city,
-        state: updates.state,
-        postal_code: updates.postalCode,
-        country: updates.country,
+        city: updates.address, // Using address field for now
+        state: updates.address, // Using address field for now
+        postal_code: updates.address, // Using address field for now
+        country: 'Australia',
         abn: updates.abn,
-        registration_date: updates.registrationDate,
+        registration_date: updates.gstRegistrationDate,
         entity_type: updates.entityType,
-        status: updates.status,
-        notes: updates.notes,
+        status: updates.active ? 'active' : 'inactive',
+        notes: Array.isArray(updates.notes) ? JSON.stringify(updates.notes) : updates.notes,
         whatsapp_number: updates.whatsappNumber,
         preferred_contact_method: updates.preferredContactMethod
       })
@@ -102,7 +103,6 @@ export const taskService = {
         *,
         client:clients(name),
         project:projects(name),
-        assignee:team_members(name),
         subtasks(*)
       `)
       .order('created_at', { ascending: false });
@@ -116,24 +116,24 @@ export const taskService = {
       description: task.description,
       status: task.status as TaskStatus,
       priority: task.priority as TaskPriority,
-      dueDate: task.due_date,
-      assigneeId: task.assigned_to,
-      assigneeName: task.assignee?.name,
+      dueDate: task.due_date ? new Date(task.due_date) : undefined,
+      assignedTo: task.assigned_to,
+      assigneeName: task.assigned_to, // Will be populated when we have team members
       clientId: task.client_id,
       clientName: task.client?.name,
       projectId: task.project_id,
       projectName: task.project?.name,
       tags: task.tags || [],
       recurrence: task.recurrence || 'none',
-      recurrenceEndDate: task.recurrence_end_date,
+      recurrenceEndDate: task.recurrence_end_date ? new Date(task.recurrence_end_date) : undefined,
       timeSpentMinutes: task.time_spent_minutes || 0,
       requiresReview: task.requires_review || false,
       reviewStatus: task.review_status,
       reviewerId: task.reviewer_id,
       comments: task.comments,
-      createdAt: task.created_at,
-      startedAt: task.started_at,
-      completedAt: task.completed_at,
+      createdAt: new Date(task.created_at),
+      startedAt: task.started_at ? new Date(task.started_at) : undefined,
+      completedDate: task.completed_at ? new Date(task.completed_at) : undefined,
       subtasks: task.subtasks?.map(subtask => ({
         id: subtask.id,
         title: subtask.title,
@@ -151,7 +151,6 @@ export const taskService = {
         *,
         client:clients(name),
         project:projects(name),
-        assignee:team_members(name),
         subtasks(*)
       `)
       .eq('id', id)
@@ -166,24 +165,24 @@ export const taskService = {
       description: data.description,
       status: data.status as TaskStatus,
       priority: data.priority as TaskPriority,
-      dueDate: data.due_date,
-      assigneeId: data.assigned_to,
-      assigneeName: data.assignee?.name,
+      dueDate: data.due_date ? new Date(data.due_date) : undefined,
+      assignedTo: data.assigned_to,
+      assigneeName: data.assigned_to, // Will be populated when we have team members
       clientId: data.client_id,
       clientName: data.client?.name,
       projectId: data.project_id,
       projectName: data.project?.name,
       tags: data.tags || [],
       recurrence: data.recurrence || 'none',
-      recurrenceEndDate: data.recurrence_end_date,
+      recurrenceEndDate: data.recurrence_end_date ? new Date(data.recurrence_end_date) : undefined,
       timeSpentMinutes: data.time_spent_minutes || 0,
       requiresReview: data.requires_review || false,
       reviewStatus: data.review_status,
       reviewerId: data.reviewer_id,
       comments: data.comments,
-      createdAt: data.created_at,
-      startedAt: data.started_at,
-      completedAt: data.completed_at,
+      createdAt: new Date(data.created_at),
+      startedAt: data.started_at ? new Date(data.started_at) : undefined,
+      completedDate: data.completed_at ? new Date(data.completed_at) : undefined,
       subtasks: data.subtasks?.map(subtask => ({
         id: subtask.id,
         title: subtask.title,
@@ -202,13 +201,13 @@ export const taskService = {
         description: task.description,
         status: task.status,
         priority: task.priority,
-        due_date: task.dueDate,
-        assigned_to: task.assigneeId,
+        due_date: task.dueDate?.toISOString(),
+        assigned_to: task.assignedTo,
         client_id: task.clientId,
         project_id: task.projectId,
         tags: task.tags,
         recurrence: task.recurrence,
-        recurrence_end_date: task.recurrenceEndDate,
+        recurrence_end_date: task.recurrenceEndDate?.toISOString(),
         requires_review: task.requiresReview,
         comments: task.comments
       })
@@ -245,20 +244,20 @@ export const taskService = {
         description: updates.description,
         status: updates.status,
         priority: updates.priority,
-        due_date: updates.dueDate,
-        assigned_to: updates.assigneeId,
+        due_date: updates.dueDate?.toISOString(),
+        assigned_to: updates.assignedTo,
         client_id: updates.clientId,
         project_id: updates.projectId,
         tags: updates.tags,
         recurrence: updates.recurrence,
-        recurrence_end_date: updates.recurrenceEndDate,
+        recurrence_end_date: updates.recurrenceEndDate?.toISOString(),
         requires_review: updates.requiresReview,
         review_status: updates.reviewStatus,
         reviewer_id: updates.reviewerId,
         comments: updates.comments,
         time_spent_minutes: updates.timeSpentMinutes,
-        started_at: updates.startedAt,
-        completed_at: updates.completedAt
+        started_at: updates.startedAt?.toISOString(),
+        completed_at: updates.completedDate?.toISOString()
       })
       .eq('id', id)
       .select()

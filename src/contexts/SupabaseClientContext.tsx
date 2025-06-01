@@ -33,25 +33,25 @@ export const SupabaseClientProvider: React.FC<{ children: React.ReactNode }> = (
       setLoading(true);
       const data = await clientService.getAll();
       // Transform database format to client interface
-      const transformedClients = data.map(dbClient => ({
+      const transformedClients: Client[] = data.map(dbClient => ({
         id: dbClient.id,
         name: dbClient.name,
         email: dbClient.email,
         phone: dbClient.phone,
         company: dbClient.company,
         address: dbClient.address,
-        city: dbClient.city,
-        state: dbClient.state,
-        postalCode: dbClient.postal_code,
-        country: dbClient.country,
         abn: dbClient.abn,
-        registrationDate: dbClient.registration_date,
+        gstRegistrationDate: dbClient.registration_date,
         entityType: dbClient.entity_type,
-        status: dbClient.status,
-        notes: dbClient.notes,
+        active: dbClient.status === 'active',
+        notes: typeof dbClient.notes === 'string' ? JSON.parse(dbClient.notes || '[]') : [],
         whatsappNumber: dbClient.whatsapp_number,
         preferredContactMethod: dbClient.preferred_contact_method,
-        createdAt: dbClient.created_at
+        createdAt: new Date(dbClient.created_at),
+        // Default values for required properties
+        requiredServices: [],
+        services: [],
+        documents: []
       }));
       setClients(transformedClients);
     } catch (error) {
