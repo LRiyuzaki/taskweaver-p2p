@@ -34,7 +34,6 @@ export const sampleClients: Client[] = [
       incomeTax: true,
       bookkeeping: true
     },
-    gstFrequency: 'quarterly',
     createdAt: new Date('2024-01-15'),
     whatsappNumber: '+61 400 123 456',
     preferredContactMethod: 'email'
@@ -62,7 +61,6 @@ export const sampleClients: Client[] = [
       incomeTax: true,
       bookkeeping: false
     },
-    gstFrequency: 'monthly',
     createdAt: new Date('2024-02-10'),
     whatsappNumber: '+61 400 654 321',
     preferredContactMethod: 'phone'
@@ -89,7 +87,6 @@ export const sampleClients: Client[] = [
       incomeTax: true,
       bookkeeping: true
     },
-    gstFrequency: 'annually',
     createdAt: new Date('2024-03-05'),
     whatsappNumber: '+61 400 987 654',
     preferredContactMethod: 'email'
