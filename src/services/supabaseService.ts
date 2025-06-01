@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { Client } from '@/types/client';
@@ -32,18 +31,18 @@ export const clientService = {
       .insert({
         name: client.name,
         email: client.email,
-        phone: client.phone,
-        company: client.company,
-        address: client.address || '',
-        city: client.address || '',
-        state: client.address || '',
-        postal_code: client.address || '',
+        phone: client.phone || '',
+        company: client.company || '',
+        address: typeof client.address === 'string' ? client.address : (client.address?.registered || ''),
+        city: '',
+        state: '',
+        postal_code: '',
         country: 'Australia',
         abn: client.abn || '',
-        registration_date: client.gstRegistrationDate,
+        registration_date: client.gstRegistrationDate?.toISOString().split('T')[0] || null,
         entity_type: client.entityType || 'individual',
         status: client.active ? 'active' : 'inactive',
-        notes: typeof client.notes === 'string' ? client.notes : JSON.stringify(client.notes || []),
+        notes: client.notes || '',
         whatsapp_number: client.whatsappNumber || '',
         preferred_contact_method: client.preferredContactMethod || 'email'
       })
@@ -60,18 +59,18 @@ export const clientService = {
       .update({
         name: updates.name,
         email: updates.email,
-        phone: updates.phone,
-        company: updates.company,
-        address: updates.address || '',
-        city: updates.address || '',
-        state: updates.address || '',
-        postal_code: updates.address || '',
+        phone: updates.phone || '',
+        company: updates.company || '',
+        address: typeof updates.address === 'string' ? updates.address : (updates.address?.registered || ''),
+        city: '',
+        state: '',
+        postal_code: '',
         country: 'Australia',
         abn: updates.abn || '',
-        registration_date: updates.gstRegistrationDate,
+        registration_date: updates.gstRegistrationDate?.toISOString().split('T')[0] || null,
         entity_type: updates.entityType || 'individual',
         status: updates.active ? 'active' : 'inactive',
-        notes: typeof updates.notes === 'string' ? updates.notes : JSON.stringify(updates.notes || []),
+        notes: updates.notes || '',
         whatsapp_number: updates.whatsappNumber || '',
         preferred_contact_method: updates.preferredContactMethod || 'email'
       })
@@ -135,10 +134,13 @@ export const taskService = {
       completedDate: task.completed_at ? new Date(task.completed_at) : undefined,
       subtasks: task.subtasks?.map(subtask => ({
         id: subtask.id,
+        taskId: subtask.task_id,
         title: subtask.title,
         description: subtask.description,
         completed: subtask.completed,
-        orderPosition: subtask.order_position
+        orderPosition: subtask.order_position,
+        createdAt: new Date(subtask.created_at || new Date()),
+        completedAt: subtask.completed_at ? new Date(subtask.completed_at) : undefined
       })) || []
     })) || [];
   },
@@ -184,10 +186,13 @@ export const taskService = {
       completedDate: data.completed_at ? new Date(data.completed_at) : undefined,
       subtasks: data.subtasks?.map(subtask => ({
         id: subtask.id,
+        taskId: subtask.task_id,
         title: subtask.title,
         description: subtask.description,
         completed: subtask.completed,
-        orderPosition: subtask.order_position
+        orderPosition: subtask.order_position,
+        createdAt: new Date(subtask.created_at || new Date()),
+        completedAt: subtask.completed_at ? new Date(subtask.completed_at) : undefined
       })) || []
     };
   },

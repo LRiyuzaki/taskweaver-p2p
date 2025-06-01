@@ -16,7 +16,7 @@ export interface Client {
   
   // Collections
   services: Service[];
-  notes: Note[];
+  notes: string; // Changed from Note[] to string to match database
   documents: Document[];
   
   // Entity information
@@ -42,11 +42,13 @@ export interface Client {
   
   // Additional fields
   startDate?: Date;
-  address?: {
-    registered: string;
-    business?: string;
-  };
+  address?: string; // Simplified from complex object to string to match database
   tasks?: Task[];
+  
+  // Additional properties that exist in database
+  abn?: string;
+  whatsappNumber?: string;
+  preferredContactMethod?: string;
   
   // Compliance-specific flags
   isGSTRegistered?: boolean;
