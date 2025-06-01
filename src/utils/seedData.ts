@@ -1,6 +1,15 @@
 
-import { Client } from '@/types/client';
+import { Client, Service } from '@/types/client';
 import { Task } from '@/types/task';
+
+// Helper function to create Service objects
+const createService = (id: string, name: string): Service => ({
+  id,
+  name,
+  description: `${name} service`,
+  startDate: new Date(),
+  status: 'active'
+});
 
 export const sampleClients: Client[] = [
   {
@@ -17,7 +26,10 @@ export const sampleClients: Client[] = [
     companyType: 'Pty Ltd',
     active: true,
     notes: '',
-    services: ['gst-filing', 'bookkeeping'],
+    services: [
+      createService('gst-filing', 'GST Filing'),
+      createService('bookkeeping', 'Bookkeeping')
+    ],
     documents: [],
     requiredServices: {
       gst: true,
@@ -43,7 +55,10 @@ export const sampleClients: Client[] = [
     companyType: 'Partnership',
     active: true,
     notes: '',
-    services: ['gst-filing', 'income-tax'],
+    services: [
+      createService('gst-filing', 'GST Filing'),
+      createService('income-tax', 'Income Tax')
+    ],
     documents: [],
     requiredServices: {
       gst: true,
@@ -69,7 +84,9 @@ export const sampleClients: Client[] = [
     companyType: 'Sole Trader',
     active: true,
     notes: '',
-    services: ['bookkeeping'],
+    services: [
+      createService('bookkeeping', 'Bookkeeping')
+    ],
     documents: [],
     requiredServices: {
       gst: false,
