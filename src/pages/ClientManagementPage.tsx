@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Filter
 } from "lucide-react";
-import { useClientContext } from "@/contexts/ClientContext";
+import { useSupabaseClientContext } from "@/contexts/SupabaseClientContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ClientForm } from "@/components/ClientForm";
 import { ClientList } from "@/components/ClientList";
@@ -33,21 +33,39 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const ClientManagementPage = () => {
-  const { clients, addClient, getAvailableServiceNames } = useClientContext();
+  const { clients, createClient, loading } = useSupabaseClientContext();
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilters, setServiceFilters] = useState<string[]>([]);
+
+  // Get available services from clients
+  const getAvailableServiceNames = () => {
+    const services = new Set<string>();
+    clients.forEach(client => {
+      if (client.services) {
+        client.services.forEach(service => {
+          if (typeof service === 'string') {
+            services.add(service);
+          } else if (service && typeof service === 'object' && 'name' in service) {
+            services.add(service.name);
+          }
+        });
+      }
+    });
+    return Array.from(services);
+  };
+
   const availableServices = getAvailableServiceNames();
 
   const handleClientClick = (clientId: string) => {
     setSelectedClientId(clientId);
   };
 
-  const handleAddClientSubmit = (formData: any) => {
+  const handleAddClientSubmit = async (formData: any) => {
     try {
-      addClient(formData);
+      await createClient(formData);
       setIsAddClientDialogOpen(false);
       toast({
         title: "Client Created",
@@ -90,9 +108,29 @@ const ClientManagementPage = () => {
     
     // Check if client has any of the required services
     return matchesSearch && serviceFilters.some(service => 
-      client.requiredServices && client.requiredServices[service]
+      client.services && client.services.some(clientService => 
+        typeof clientService === 'string' ? clientService === service : clientService.name === service
+      )
     );
   });
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-screen">
+        <Header />
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading clients...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -153,42 +191,44 @@ const ClientManagementPage = () => {
                     />
                   </div>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="gap-1">
-                        <Filter className="h-4 w-4" />
-                        Filter
+                  {availableServices.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-1">
+                          <Filter className="h-4 w-4" />
+                          Filter
+                          {serviceFilters.length > 0 && (
+                            <Badge variant="secondary" className="ml-1 h-5 px-1">
+                              {serviceFilters.length}
+                            </Badge>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem disabled className="font-semibold">
+                          Filter by Service
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {availableServices.map(service => (
+                          <DropdownMenuCheckboxItem
+                            key={service}
+                            checked={serviceFilters.includes(service)}
+                            onCheckedChange={() => toggleServiceFilter(service)}
+                          >
+                            {service}
+                          </DropdownMenuCheckboxItem>
+                        ))}
                         {serviceFilters.length > 0 && (
-                          <Badge variant="secondary" className="ml-1 h-5 px-1">
-                            {serviceFilters.length}
-                          </Badge>
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setServiceFilters([])}>
+                              Clear Filters
+                            </DropdownMenuItem>
+                          </>
                         )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem disabled className="font-semibold">
-                        Filter by Service
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {availableServices.map(service => (
-                        <DropdownMenuCheckboxItem
-                          key={service}
-                          checked={serviceFilters.includes(service)}
-                          onCheckedChange={() => toggleServiceFilter(service)}
-                        >
-                          {service}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      {serviceFilters.length > 0 && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setServiceFilters([])}>
-                            Clear Filters
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   
                   <Button 
                     variant="ghost" 
@@ -242,7 +282,7 @@ const ClientManagementPage = () => {
                 <p className="text-muted-foreground mb-4">
                   Generate comprehensive reports for compliance tracking and team performance.
                 </p>
-                <Button onClick={() => window.location.href = '/reports-list'}>
+                <Button onClick={() => window.location.href = '/reports'}>
                   Go to Reports
                 </Button>
               </div>

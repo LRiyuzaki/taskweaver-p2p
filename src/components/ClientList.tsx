@@ -66,6 +66,20 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
     return true;
   });
 
+  if (!clients || clients.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <div className="flex flex-col items-center justify-center text-muted-foreground">
+            <Building className="h-12 w-12 mb-4" />
+            <h3 className="text-lg font-medium mb-2">No clients found</h3>
+            <p>Start by adding your first client to get started.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <div className="p-4 border-b">
@@ -73,7 +87,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
           <div>
             <Label>Entity Type</Label>
             <Select
-              value={filters.entityType || "all"} // Ensure we never have empty string
+              value={filters.entityType || "all"}
               onValueChange={(value) => setFilters(prev => ({ ...prev, entityType: value === "all" ? undefined : value }))}
             >
               <SelectTrigger>
@@ -179,11 +193,13 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                     <div className="flex flex-col">
                       <div className="flex items-center">
                         <Building className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {client.name}
+                        {client.name || 'Unnamed Client'}
                       </div>
-                      <span className="text-sm text-muted-foreground mt-1">
-                        {client.company}
-                      </span>
+                      {client.company && (
+                        <span className="text-sm text-muted-foreground mt-1">
+                          {client.company}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{client.contactPerson || "-"}</TableCell>
@@ -191,7 +207,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                     <div className="space-y-1">
                       <div className="flex items-center text-sm">
                         <Mail className="h-3 w-3 mr-1 text-muted-foreground" /> 
-                        {client.email}
+                        {client.email || 'No email'}
                       </div>
                       {client.phone && (
                         <div className="flex items-center text-sm">
@@ -219,12 +235,18 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {client.requiredServices && Object.entries(client.requiredServices)
-                        .filter(([_, isRequired]) => isRequired)
-                        .map(([serviceName]) => (
-                          <Badge key={serviceName} variant="outline">{serviceName}</Badge>
+                      {client.services && client.services.length > 0 ? (
+                        client.services.slice(0, 2).map((service, index) => (
+                          <Badge key={index} variant="outline">
+                            {typeof service === 'string' ? service : service.name || 'Service'}
+                          </Badge>
                         ))
-                      }
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No services</span>
+                      )}
+                      {client.services && client.services.length > 2 && (
+                        <Badge variant="outline">+{client.services.length - 2} more</Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
