@@ -192,7 +192,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               <CardTitle className="text-2xl">{client?.name}</CardTitle>
               <CardDescription>{client?.company}</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex space-x-1">
               {activeServices && activeServices.length > 0 ? 
                 activeServices.map(serviceName => (
                   <Badge key={serviceName}>{serviceName}</Badge>
@@ -434,18 +434,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
               Update client information and services.
             </DialogDescription>
           </DialogHeader>
-          <ClientForm client={{
-            ...client,
-            // Ensure requiredServices are correctly passed to the form
-            requiredServices: client.requiredServices ? 
-              Object.entries(client.requiredServices)
-                .filter(([_, isSelected]) => isSelected === true)
-                .reduce((acc, [name]) => {
-                  acc[name] = true;
-                  return acc;
-                }, {} as Record<string, boolean>) 
-              : {}
-          }} onSubmit={handleEditSubmit} />
+          <ClientForm client={client} onSubmit={handleEditSubmit} />
         </DialogContent>
       </Dialog>
       

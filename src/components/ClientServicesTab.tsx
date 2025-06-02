@@ -31,17 +31,7 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
     
     // Override with client's required services if they exist
     if (client.requiredServices) {
-      // Create a copy of defaultServices
-      const updatedServices = { ...defaultServices };
-      
-      // Only update services that are explicitly true
-      Object.entries(client.requiredServices).forEach(([name, value]) => {
-        if (value === true) {
-          updatedServices[name] = true;
-        }
-      });
-      
-      return updatedServices;
+      return { ...defaultServices, ...client.requiredServices };
     }
     
     return defaultServices;
@@ -73,17 +63,8 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) 
         return acc;
       }, {} as Record<string, boolean>);
       
-      // Create a copy of defaultServices
-      const updatedServices = { ...defaultServices };
-      
-      // Only update services that are explicitly true
-      Object.entries(client.requiredServices).forEach(([name, value]) => {
-        if (value === true) {
-          updatedServices[name] = true;
-        }
-      });
-      
-      setSelectedServices(updatedServices);
+      // Merge with client's required services
+      setSelectedServices({ ...defaultServices, ...client.requiredServices });
     } else {
       // Initialize with all services set to false
       const defaultServices = availableServices.reduce((acc, serviceName) => {
