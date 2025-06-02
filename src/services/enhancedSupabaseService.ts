@@ -90,6 +90,80 @@ export interface KPISummary {
   team_utilization_rate: number;
 }
 
+// Helper function to transform database client to Client type
+function transformClient(dbClient: any): Client {
+  return {
+    id: dbClient.id,
+    name: dbClient.name,
+    email: dbClient.email,
+    company: dbClient.company || '',
+    contactPerson: dbClient.contact_person,
+    phone: dbClient.phone,
+    createdAt: new Date(dbClient.created_at),
+    active: dbClient.client_status === 'active',
+    requiredServices: {},
+    services: dbClient.client_services_enhanced?.map((cs: any) => ({
+      id: cs.service_id,
+      name: cs.team_services?.name || 'Unknown Service',
+      status: cs.is_active ? 'active' : 'inactive',
+      startDate: cs.start_date ? new Date(cs.start_date) : undefined,
+      endDate: cs.end_date ? new Date(cs.end_date) : undefined
+    })) || [],
+    notes: dbClient.notes || '',
+    documents: [],
+    entityType: dbClient.entity_type,
+    gstin: dbClient.gstin,
+    pan: dbClient.pan,
+    tan: dbClient.tan,
+    cin: dbClient.cin,
+    abn: dbClient.abn,
+    address: dbClient.address,
+    whatsappNumber: dbClient.whatsapp_number,
+    preferredContactMethod: dbClient.preferred_contact_method
+  };
+}
+
+// Helper function to transform database task to Task type
+function transformTask(dbTask: any): Task {
+  return {
+    id: dbTask.id,
+    title: dbTask.title,
+    description: dbTask.description,
+    status: dbTask.status as 'todo' | 'inProgress' | 'review' | 'done',
+    priority: dbTask.priority as 'low' | 'medium' | 'high',
+    dueDate: dbTask.due_date ? new Date(dbTask.due_date) : undefined,
+    createdAt: new Date(dbTask.created_at),
+    updatedAt: dbTask.updated_at ? new Date(dbTask.updated_at) : undefined,
+    completedDate: dbTask.completed_at ? new Date(dbTask.completed_at) : undefined,
+    startedAt: dbTask.started_at ? new Date(dbTask.started_at) : undefined,
+    timeSpentMinutes: dbTask.time_spent_minutes || 0,
+    assignedTo: dbTask.assigned_to,
+    assigneeName: dbTask.task_assignments?.[0]?.team_users?.full_name,
+    clientId: dbTask.client_id,
+    clientName: dbTask.clients?.name || dbTask.clients?.company,
+    projectId: dbTask.project_id,
+    serviceId: dbTask.service_id,
+    serviceName: dbTask.team_services?.name,
+    requiresReview: dbTask.requires_review || false,
+    reviewerId: dbTask.reviewer_id,
+    reviewStatus: dbTask.review_status as 'pending' | 'approved' | 'rejected' | undefined,
+    comments: dbTask.comments,
+    tags: dbTask.tags || [],
+    recurrence: (dbTask.recurrence || 'none') as 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly',
+    recurrenceEndDate: dbTask.recurrence_end_date ? new Date(dbTask.recurrence_end_date) : undefined,
+    subtasks: dbTask.subtasks?.map((st: any) => ({
+      id: st.id,
+      taskId: st.task_id,
+      title: st.title,
+      description: st.description,
+      completed: st.completed,
+      orderPosition: st.order_position,
+      createdAt: new Date(st.created_at),
+      completedAt: st.completed_at ? new Date(st.completed_at) : undefined
+    })) || []
+  };
+}
+
 // Enhanced API service class
 export class EnhancedSupabaseService {
   // =============================================
@@ -114,7 +188,7 @@ export class EnhancedSupabaseService {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(transformClient);
   }
 
   async getClientById(id: string): Promise<Client | null> {
@@ -143,7 +217,7 @@ export class EnhancedSupabaseService {
       .single();
     
     if (error) throw error;
-    return data;
+    return data ? transformClient(data) : null;
   }
 
   async createClient(client: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
@@ -169,7 +243,7 @@ export class EnhancedSupabaseService {
       .single();
     
     if (error) throw error;
-    return data;
+    return transformClient(data);
   }
 
   // =============================================
@@ -206,7 +280,7 @@ export class EnhancedSupabaseService {
     const { data, error } = await query;
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(transformTask);
   }
 
   async createTask(task: Omit<Task, 'id' | 'createdAt'>): Promise<Task> {
@@ -231,7 +305,7 @@ export class EnhancedSupabaseService {
       .single();
     
     if (error) throw error;
-    return data;
+    return transformTask(data);
   }
 
   async updateTaskStatus(taskId: string, status: string): Promise<void> {
