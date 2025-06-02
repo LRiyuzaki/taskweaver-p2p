@@ -1,10 +1,11 @@
+
 import { useEffect } from 'react';
-import { useClientContext } from '@/contexts/ClientContext';
+import { useSupabaseClientContext } from '@/contexts/SupabaseClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { addMonths, addDays, startOfMonth, endOfMonth, isBefore } from 'date-fns';
 
 export const useComplianceScheduler = () => {
-  const { clients, clientServices, serviceTypes } = useClientContext();
+  const { clients } = useSupabaseClientContext();
   const { tasks, addTask } = useTaskContext();
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export const useComplianceScheduler = () => {
             priority: 'high',
             dueDate,
             tags: ['Income Tax', 'Compliance', 'Annual'],
-            recurrence: 'yearly' // Changed from "annually" to "yearly"
+            recurrence: 'yearly'
           });
         }
       }
@@ -165,7 +166,7 @@ export const useComplianceScheduler = () => {
             priority: 'high',
             dueDate: aocDueDate,
             tags: ['ROC', 'Compliance', 'Annual'],
-            recurrence: 'yearly' // Changed from "annually" to "yearly"
+            recurrence: 'yearly'
           });
         }
       }

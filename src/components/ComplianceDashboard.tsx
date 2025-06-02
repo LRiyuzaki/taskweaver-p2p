@@ -11,7 +11,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { useClientContext } from '@/contexts/ClientContext';
+import { useSupabaseClientContext } from '@/contexts/SupabaseClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { format, addMonths, isBefore, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { Calendar, Receipt, AlertCircle, BarChart } from "lucide-react";
@@ -20,7 +20,7 @@ import { ComplianceAnalytics } from './ComplianceAnalytics';
 import { ComplianceReporting } from './ComplianceReporting';
 
 export const ComplianceDashboard = () => {
-  const { clients } = useClientContext();
+  const { clients } = useSupabaseClientContext();
   const { tasks, addTask } = useTaskContext();
 
   // Get current month's GST filing deadlines

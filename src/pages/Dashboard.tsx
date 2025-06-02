@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Header } from "@/components/Header";
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
@@ -14,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 import { ClientList } from '@/components/ClientList';
 import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { ComplianceDashboard } from '@/components/ComplianceDashboard';
-import { useComplianceScheduler } from '@/hooks/useComplianceScheduler';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
@@ -71,9 +71,6 @@ const Dashboard = () => {
       navigate(`/client/${task.clientId}`);
     }
   };
-
-  // Initialize compliance task scheduler
-  useComplianceScheduler();
   
   return (
     <div className="flex flex-col h-screen">

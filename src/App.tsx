@@ -1,59 +1,47 @@
 
-import { BrowserRouter as Router, RouterProvider } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { PerformanceProvider } from '@/contexts/PerformanceContext';
-import { P2PProvider } from '@/contexts/P2PContext';
-import { P2PAuthProvider } from '@/contexts/P2PAuthContext';
-import { ThemeProvider } from '@/components/theme-provider';
-import { TaskProvider } from '@/contexts/TaskContext';
-import { SupabaseTaskProvider } from '@/contexts/SupabaseTaskContext';
-import { SupabaseClientProvider } from '@/contexts/SupabaseClientContext';
-import { DatabaseProvider } from '@/contexts/DatabaseContext';
-import { MigrationStatus } from '@/components/MigrationStatus';
-import { useSupabaseIntegration } from '@/hooks/useSupabaseIntegration';
-import { router } from '@/router';
-import './App.css';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { router } from "@/router";
+import { RouterProvider } from "react-router-dom";
+import { ClientProvider } from "@/contexts/ClientContext";
+import { TaskProvider } from "@/contexts/TaskContext";
+import { SupabaseClientProvider } from "@/contexts/SupabaseClientContext";
+import { P2PAuthProvider } from "@/contexts/P2PAuthContext";
+import { P2PProvider } from "@/contexts/P2PContext";
+import { DatabaseProvider } from "@/contexts/DatabaseContext";
+import { PerformanceProvider } from "@/contexts/PerformanceContext";
+import "./App.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
     },
   },
 });
-
-const AppContent = () => {
-  const { isInitialized, migrationStatus } = useSupabaseIntegration();
-
-  return (
-    <>
-      {(!isInitialized || migrationStatus === 'in-progress') && <MigrationStatus />}
-      <RouterProvider router={router} />
-    </>
-  );
-};
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <PerformanceProvider>
-          <P2PAuthProvider>
-            <P2PProvider>
-              <DatabaseProvider>
-                <TaskProvider>
-                  <SupabaseClientProvider>
-                    <SupabaseTaskProvider>
-                      <AppContent />
+          <DatabaseProvider>
+            <SupabaseClientProvider>
+              <P2PAuthProvider>
+                <P2PProvider>
+                  <ClientProvider>
+                    <TaskProvider>
+                      <RouterProvider router={router} />
                       <Toaster />
-                    </SupabaseTaskProvider>
-                  </SupabaseClientProvider>
-                </TaskProvider>
-              </DatabaseProvider>
-            </P2PProvider>
-          </P2PAuthProvider>
+                    </TaskProvider>
+                  </ClientProvider>
+                </P2PProvider>
+              </P2PAuthProvider>
+            </SupabaseClientProvider>
+          </DatabaseProvider>
         </PerformanceProvider>
       </ThemeProvider>
     </QueryClientProvider>
