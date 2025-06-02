@@ -1,19 +1,21 @@
 
 import { createBrowserRouter } from "react-router-dom";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import TasksPage from "./pages/TasksPage";
-import ClientManagementPage from "./pages/ClientManagementPage";
-import ClientPage from "./pages/ClientPage";
-import Settings from "./pages/Settings";
-import AdvancedSettings from "./pages/AdvancedSettings";
-import TaskTemplatesPage from "./pages/TaskTemplatesPage";
-import Database from "./pages/Database";
-import BulkTaskCreationPage from "./pages/BulkTaskCreationPage";
-import HelpPage from "./pages/HelpPage";
-import NotFound from "./pages/NotFound";
-import ReportListPage from "./pages/ReportListPage";
-import ReportsPage from "./pages/ReportsPage";
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import EnhancedDashboard from "@/pages/EnhancedDashboard";
+import ClientManagement from "@/pages/ClientManagement";
+import ClientManagementPage from "@/pages/ClientManagementPage";
+import ClientPage from "@/pages/ClientPage";
+import TasksPage from "@/pages/TasksPage";
+import ReportsPage from "@/pages/ReportsPage";
+import ReportListPage from "@/pages/ReportListPage";
+import Settings from "@/pages/Settings";
+import AdvancedSettings from "@/pages/AdvancedSettings";
+import HelpPage from "@/pages/HelpPage";
+import TaskTemplatesPage from "@/pages/TaskTemplatesPage";
+import BulkTaskCreationPage from "@/pages/BulkTaskCreationPage";
+import Database from "@/pages/Database";
+import NotFound from "@/pages/NotFound";
 
 export const router = createBrowserRouter([
   {
@@ -25,19 +27,15 @@ export const router = createBrowserRouter([
     element: <Dashboard />,
   },
   {
-    path: "/tasks",
-    element: <TasksPage />,
-  },
-  {
-    path: "/tasks/new",
-    element: <TasksPage />,
-  },
-  {
-    path: "/tasks/:taskId",
-    element: <TasksPage />,
+    path: "/enhanced-dashboard",
+    element: <EnhancedDashboard />,
   },
   {
     path: "/client-management",
+    element: <ClientManagement />,
+  },
+  {
+    path: "/client-management-page",
     element: <ClientManagementPage />,
   },
   {
@@ -45,11 +43,15 @@ export const router = createBrowserRouter([
     element: <ClientPage />,
   },
   {
+    path: "/tasks",
+    element: <TasksPage />,
+  },
+  {
     path: "/reports",
     element: <ReportsPage />,
   },
   {
-    path: "/reports-list",
+    path: "/report-list",
     element: <ReportListPage />,
   },
   {
@@ -61,20 +63,20 @@ export const router = createBrowserRouter([
     element: <AdvancedSettings />,
   },
   {
+    path: "/help",
+    element: <HelpPage />,
+  },
+  {
     path: "/task-templates",
     element: <TaskTemplatesPage />,
   },
   {
-    path: "/database",
-    element: <Database />,
-  },
-  {
-    path: "/bulk-task-creation",
+    path: "/bulk-tasks",
     element: <BulkTaskCreationPage />,
   },
   {
-    path: "/help",
-    element: <HelpPage />,
+    path: "/database",
+    element: <Database />,
   },
   {
     path: "*",

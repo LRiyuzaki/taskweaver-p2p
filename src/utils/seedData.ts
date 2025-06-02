@@ -1,3 +1,4 @@
+
 import { Client, Service } from '@/types/client';
 import { Task } from '@/types/task';
 
@@ -23,10 +24,11 @@ export const sampleClients: Client[] = [
     gstRegistrationDate: new Date('2020-01-15'),
     entityType: 'Company',
     active: true,
-    notes: '',
+    notes: 'High-value client with multiple compliance requirements',
     services: [
-      createService('gst-filing', 'GST Filing'),
-      createService('bookkeeping', 'Bookkeeping')
+      createService('gst-filing', 'Monthly GST Filing'),
+      createService('bookkeeping', 'Monthly Bookkeeping'),
+      createService('payroll', 'Payroll Processing')
     ],
     documents: [],
     requiredServices: {
@@ -50,10 +52,11 @@ export const sampleClients: Client[] = [
     gstRegistrationDate: new Date('2019-06-20'),
     entityType: 'Partnership',
     active: true,
-    notes: '',
+    notes: 'Quarterly BAS and annual compliance services',
     services: [
-      createService('gst-filing', 'GST Filing'),
-      createService('income-tax', 'Income Tax')
+      createService('gst-filing', 'Quarterly GST Filing'),
+      createService('income-tax', 'Annual Income Tax'),
+      createService('audit', 'Annual Audit')
     ],
     documents: [],
     requiredServices: {
@@ -77,9 +80,10 @@ export const sampleClients: Client[] = [
     gstRegistrationDate: new Date('2021-03-10'),
     entityType: 'Individual',
     active: true,
-    notes: '',
+    notes: 'Small business with basic compliance needs',
     services: [
-      createService('bookkeeping', 'Bookkeeping')
+      createService('bookkeeping', 'Monthly Bookkeeping'),
+      createService('bas', 'Quarterly BAS')
     ],
     documents: [],
     requiredServices: {
@@ -90,6 +94,64 @@ export const sampleClients: Client[] = [
     createdAt: new Date('2024-03-05'),
     whatsappNumber: '+61 400 987 654',
     preferredContactMethod: 'email'
+  },
+  {
+    id: '4',
+    name: 'Emma Thompson',
+    email: 'emma.thompson@techstart.com',
+    company: 'TechStart Solutions',
+    phone: '+61 2 5555 0123',
+    contactPerson: 'Emma Thompson',
+    address: '321 Innovation Drive, Sydney NSW 2000',
+    abn: '55 123 456 789',
+    gstRegistrationDate: new Date('2023-01-15'),
+    entityType: 'Company',
+    active: true,
+    notes: 'Fast-growing tech startup requiring comprehensive services',
+    services: [
+      createService('gst-filing', 'Monthly GST Filing'),
+      createService('bookkeeping', 'Monthly Bookkeeping'),
+      createService('payroll', 'Fortnightly Payroll'),
+      createService('management-reports', 'Monthly Management Reports')
+    ],
+    documents: [],
+    requiredServices: {
+      gst: true,
+      incomeTax: true,
+      bookkeeping: true
+    },
+    createdAt: new Date('2024-01-20'),
+    whatsappNumber: '+61 400 555 123',
+    preferredContactMethod: 'email'
+  },
+  {
+    id: '5',
+    name: 'David Chen',
+    email: 'david.chen@retail.com',
+    company: 'Chen Retail Group',
+    phone: '+61 3 7777 8888',
+    contactPerson: 'David Chen',
+    address: '88 Retail Street, Melbourne VIC 3001',
+    abn: '77 888 999 000',
+    gstRegistrationDate: new Date('2018-05-10'),
+    entityType: 'Company',
+    active: true,
+    notes: 'Multi-location retail business with complex GST requirements',
+    services: [
+      createService('gst-filing', 'Monthly GST Filing'),
+      createService('bookkeeping', 'Monthly Bookkeeping'),
+      createService('management-reports', 'Monthly Management Reports'),
+      createService('inventory-management', 'Inventory Management')
+    ],
+    documents: [],
+    requiredServices: {
+      gst: true,
+      incomeTax: true,
+      bookkeeping: true
+    },
+    createdAt: new Date('2024-02-28'),
+    whatsappNumber: '+61 400 777 888',
+    preferredContactMethod: 'phone'
   }
 ];
 
@@ -97,7 +159,7 @@ export const sampleTasks: Task[] = [
   {
     id: '1',
     title: 'Monthly GST Filing - Smith Enterprises',
-    description: 'Complete monthly GST return for December 2024',
+    description: 'Complete monthly GST return for December 2024. Review sales and purchase invoices, verify input tax credits, and submit BAS.',
     status: 'todo',
     priority: 'high',
     dueDate: new Date('2024-12-31'),
@@ -105,9 +167,9 @@ export const sampleTasks: Task[] = [
     assigneeName: 'Current User',
     clientId: '1',
     clientName: 'John Smith',
-    projectId: null,
-    projectName: null,
-    tags: ['GST', 'Monthly'],
+    projectId: 'gst-filing',
+    projectName: 'GST Filing',
+    tags: ['GST', 'Monthly', 'Compliance'],
     recurrence: 'monthly',
     recurrenceEndDate: new Date('2025-12-31'),
     timeSpentMinutes: 0,
@@ -118,50 +180,81 @@ export const sampleTasks: Task[] = [
     createdAt: new Date('2024-12-01'),
     startedAt: null,
     completedDate: null,
-    subtasks: []
+    subtasks: [
+      {
+        id: 'sub1-1',
+        taskId: '1',
+        title: 'Gather December sales invoices',
+        description: 'Collect all sales invoices for December 2024',
+        completed: false,
+        orderPosition: 1,
+        createdAt: new Date('2024-12-01'),
+        completedAt: null
+      },
+      {
+        id: 'sub1-2',
+        taskId: '1',
+        title: 'Review purchase invoices',
+        description: 'Verify all purchase invoices and input tax credits',
+        completed: false,
+        orderPosition: 2,
+        createdAt: new Date('2024-12-01'),
+        completedAt: null
+      }
+    ]
   },
   {
     id: '2',
     title: 'Quarterly BAS - Johnson & Associates',
-    description: 'Prepare quarterly Business Activity Statement',
-    status: 'inProgress',
+    description: 'Prepare quarterly Business Activity Statement for Q4 2024. Calculate GST liability and PAYG instalments.',
+    status: 'in_progress',
     priority: 'medium',
     dueDate: new Date('2025-01-28'),
     assignedTo: 'user1',
     assigneeName: 'Current User',
     clientId: '2',
     clientName: 'Sarah Johnson',
-    projectId: null,
-    projectName: null,
-    tags: ['BAS', 'Quarterly'],
+    projectId: 'bas',
+    projectName: 'BAS Filing',
+    tags: ['BAS', 'Quarterly', 'GST'],
     recurrence: 'quarterly',
     recurrenceEndDate: new Date('2025-12-31'),
-    timeSpentMinutes: 45,
+    timeSpentMinutes: 145,
     requiresReview: false,
     reviewStatus: 'pending',
     reviewerId: null,
-    comments: null,
+    comments: 'Working on PAYG calculations',
     createdAt: new Date('2024-12-15'),
     startedAt: new Date('2024-12-20'),
     completedDate: null,
     subtasks: [
       {
-        id: 'sub1',
+        id: 'sub2-1',
         taskId: '2',
-        title: 'Gather financial records',
-        description: 'Collect all receipts and invoices',
+        title: 'Gather quarterly financial records',
+        description: 'Collect all receipts and invoices for Q4',
         completed: true,
         orderPosition: 1,
         createdAt: new Date('2024-12-15'),
         completedAt: new Date('2024-12-18')
       },
       {
-        id: 'sub2',
+        id: 'sub2-2',
         taskId: '2',
-        title: 'Enter data into system',
-        description: 'Input all transactions',
-        completed: false,
+        title: 'Calculate GST liability',
+        description: 'Calculate total GST payable for the quarter',
+        completed: true,
         orderPosition: 2,
+        createdAt: new Date('2024-12-15'),
+        completedAt: new Date('2024-12-22')
+      },
+      {
+        id: 'sub2-3',
+        taskId: '2',
+        title: 'Enter data into BAS system',
+        description: 'Input all calculated amounts into the BAS portal',
+        completed: false,
+        orderPosition: 3,
         createdAt: new Date('2024-12-15'),
         completedAt: null
       }
@@ -169,8 +262,8 @@ export const sampleTasks: Task[] = [
   },
   {
     id: '3',
-    title: 'Bookkeeping Review - Wilson Consulting',
-    description: 'Monthly bookkeeping reconciliation and review',
+    title: 'Monthly Bookkeeping - Wilson Consulting',
+    description: 'Complete monthly bookkeeping reconciliation and review for November 2024. Bank reconciliation and expense categorization.',
     status: 'done',
     priority: 'low',
     dueDate: new Date('2024-12-15'),
@@ -178,20 +271,124 @@ export const sampleTasks: Task[] = [
     assigneeName: 'Current User',
     clientId: '3',
     clientName: 'Mike Wilson',
-    projectId: null,
-    projectName: null,
-    tags: ['Bookkeeping', 'Monthly'],
+    projectId: 'bookkeeping',
+    projectName: 'Bookkeeping',
+    tags: ['Bookkeeping', 'Monthly', 'Reconciliation'],
     recurrence: 'monthly',
     recurrenceEndDate: new Date('2025-12-31'),
-    timeSpentMinutes: 120,
+    timeSpentMinutes: 180,
     requiresReview: false,
     reviewStatus: 'approved',
     reviewerId: null,
-    comments: 'Completed without issues',
+    comments: 'Completed without issues. All transactions reconciled.',
     createdAt: new Date('2024-11-15'),
     startedAt: new Date('2024-12-10'),
     completedDate: new Date('2024-12-14'),
     subtasks: []
+  },
+  {
+    id: '4',
+    title: 'Annual Income Tax Return - TechStart Solutions',
+    description: 'Prepare annual company tax return for TechStart Solutions for FY2024. Review depreciation schedules and R&D claims.',
+    status: 'review',
+    priority: 'high',
+    dueDate: new Date('2025-02-15'),
+    assignedTo: 'user1',
+    assigneeName: 'Current User',
+    clientId: '4',
+    clientName: 'Emma Thompson',
+    projectId: 'income-tax',
+    projectName: 'Income Tax',
+    tags: ['Income Tax', 'Annual', 'Company'],
+    recurrence: 'annually',
+    recurrenceEndDate: new Date('2030-12-31'),
+    timeSpentMinutes: 420,
+    requiresReview: true,
+    reviewStatus: 'pending',
+    reviewerId: 'reviewer1',
+    comments: 'Draft completed, awaiting senior review for R&D claims',
+    createdAt: new Date('2024-11-01'),
+    startedAt: new Date('2024-11-15'),
+    completedDate: null,
+    subtasks: [
+      {
+        id: 'sub4-1',
+        taskId: '4',
+        title: 'Review financial statements',
+        description: 'Analyze P&L and balance sheet for FY2024',
+        completed: true,
+        orderPosition: 1,
+        createdAt: new Date('2024-11-01'),
+        completedAt: new Date('2024-11-20')
+      },
+      {
+        id: 'sub4-2',
+        taskId: '4',
+        title: 'Calculate depreciation',
+        description: 'Update depreciation schedules for all assets',
+        completed: true,
+        orderPosition: 2,
+        createdAt: new Date('2024-11-01'),
+        completedAt: new Date('2024-12-05')
+      },
+      {
+        id: 'sub4-3',
+        taskId: '4',
+        title: 'Prepare R&D claim',
+        description: 'Document and calculate R&D tax incentive claim',
+        completed: false,
+        orderPosition: 3,
+        createdAt: new Date('2024-11-01'),
+        completedAt: null
+      }
+    ]
+  },
+  {
+    id: '5',
+    title: 'Payroll Processing - Chen Retail Group',
+    description: 'Process fortnightly payroll for Chen Retail Group. Calculate superannuation and PAYG withholding.',
+    status: 'todo',
+    priority: 'medium',
+    dueDate: new Date('2025-01-10'),
+    assignedTo: 'user1',
+    assigneeName: 'Current User',
+    clientId: '5',
+    clientName: 'David Chen',
+    projectId: 'payroll',
+    projectName: 'Payroll',
+    tags: ['Payroll', 'Fortnightly', 'Superannuation'],
+    recurrence: 'weekly',
+    recurrenceEndDate: new Date('2025-12-31'),
+    timeSpentMinutes: 0,
+    requiresReview: false,
+    reviewStatus: 'pending',
+    reviewerId: null,
+    comments: null,
+    createdAt: new Date('2024-12-20'),
+    startedAt: null,
+    completedDate: null,
+    subtasks: [
+      {
+        id: 'sub5-1',
+        taskId: '5',
+        title: 'Collect timesheets',
+        description: 'Gather timesheets from all retail locations',
+        completed: false,
+        orderPosition: 1,
+        createdAt: new Date('2024-12-20'),
+        completedAt: null
+      },
+      {
+        id: 'sub5-2',
+        taskId: '5',
+        title: 'Calculate wages',
+        description: 'Calculate gross wages including overtime and penalties',
+        completed: false,
+        orderPosition: 2,
+        createdAt: new Date('2024-12-20'),
+        completedAt: null
+      }
+    ]
   }
 ];
 
@@ -199,7 +396,7 @@ export const sampleTasks: Task[] = [
 export const seedLocalStorage = () => {
   localStorage.setItem('clients', JSON.stringify(sampleClients));
   localStorage.setItem('tasks', JSON.stringify(sampleTasks));
-  console.log('Sample data seeded to localStorage');
+  console.log('Enhanced sample data seeded to localStorage');
 };
 
 // Helper function to clear localStorage
