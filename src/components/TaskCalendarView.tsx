@@ -110,9 +110,12 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 </>
               )
             }}
-            // Fix the type error by using className directly instead of styles
-            classNames={{
-              day: (date) => `${getDayClassNames(date)} relative`
+            styles={{
+              day: (date) => {
+                return {
+                  className: `${getDayClassNames(date)} relative`
+                };
+              }
             }}
           />
         </CardContent>
@@ -169,7 +172,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                     )}
                     <div className="flex justify-between mt-2">
                       <Badge variant={
-                        task.status === 'done' ? 'secondary' :
+                        task.status === 'done' ? 'success' :
                         task.status === 'inProgress' ? 'default' :
                         'outline'
                       }>

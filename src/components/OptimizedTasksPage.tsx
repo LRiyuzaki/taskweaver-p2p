@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,15 +15,14 @@ import { usePerformance } from '@/contexts/PerformanceContext';
 const OptimizedTasksPage = () => {
   const [activeView, setActiveView] = useState('board');
   const { isLowPerformanceMode } = usePerformance();
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   
   // Only render the active view to improve performance
   const renderActiveViewOnly = isLowPerformanceMode;
   
   // Memoize the views to avoid unnecessary re-renders
-  const boardView = useMemo(() => <TaskBoard onTaskSelect={setSelectedTaskIds} />, []);
-  const listView = useMemo(() => <TaskListView filterClient={undefined} />, []);
-  const calendarView = useMemo(() => <TaskCalendarView onSelectedTaskIdsChange={setSelectedTaskIds} />, []);
+  const boardView = useMemo(() => <TaskBoard />, []);
+  const listView = useMemo(() => <TaskListView />, []);
+  const calendarView = useMemo(() => <TaskCalendarView />, []);
 
   return (
     <div className="flex flex-col h-screen">

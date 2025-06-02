@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, GripVerticalIcon, Plus, X, ListFilter } from "lucide-react";
 import { useTaskContext } from '@/contexts/TaskContext';
-import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
+import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -129,7 +130,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ onTaskSelect }) => {
       tags: [],
       clientId: clientId || '',
       assignedTo: '',
-      recurrence: 'none' as RecurrenceType
+      recurrence: 'none'
     };
 
     addTask(newTask);

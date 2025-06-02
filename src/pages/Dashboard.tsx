@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Header } from "@/components/Header";
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -21,7 +21,6 @@ const Dashboard = () => {
   const { clients } = useClientContext();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const navigate = useNavigate();
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   
   // Get upcoming deadlines (due in the next 7 days)
   const today = new Date();
@@ -273,7 +272,7 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="calendar" className="space-y-6">
-              <TaskCalendarView onSelectedTaskIdsChange={setSelectedTaskIds} />
+              <TaskCalendarView />
             </TabsContent>
 
             <TabsContent value="compliance" className="space-y-6">
