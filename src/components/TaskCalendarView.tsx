@@ -51,6 +51,22 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
     onSelectedTaskIdsChange(updatedSelection);
   };
 
+  const getDayClassNames = (date: Date) => {
+    const tasksForDay = tasks.filter(task => 
+      task.dueDate && isSameDay(new Date(task.dueDate), date)
+    );
+    
+    if (tasksForDay.length === 0) return "";
+    
+    const hasPriorityHigh = tasksForDay.some(task => task.priority === 'high');
+    
+    if (hasPriorityHigh) {
+      return "bg-red-100 border-red-200 font-bold";
+    }
+    
+    return "bg-blue-50 border-blue-100 font-medium";
+  };
+
   const getDayContent = (date: Date) => {
     const tasksForDay = tasks.filter(task => 
       task.dueDate && isSameDay(new Date(task.dueDate), date)
@@ -81,16 +97,10 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 return tasks.some(task => 
                   task.dueDate && isSameDay(new Date(task.dueDate), date)
                 );
-              },
-              highPriorityDay: (date) => {
-                return tasks.some(task => 
-                  task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high'
-                );
               }
             }}
             modifiersClassNames={{
-              taskDay: "bg-blue-50 font-medium border-blue-100",
-              highPriorityDay: "bg-red-100 font-bold border-red-200"
+              taskDay: "relative"
             }}
             components={{
               DayContent: ({ date }) => (
@@ -99,6 +109,10 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                   {getDayContent(date)}
                 </>
               )
+            }}
+            // Fix the type error by using className directly instead of styles
+            classNames={{
+              day: (date) => `${getDayClassNames(date)} relative`
             }}
           />
         </CardContent>
@@ -134,8 +148,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                     <div className="flex justify-between">
                       <label 
                         htmlFor={`task-${task.id}`}
-                        className="font-medium cursor-pointer"
-                        onClick={() => handleTaskSelect(task.id)}
+                        className="font-medium"
                       >
                         {task.title}
                       </label>

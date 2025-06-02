@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Task } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -22,7 +21,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useNavigate } from 'react-router-dom';
 
 interface TaskDetailsProps {
   task: Task;
@@ -33,7 +31,6 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { updateTask, deleteTask, getTaskProgress } = useTaskContext();
-  const navigate = useNavigate();
   
   const progressPercentage = getTaskProgress(task.id);
   
@@ -47,7 +44,6 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     deleteTask(task.id);
     if (onClose) onClose();
     toast.success('Task deleted successfully');
-    navigate('/tasks');
   };
   
   const getPriorityColor = (priority: string) => {
@@ -63,7 +59,6 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
     switch (status) {
       case 'done': return 'bg-green-500 text-white';
       case 'inProgress': return 'bg-blue-500 text-white';
-      case 'review': return 'bg-amber-500 text-white';
       case 'todo': return 'bg-slate-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
@@ -97,8 +92,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           <div className="flex flex-wrap gap-2 mt-4">
             <Badge className={getStatusColor(task.status)}>
               {task.status === 'todo' ? 'To Do' : 
-               task.status === 'inProgress' ? 'In Progress' : 
-               task.status === 'review' ? 'In Review' : 'Done'}
+               task.status === 'inProgress' ? 'In Progress' : 'Done'}
             </Badge>
             
             <Badge className={getPriorityColor(task.priority)}>

@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Header } from "@/components/Header";
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { useTaskContext } from '@/contexts/TaskContext';
-import { useSupabaseClientContext } from '@/contexts/SupabaseClientContext';
+import { useClientContext } from '@/contexts/ClientContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TaskListView } from '@/components/TaskListView';
@@ -15,10 +14,11 @@ import { useNavigate } from 'react-router-dom';
 import { ClientList } from '@/components/ClientList';
 import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { ComplianceDashboard } from '@/components/ComplianceDashboard';
+import { useComplianceScheduler } from '@/hooks/useComplianceScheduler';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
-  const { clients } = useSupabaseClientContext();
+  const { clients } = useClientContext();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
   const navigate = useNavigate();
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -53,9 +53,10 @@ const Dashboard = () => {
   // Get recent clients
   const recentClients = [...clients]
     .sort((a, b) => {
-      const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
-      const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
-      return bDate.getTime() - aDate.getTime();
+      if (a.startDate && b.startDate) {
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      }
+      return 0;
     })
     .slice(0, 5);
   
@@ -71,6 +72,9 @@ const Dashboard = () => {
       navigate(`/client/${task.clientId}`);
     }
   };
+
+  // Initialize compliance task scheduler
+  useComplianceScheduler();
   
   return (
     <div className="flex flex-col h-screen">
@@ -210,7 +214,7 @@ const Dashboard = () => {
                             <div>
                               <h4 className="font-medium">{client.name}</h4>
                               <p className="text-sm text-muted-foreground">
-                                {client.email}
+                                {client.contactPerson || client.email}
                               </p>
                             </div>
                             <Button 

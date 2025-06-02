@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +11,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { useSupabaseClientContext } from '@/contexts/SupabaseClientContext';
+import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { format, addMonths, isBefore, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { Calendar, Receipt, AlertCircle, BarChart } from "lucide-react";
@@ -21,40 +20,28 @@ import { ComplianceAnalytics } from './ComplianceAnalytics';
 import { ComplianceReporting } from './ComplianceReporting';
 
 export const ComplianceDashboard = () => {
-  const { clients, loading: clientsLoading } = useSupabaseClientContext();
+  const { clients } = useClientContext();
   const { tasks, addTask } = useTaskContext();
-
-  if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading compliance data...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Get current month's GST filing deadlines
   const currentMonthGSTDeadlines = clients
     .filter(client => client.isGSTRegistered)
     .map(client => {
       const dueDate = new Date();
-      dueDate.setDate(20); // Default GST due date
+      dueDate.setDate(client.statutoryDueDates?.gstReturn || 20);
       
       const isOverdue = isBefore(dueDate, new Date());
       const filingTask = tasks.find(task => 
         task.clientId === client.id && 
-        task.tags?.includes('GST') &&
-        task.dueDate &&
-        isBefore(task.dueDate, endOfMonth(new Date())) &&
-        isBefore(startOfMonth(new Date()), task.dueDate)
+        task.tags.includes('GST') &&
+        isBefore(task.dueDate || new Date(), endOfMonth(new Date())) &&
+        isBefore(startOfMonth(new Date()), task.dueDate || new Date())
       );
 
       return {
         clientId: client.id,
         clientName: client.name,
-        gstin: client.gstin || 'N/A',
+        gstin: client.gstin,
         dueDate,
         status: filingTask?.status || 'pending',
         isOverdue
@@ -67,11 +54,11 @@ export const ComplianceDashboard = () => {
     .map(client => {
       const currentQuarter = Math.floor((new Date().getMonth() / 3));
       const quarterEndDate = addDays(addMonths(startOfMonth(new Date()), (currentQuarter + 1) * 3), -1);
-      const dueDate = addDays(quarterEndDate, 7); // Default TDS due date
+      const dueDate = addDays(quarterEndDate, client.statutoryDueDates?.tdsReturn || 7);
 
       const tdsTask = tasks.find(task => 
         task.clientId === client.id && 
-        task.tags?.includes('TDS') &&
+        task.tags.includes('TDS') &&
         task.dueDate && 
         isBefore(task.dueDate, addDays(dueDate, 1)) &&
         isBefore(quarterEndDate, task.dueDate)
@@ -103,13 +90,13 @@ export const ComplianceDashboard = () => {
           title: `GST Filing - ${client.name}`,
           description: `Monthly GST return filing for ${format(new Date(), 'MMMM yyyy')}`,
           tags: ['GST', 'Compliance', 'Monthly'],
-          dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), 20)
+          dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), client.statutoryDueDates?.gstReturn || 20)
         }
       : {
           title: `TDS Return - ${client.name}`,
           description: `Quarterly TDS return filing for Q${Math.floor((new Date().getMonth() / 3)) + 1}`,
           tags: ['TDS', 'Compliance', 'Quarterly'],
-          dueDate: addDays(addMonths(startOfMonth(new Date()), Math.floor(new Date().getMonth() / 3) * 3 + 3), 6)
+          dueDate: addDays(addMonths(startOfMonth(new Date()), Math.floor(new Date().getMonth() / 3) * 3 + 3), (client.statutoryDueDates?.tdsReturn || 7) - 1)
         };
 
     addTask({
@@ -245,48 +232,40 @@ export const ComplianceDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentMonthGSTDeadlines.length > 0 ? (
-                  currentMonthGSTDeadlines.map(deadline => (
-                    <TableRow key={deadline.clientId}>
-                      <TableCell>{deadline.clientName}</TableCell>
-                      <TableCell>{deadline.gstin}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {format(deadline.dueDate, 'dd MMM yyyy')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            deadline.status === 'done' ? 'default' :
-                            deadline.isOverdue ? 'destructive' : 'outline'
-                          }
+                {currentMonthGSTDeadlines.map(deadline => (
+                  <TableRow key={deadline.clientId}>
+                    <TableCell>{deadline.clientName}</TableCell>
+                    <TableCell>{deadline.gstin}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {format(deadline.dueDate, 'dd MMM yyyy')}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          deadline.status === 'done' ? 'default' :
+                          deadline.isOverdue ? 'destructive' : 'outline'
+                        }
+                      >
+                        {deadline.status === 'done' ? 'Completed' :
+                         deadline.isOverdue ? 'Overdue' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {deadline.status !== 'done' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCreateTask(deadline.clientId, 'GST')}
                         >
-                          {deadline.status === 'done' ? 'Completed' :
-                           deadline.isOverdue ? 'Overdue' : 'Pending'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {deadline.status !== 'done' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCreateTask(deadline.clientId, 'GST')}
-                          >
-                            Create Task
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                      No GST registered clients found
+                          Create Task
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </CardContent>
@@ -311,48 +290,40 @@ export const ComplianceDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {upcomingTDSDeadlines.length > 0 ? (
-                  upcomingTDSDeadlines.map(deadline => (
-                    <TableRow key={deadline.clientId}>
-                      <TableCell>{deadline.clientName}</TableCell>
-                      <TableCell>{deadline.tan}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {format(deadline.dueDate, 'dd MMM yyyy')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            deadline.status === 'done' ? 'default' :
-                            isBefore(deadline.dueDate, new Date()) ? 'destructive' : 'outline'
-                          }
+                {upcomingTDSDeadlines.map(deadline => (
+                  <TableRow key={deadline.clientId}>
+                    <TableCell>{deadline.clientName}</TableCell>
+                    <TableCell>{deadline.tan}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {format(deadline.dueDate, 'dd MMM yyyy')}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          deadline.status === 'done' ? 'default' :
+                          isBefore(deadline.dueDate, new Date()) ? 'destructive' : 'outline'
+                        }
+                      >
+                        {deadline.status === 'done' ? 'Completed' :
+                         isBefore(deadline.dueDate, new Date()) ? 'Overdue' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {deadline.status !== 'done' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCreateTask(deadline.clientId, 'TDS')}
                         >
-                          {deadline.status === 'done' ? 'Completed' :
-                           isBefore(deadline.dueDate, new Date()) ? 'Overdue' : 'Pending'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {deadline.status !== 'done' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCreateTask(deadline.clientId, 'TDS')}
-                          >
-                            Create Task
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                      No clients with TAN found
+                          Create Task
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </CardContent>

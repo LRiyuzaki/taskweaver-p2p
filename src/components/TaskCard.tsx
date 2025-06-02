@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Task } from '@/types/task';
+import { Task, TaskSubtask } from '@/types/task';
 import { Calendar, Tag, AlertCircle, MoreVertical, Edit2, Trash2, Check, Clock, User, FileText, ClipboardCheck } from 'lucide-react';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';

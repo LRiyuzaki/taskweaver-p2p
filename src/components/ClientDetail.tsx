@@ -328,7 +328,9 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             <div className="mt-6 border-t pt-4">
               <h3 className="text-sm font-medium mb-2">Address</h3>
               <p className="text-sm whitespace-pre-wrap">
-                {client.address}
+                {typeof client.address === 'string' 
+                  ? client.address 
+                  : client.address.registered || client.address.business || ''}
               </p>
             </div>
           )}

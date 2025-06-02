@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ClipboardList, 
+  Calendar as CalendarIcon, 
   ListFilter,
   RepeatIcon,
   Plus,
@@ -11,31 +12,20 @@ import {
 } from 'lucide-react';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TaskListView } from '@/components/TaskListView';
+import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
-import { useNavigate, useParams } from "react-router-dom";
-import { useSupabaseTaskContext } from "@/contexts/SupabaseTaskContext";
+import { useNavigate } from "react-router-dom";
+import { useTaskContext } from "@/contexts/TaskContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
-import TaskDetails from '@/components/TaskDetails';
 
 const TasksPage = () => {
   const [activeView, setActiveView] = useState('board');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { taskId } = useParams();
-  const { deleteTasks, tasks, loading } = useSupabaseTaskContext();
-  const [taskDetailsOpen, setTaskDetailsOpen] = useState(false);
-  const currentTask = taskId ? tasks.find(task => task.id === taskId) : undefined;
-
-  useEffect(() => {
-    if (taskId && tasks.some(task => task.id === taskId)) {
-      setTaskDetailsOpen(true);
-    } else {
-      setTaskDetailsOpen(false);
-    }
-  }, [taskId, tasks]);
+  const { deleteTasks } = useTaskContext();
 
   const handleCreateTask = () => {
     navigate('/tasks/new');
@@ -53,34 +43,15 @@ const TasksPage = () => {
     }
   };
 
-  const confirmDelete = async () => {
-    try {
-      await deleteTasks(selectedTasks);
-      setSelectedTasks([]);
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      // Error handling is done in the context
-    }
+  const confirmDelete = () => {
+    deleteTasks(selectedTasks);
+    setSelectedTasks([]);
+    setIsDeleteDialogOpen(false);
+    toast({
+      title: "Tasks Deleted",
+      description: `${selectedTasks.length} task(s) deleted successfully.`,
+    });
   };
-
-  const handleCloseTaskDetails = () => {
-    setTaskDetailsOpen(false);
-    navigate('/tasks');
-  };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-screen">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading tasks...</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -114,6 +85,10 @@ const TasksPage = () => {
                 <ListFilter className="h-4 w-4" />
                 List View
               </TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center gap-1">
+                <CalendarIcon className="h-4 w-4" />
+                Calendar View
+              </TabsTrigger>
               <TabsTrigger value="recurring" className="flex items-center gap-1">
                 <RepeatIcon className="h-4 w-4" />
                 Recurring Tasks
@@ -126,6 +101,10 @@ const TasksPage = () => {
 
             <TabsContent value="list" className="space-y-6">
               <TaskListView filterClient={undefined} />
+            </TabsContent>
+
+            <TabsContent value="calendar" className="space-y-6">
+              <TaskCalendarView onSelectedTaskIdsChange={(taskIds) => setSelectedTasks(taskIds)} />
             </TabsContent>
             
             <TabsContent value="recurring" className="space-y-6">
@@ -153,15 +132,6 @@ const TasksPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Task details dialog for individual task routes */}
-      {currentTask && (
-        <Dialog open={taskDetailsOpen} onOpenChange={setTaskDetailsOpen}>
-          <DialogContent className="max-w-3xl">
-            <TaskDetails task={currentTask} onClose={handleCloseTaskDetails} />
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };
