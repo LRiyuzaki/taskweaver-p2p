@@ -1,94 +1,66 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  resetCondition?: any[];
 }
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
+export class ErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return {
-      hasError: true,
-      error
-    };
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo);
-    }
-  }
+  private handleReset = () => {
+    this.setState({ hasError: false, error: undefined });
+  };
 
-  componentDidUpdate(prevProps: Props): void {
-    // Reset the error state if resetCondition changes
-    if (
-      this.state.hasError &&
-      this.props.resetCondition &&
-      prevProps.resetCondition &&
-      JSON.stringify(prevProps.resetCondition) !== JSON.stringify(this.props.resetCondition)
-    ) {
-      this.setState({ hasError: false, error: null });
-    }
-  }
-
-  render(): ReactNode {
+  public render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
       return (
-        <Card className="shadow-lg border-red-200">
-          <CardHeader className="bg-red-50 dark:bg-red-900/20">
-            <CardTitle className="text-red-600 dark:text-red-400 flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              Something went wrong
-            </CardTitle>
-            <CardDescription>
-              An error occurred in this component
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto max-h-32 text-sm">
-              {this.state.error && this.state.error.toString()}
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Something went wrong</AlertTitle>
+              <AlertDescription className="mt-2">
+                {this.state.error?.message || 'An unexpected error occurred'}
+              </AlertDescription>
+            </Alert>
+            <div className="mt-4 flex gap-2">
+              <Button onClick={this.handleReset} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+              <Button onClick={() => window.location.reload()}>
+                Reload Page
+              </Button>
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => this.setState({ hasError: false, error: null })}
-              className="flex items-center"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       );
     }
 
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;

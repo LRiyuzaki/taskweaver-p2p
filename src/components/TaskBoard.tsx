@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskColumn } from './TaskColumn';
 import { TaskForm } from './TaskForm';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, Filter, Search, ClipboardCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast-extensions';
+import { toast } from '@/hooks/use-toast';
 
 export const TaskBoard: React.FC = () => {
   const { tasks, addTask, updateTask, moveTask } = useTaskContext();
@@ -21,85 +21,142 @@ export const TaskBoard: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
-  // Add filtering by service
-  const filteredTasks = tasks.filter((task) => {
-    // Apply search filter
-    const matchesSearch = !searchTerm || 
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (task.clientName && task.clientName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Apply priority filter
-    const matchesPriority = !selectedPriority || task.priority === selectedPriority;
-    
-    // Apply client filter
-    const matchesClient = !selectedClient || task.clientId === selectedClient;
+  // Filter tasks with error handling
+  const filteredTasks = React.useMemo(() => {
+    try {
+      return tasks.filter((task) => {
+        if (!task) return false;
+        
+        // Apply search filter
+        const matchesSearch = !searchTerm || 
+          task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (task.clientName && task.clientName.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        // Apply priority filter
+        const matchesPriority = !selectedPriority || task.priority === selectedPriority;
+        
+        // Apply client filter
+        const matchesClient = !selectedClient || task.clientId === selectedClient;
 
-    // Apply service filter
-    const matchesService = !selectedService || task.serviceId === selectedService;
-    
-    return matchesSearch && matchesPriority && matchesClient && matchesService;
-  });
+        // Apply service filter
+        const matchesService = !selectedService || task.serviceId === selectedService;
+        
+        return matchesSearch && matchesPriority && matchesClient && matchesService;
+      });
+    } catch (error) {
+      console.error('Error filtering tasks:', error);
+      return [];
+    }
+  }, [tasks, searchTerm, selectedPriority, selectedClient, selectedService]);
   
   const todoTasks = filteredTasks.filter((task) => task.status === 'todo');
   const inProgressTasks = filteredTasks.filter((task) => task.status === 'inProgress');
-  const reviewTasks = filteredTasks.filter((task) => task.status === 'review'); // Add review tasks
+  const reviewTasks = filteredTasks.filter((task) => task.status === 'review');
   const doneTasks = filteredTasks.filter((task) => task.status === 'done');
 
-  // Get unique clients for filter dropdown
-  const uniqueClients = Array.from(new Set(tasks
-    .filter(t => t.clientId && t.clientName)
-    .map(t => ({ id: t.clientId!, name: t.clientName! }))
-  ));
+  // Get unique clients for filter dropdown with error handling
+  const uniqueClients = React.useMemo(() => {
+    try {
+      return Array.from(new Set(tasks
+        .filter(t => t?.clientId && t?.clientName)
+        .map(t => ({ id: t.clientId!, name: t.clientName! }))
+        .filter(client => client.id && client.name)
+      ));
+    } catch (error) {
+      console.error('Error getting unique clients:', error);
+      return [];
+    }
+  }, [tasks]);
 
-  // Get unique services for filter dropdown
-  const uniqueServices = Array.from(new Set(tasks
-    .filter(t => t.serviceId && t.serviceName)
-    .map(t => ({ id: t.serviceId!, name: t.serviceName! }))
-  ));
+  // Get unique services for filter dropdown with error handling
+  const uniqueServices = React.useMemo(() => {
+    try {
+      return Array.from(new Set(tasks
+        .filter(t => t?.serviceId && t?.serviceName)
+        .map(t => ({ id: t.serviceId!, name: t.serviceName! }))
+        .filter(service => service.id && service.name)
+      ));
+    } catch (error) {
+      console.error('Error getting unique services:', error);
+      return [];
+    }
+  }, [tasks]);
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = useCallback((task: Task) => {
     setEditingTask(task);
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     setEditingTask(null);
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
+  const handleDrop = useCallback((e: React.DragEvent, newStatus: TaskStatus) => {
+    e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
-    moveTask(taskId, newStatus);
     
-    // Provide visual feedback
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      toast.success(`Task "${task.title}" moved to ${
-        newStatus === 'todo' ? 'To Do' : 
-        newStatus === 'inProgress' ? 'In Progress' : 
-        newStatus === 'review' ? 'Review' : 'Done'
-      }`);
+    if (!taskId) return;
+    
+    try {
+      moveTask(taskId, newStatus);
+      
+      // Provide visual feedback
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        toast({
+          title: "Task Updated",
+          description: `"${task.title}" moved to ${
+            newStatus === 'todo' ? 'To Do' : 
+            newStatus === 'inProgress' ? 'In Progress' : 
+            newStatus === 'review' ? 'Review' : 'Done'
+          }`,
+        });
+      }
+    } catch (error) {
+      console.error('Error moving task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move task. Please try again.",
+        variant: "destructive",
+      });
     }
-  };
+  }, [tasks, moveTask]);
 
-  const handleFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
-    if (editingTask) {
-      updateTask(editingTask.id, formData);
-      toast.success('Task updated successfully');
-    } else {
-      addTask(formData);
-      toast.success('New task created successfully');
+  const handleFormSubmit = useCallback((formData: Omit<Task, 'id' | 'createdAt'>) => {
+    try {
+      if (editingTask) {
+        updateTask(editingTask.id, formData);
+        toast({
+          title: "Success",
+          description: "Task updated successfully",
+        });
+      } else {
+        addTask(formData);
+        toast({
+          title: "Success",
+          description: "New task created successfully",
+        });
+      }
+      setIsDialogOpen(false);
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save task. Please try again.",
+        variant: "destructive",
+      });
     }
-    setIsDialogOpen(false);
-  };
+  }, [editingTask, updateTask, addTask]);
   
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     setSelectedPriority(null);
     setSelectedClient(null);
     setSelectedService(null);
-  };
+  }, []);
 
   return (
     <div className="p-4">
@@ -146,27 +203,16 @@ export const TaskBoard: React.FC = () => {
             <div className="space-y-1">
               <label className="text-xs font-medium">Priority</label>
               <div className="flex gap-1">
-                <Badge 
-                  variant={selectedPriority === 'low' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'low' ? null : 'low')}
-                >
-                  Low
-                </Badge>
-                <Badge 
-                  variant={selectedPriority === 'medium' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'medium' ? null : 'medium')}
-                >
-                  Medium
-                </Badge>
-                <Badge 
-                  variant={selectedPriority === 'high' ? 'default' : 'outline'} 
-                  className="cursor-pointer hover:bg-primary/10"
-                  onClick={() => setSelectedPriority(selectedPriority === 'high' ? null : 'high')}
-                >
-                  High
-                </Badge>
+                {['low', 'medium', 'high'].map(priority => (
+                  <Badge 
+                    key={priority}
+                    variant={selectedPriority === priority ? 'default' : 'outline'} 
+                    className="cursor-pointer hover:bg-primary/10 capitalize"
+                    onClick={() => setSelectedPriority(selectedPriority === priority ? null : priority)}
+                  >
+                    {priority}
+                  </Badge>
+                ))}
               </div>
             </div>
             
@@ -188,7 +234,6 @@ export const TaskBoard: React.FC = () => {
               </div>
             )}
 
-            {/* Add service filter */}
             {uniqueServices.length > 0 && (
               <div className="space-y-1">
                 <label className="text-xs font-medium">Service</label>

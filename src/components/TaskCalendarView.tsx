@@ -47,37 +47,72 @@ export const TaskCalendarView = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   
   const daysInMonth = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start: monthStart, end: monthEnd });
+    try {
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
+      return eachDayOfInterval({ start: monthStart, end: monthEnd });
+    } catch (error) {
+      console.error('Error calculating days in month:', error);
+      return [];
+    }
   }, [currentMonth]);
   
-  const firstDayOfMonth = getDay(startOfMonth(currentMonth));
+  const firstDayOfMonth = useMemo(() => {
+    try {
+      return getDay(startOfMonth(currentMonth));
+    } catch (error) {
+      console.error('Error getting first day of month:', error);
+      return 0;
+    }
+  }, [currentMonth]);
   
   const tasksForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
-    return tasks.filter(task => 
-      task.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
-    );
+    try {
+      return tasks.filter(task => 
+        task?.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
+      );
+    } catch (error) {
+      console.error('Error filtering tasks for selected date:', error);
+      return [];
+    }
   }, [selectedDate, tasks]);
   
   const getTasksForDay = (day: Date) => {
-    return tasks.filter(task => task.dueDate && isSameDay(new Date(task.dueDate), day));
+    try {
+      return tasks.filter(task => task?.dueDate && isSameDay(new Date(task.dueDate), day));
+    } catch (error) {
+      console.error('Error getting tasks for day:', error);
+      return [];
+    }
   };
   
   const isOverdue = (task: Task) => {
-    return task.status !== 'done' && 
-      task.dueDate && 
-      new Date(task.dueDate) < new Date() && 
-      !isSameDay(new Date(task.dueDate), new Date());
+    try {
+      return task.status !== 'done' && 
+        task.dueDate && 
+        new Date(task.dueDate) < new Date() && 
+        !isSameDay(new Date(task.dueDate), new Date());
+    } catch (error) {
+      console.error('Error checking if task is overdue:', error);
+      return false;
+    }
   };
   
   const handlePreviousMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
+    try {
+      setCurrentMonth(subMonths(currentMonth, 1));
+    } catch (error) {
+      console.error('Error navigating to previous month:', error);
+    }
   };
   
   const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
+    try {
+      setCurrentMonth(addMonths(currentMonth, 1));
+    } catch (error) {
+      console.error('Error navigating to next month:', error);
+    }
   };
   
   const handleDateClick = (day: Date) => {
@@ -86,12 +121,16 @@ export const TaskCalendarView = () => {
   };
   
   const handleTaskView = (taskId: string) => {
-    setIsTaskDialogOpen(false);
-    
-    // If the task has a clientId, navigate to that client's page
-    const task = tasks.find(t => t.id === taskId);
-    if (task && task.clientId) {
-      navigate(`/client/${task.clientId}`);
+    try {
+      setIsTaskDialogOpen(false);
+      
+      // If the task has a clientId, navigate to that client's page
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.clientId) {
+        navigate(`/client/${task.clientId}`);
+      }
+    } catch (error) {
+      console.error('Error navigating to task view:', error);
     }
   };
   
@@ -219,13 +258,14 @@ export const TaskCalendarView = () => {
                       
                       <Badge variant={task.status === 'done' ? "outline" : isOverdue(task) ? "destructive" : "default"}>
                         {task.status === 'todo' ? 'To Do' : 
-                         task.status === 'inProgress' ? 'In Progress' : 'Done'}
+                         task.status === 'inProgress' ? 'In Progress' : 
+                         task.status === 'review' ? 'Review' : 'Done'}
                       </Badge>
                     </div>
                     
                     <div className="mt-4 flex justify-between items-center">
                       <div className="flex flex-wrap gap-2">
-                        {task.tags.map(tag => (
+                        {task.tags?.map(tag => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>

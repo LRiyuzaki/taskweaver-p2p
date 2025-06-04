@@ -10,7 +10,8 @@ import { DatabaseProvider } from './contexts/DatabaseContext';
 import { P2PProvider } from './contexts/P2PContext';
 import { P2PAuthProvider } from './contexts/P2PAuthContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
-import { useEffect, lazy, Suspense } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useEffect, Suspense } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
 import { performanceService } from './services/monitoring/performance-service';
 import { env } from './config/env';
@@ -27,51 +28,69 @@ function App() {
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
-        retry: false
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      },
+      mutations: {
+        retry: 1,
       }
     }
   });
   
   // Initialize performance monitoring
   useEffect(() => {
-    performanceService.init();
-    
-    if (env.isDevelopment) {
-      console.log(`Application initialized in ${env.isDevelopment ? 'development' : 'production'} mode`);
-      console.log(`Connected to Supabase project: ${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}`);
+    try {
+      performanceService.init();
+      
+      if (env.isDevelopment) {
+        console.log(`Application initialized in ${env.isDevelopment ? 'development' : 'production'} mode`);
+        console.log(`Connected to Supabase project: ${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}`);
+      }
+    } catch (error) {
+      console.error('Failed to initialize performance service:', error);
     }
     
     return () => {
-      performanceService.dispose();
+      try {
+        performanceService.dispose();
+      } catch (error) {
+        console.error('Failed to dispose performance service:', error);
+      }
     };
   }, []);
   
   // Initialize app with seed data if needed
   useEffect(() => {
-    initializeWithSeedData();
+    try {
+      initializeWithSeedData();
+    } catch (error) {
+      console.error('Failed to initialize seed data:', error);
+    }
   }, []);
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <PerformanceProvider>
-        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <TaskProvider>
-            <ClientProvider>
-              <DatabaseProvider>
-                <P2PAuthProvider>
-                  <P2PProvider>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <RouterProvider router={router} />
-                    </Suspense>
-                    <Toaster />
-                  </P2PProvider>
-                </P2PAuthProvider>
-              </DatabaseProvider>
-            </ClientProvider>
-          </TaskProvider>
-        </ThemeProvider>
-      </PerformanceProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <PerformanceProvider>
+          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            <DatabaseProvider>
+              <P2PAuthProvider>
+                <P2PProvider>
+                  <TaskProvider>
+                    <ClientProvider>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <RouterProvider router={router} />
+                      </Suspense>
+                      <Toaster />
+                    </ClientProvider>
+                  </TaskProvider>
+                </P2PProvider>
+              </P2PAuthProvider>
+            </DatabaseProvider>
+          </ThemeProvider>
+        </PerformanceProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

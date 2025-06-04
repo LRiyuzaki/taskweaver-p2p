@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Table, 
@@ -37,7 +37,7 @@ interface FilterState {
   isIECHolder: boolean;
 }
 
-export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }) => {
+export const ClientList: React.FC<ClientListProps> = ({ clients = [], onClientClick }) => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<FilterState>({
     entityType: undefined,
@@ -49,22 +49,54 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
   });
 
   const handleClientClick = (clientId: string) => {
-    if (onClientClick) {
-      onClientClick(clientId);
-    } else {
-      navigate(`/client/${clientId}`);
+    try {
+      if (onClientClick) {
+        onClientClick(clientId);
+      } else {
+        navigate(`/client/${clientId}`);
+      }
+    } catch (error) {
+      console.error('Error navigating to client:', error);
     }
   };
 
-  const filteredClients = clients.filter(client => {
-    if (filters.entityType && client.entityType !== filters.entityType) return false;
-    if (filters.hasGST && !client.isGSTRegistered) return false;
-    if (filters.hasPAN && !client.pan) return false;
-    if (filters.hasTAN && !client.tan) return false;
-    if (filters.isMSME && !client.isMSME) return false;
-    if (filters.isIECHolder && !client.isIECHolder) return false;
-    return true;
-  });
+  const filteredClients = useMemo(() => {
+    try {
+      if (!Array.isArray(clients)) {
+        console.warn('Clients prop is not an array:', clients);
+        return [];
+      }
+
+      return clients.filter(client => {
+        if (!client) return false;
+        
+        if (filters.entityType && client.entityType !== filters.entityType) return false;
+        if (filters.hasGST && !client.isGSTRegistered) return false;
+        if (filters.hasPAN && !client.pan) return false;
+        if (filters.hasTAN && !client.tan) return false;
+        if (filters.isMSME && !client.isMSME) return false;
+        if (filters.isIECHolder && !client.isIECHolder) return false;
+        return true;
+      });
+    } catch (error) {
+      console.error('Error filtering clients:', error);
+      return [];
+    }
+  }, [clients, filters]);
+
+  const handleFilterChange = (key: keyof FilterState, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  if (!Array.isArray(clients)) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-muted-foreground">Invalid client data. Please refresh the page.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -73,8 +105,8 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
           <div>
             <Label>Entity Type</Label>
             <Select
-              value={filters.entityType || "all"} // Ensure we never have empty string
-              onValueChange={(value) => setFilters(prev => ({ ...prev, entityType: value === "all" ? undefined : value }))}
+              value={filters.entityType || "all"}
+              onValueChange={(value) => handleFilterChange('entityType', value === "all" ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All Entity Types" />
@@ -100,7 +132,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   id="hasGST"
                   checked={filters.hasGST}
                   onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, hasGST: checked === true }))
+                    handleFilterChange('hasGST', checked === true)
                   }
                 />
                 <Label htmlFor="hasGST">GST Registered</Label>
@@ -110,7 +142,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   id="hasPAN"
                   checked={filters.hasPAN}
                   onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, hasPAN: checked === true }))
+                    handleFilterChange('hasPAN', checked === true)
                   }
                 />
                 <Label htmlFor="hasPAN">Has PAN</Label>
@@ -120,7 +152,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   id="hasTAN"
                   checked={filters.hasTAN}
                   onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, hasTAN: checked === true }))
+                    handleFilterChange('hasTAN', checked === true)
                   }
                 />
                 <Label htmlFor="hasTAN">Has TAN</Label>
@@ -136,7 +168,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   id="isMSME"
                   checked={filters.isMSME}
                   onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, isMSME: checked === true }))
+                    handleFilterChange('isMSME', checked === true)
                   }
                 />
                 <Label htmlFor="isMSME">MSME Registered</Label>
@@ -146,7 +178,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                   id="isIECHolder"
                   checked={filters.isIECHolder}
                   onCheckedChange={(checked) => 
-                    setFilters(prev => ({ ...prev, isIECHolder: checked === true }))
+                    handleFilterChange('isIECHolder', checked === true)
                   }
                 />
                 <Label htmlFor="isIECHolder">IEC Holder</Label>
@@ -179,10 +211,10 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                     <div className="flex flex-col">
                       <div className="flex items-center">
                         <Building className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {client.name}
+                        {client.name || 'Unnamed Client'}
                       </div>
                       <span className="text-sm text-muted-foreground mt-1">
-                        {client.company}
+                        {client.company || 'No company'}
                       </span>
                     </div>
                   </TableCell>
@@ -191,7 +223,7 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
                     <div className="space-y-1">
                       <div className="flex items-center text-sm">
                         <Mail className="h-3 w-3 mr-1 text-muted-foreground" /> 
-                        {client.email}
+                        {client.email || 'No email'}
                       </div>
                       {client.phone && (
                         <div className="flex items-center text-sm">
@@ -241,7 +273,10 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onClientClick }
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No clients found matching the selected filters.
+                  {clients.length === 0 
+                    ? "No clients found. Add your first client to get started."
+                    : "No clients found matching the selected filters."
+                  }
                 </TableCell>
               </TableRow>
             )}
