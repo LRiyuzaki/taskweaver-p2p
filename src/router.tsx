@@ -1,3 +1,4 @@
+
 import { createBrowserRouter } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -71,4 +72,9 @@ export const router = createBrowserRouter([
     path: "*",
     element: <NotFound />,
   },
-]);
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  },
+});

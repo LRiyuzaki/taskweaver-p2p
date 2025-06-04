@@ -11,10 +11,12 @@ import { P2PProvider } from './contexts/P2PContext';
 import { P2PAuthProvider } from './contexts/P2PAuthContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MobileNavigation } from './components/MobileNavigation';
 import { useEffect, Suspense } from 'react';
 import { initializeWithSeedData } from './utils/seedData';
 import { performanceService } from './services/monitoring/performance-service';
 import { env } from './config/env';
+import { useIsMobile } from './hooks/use-mobile';
 
 // Create custom loading component
 const LoadingFallback = () => (
@@ -22,6 +24,20 @@ const LoadingFallback = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
+
+const AppContent = () => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div className={`min-h-screen ${isMobile ? 'pb-16' : ''}`}>
+      <Suspense fallback={<LoadingFallback />}>
+        <RouterProvider router={router} />
+      </Suspense>
+      <Toaster />
+      {isMobile && <MobileNavigation />}
+    </div>
+  );
+};
 
 function App() {
   const queryClient = new QueryClient({
@@ -78,10 +94,7 @@ function App() {
                 <P2PProvider>
                   <TaskProvider>
                     <ClientProvider>
-                      <Suspense fallback={<LoadingFallback />}>
-                        <RouterProvider router={router} />
-                      </Suspense>
-                      <Toaster />
+                      <AppContent />
                     </ClientProvider>
                   </TaskProvider>
                 </P2PProvider>
