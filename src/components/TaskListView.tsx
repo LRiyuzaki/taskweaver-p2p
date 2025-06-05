@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Task, TaskCount, SortOption, FilterOption } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -91,8 +92,9 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
 
   const taskCounts: TaskCount = {
     total: clientFilteredTasks.length,
+    completed: clientFilteredTasks.filter(task => task.status === 'done').length,
     todo: clientFilteredTasks.filter(task => task.status === 'todo').length,
-    inProgress: clientFilteredTasks.filter(task => task.status === 'inProgress').length,
+    inProgress: clientFilteredTasks.filter(task => task.status === 'in-progress').length,
     review: clientFilteredTasks.filter(task => task.status === 'review').length,
     done: clientFilteredTasks.filter(task => task.status === 'done').length,
     upcoming: clientFilteredTasks.filter(task => task.dueDate && isAfter(task.dueDate, new Date())).length
@@ -169,7 +171,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
             : b.title.localeCompare(a.title);
         
         case 'status': {
-          const statusValues = { todo: 1, inProgress: 2, done: 3 };
+          const statusValues = { todo: 1, 'in-progress': 2, review: 3, done: 4 };
           const statusA = statusValues[a.status] || 0;
           const statusB = statusValues[b.status] || 0;
           return statusA - statusB;
@@ -198,8 +200,10 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
     switch (status) {
       case 'todo':
         return <Badge variant="outline" className="bg-slate-100 text-slate-800">To Do</Badge>;
-      case 'inProgress':
+      case 'in-progress':
         return <Badge className="bg-blue-500">In Progress</Badge>;
+      case 'review':
+        return <Badge className="bg-purple-500">Review</Badge>;
       case 'done':
         return <Badge className="bg-green-500">Done</Badge>;
       default:
@@ -213,7 +217,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Total Tasks</CardTitle>
@@ -248,10 +252,10 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Upcoming</CardTitle>
+            <CardTitle className="text-sm">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{taskCounts.upcoming}</p>
+            <p className="text-2xl font-bold">{taskCounts.completed}</p>
           </CardContent>
         </Card>
       </div>
@@ -304,25 +308,25 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
                 <DropdownMenuItem className="font-semibold">Status</DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('status', 'todo') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'status', value: 'todo' })}
+                  onClick={() => toggleFilter({ type: 'status', value: 'todo', label: 'To Do' })}
                 >
                   To Do
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  className={isFilterActive('status', 'inProgress') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'status', value: 'inProgress' })}
+                  className={isFilterActive('status', 'in-progress') ? 'bg-accent' : ''}
+                  onClick={() => toggleFilter({ type: 'status', value: 'in-progress', label: 'In Progress' })}
                 >
                   In Progress
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('status', 'review') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'status', value: 'review' })}
+                  onClick={() => toggleFilter({ type: 'status', value: 'review', label: 'Review' })}
                 >
                   Review
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('status', 'done') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'status', value: 'done' })}
+                  onClick={() => toggleFilter({ type: 'status', value: 'done', label: 'Done' })}
                 >
                   Done
                 </DropdownMenuItem>
@@ -332,19 +336,19 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
                 <DropdownMenuItem className="font-semibold">Priority</DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('priority', 'high') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'priority', value: 'high' })}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'high', label: 'High' })}
                 >
                   High
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('priority', 'medium') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'priority', value: 'medium' })}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'medium', label: 'Medium' })}
                 >
                   Medium
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('priority', 'low') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'priority', value: 'low' })}
+                  onClick={() => toggleFilter({ type: 'priority', value: 'low', label: 'Low' })}
                 >
                   Low
                 </DropdownMenuItem>
@@ -354,25 +358,25 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
                 <DropdownMenuItem className="font-semibold">Due Date</DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('dueDate', 'today') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'dueDate', value: 'today' })}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'today', label: 'Today' })}
                 >
                   Today
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('dueDate', 'upcoming') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'dueDate', value: 'upcoming' })}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'upcoming', label: 'Next 7 days' })}
                 >
                   Next 7 days
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('dueDate', 'overdue') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'dueDate', value: 'overdue' })}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'overdue', label: 'Overdue' })}
                 >
                   Overdue
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('dueDate', 'none') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'dueDate', value: 'none' })}
+                  onClick={() => toggleFilter({ type: 'dueDate', value: 'none', label: 'No due date' })}
                 >
                   No due date
                 </DropdownMenuItem>
@@ -382,7 +386,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ filterClient }) => {
                 <DropdownMenuItem className="font-semibold">Assignee</DropdownMenuItem>
                 <DropdownMenuItem 
                   className={isFilterActive('assignee', 'unassigned') ? 'bg-accent' : ''}
-                  onClick={() => toggleFilter({ type: 'assignee', value: 'unassigned' })}
+                  onClick={() => toggleFilter({ type: 'assignee', value: 'unassigned', label: 'Unassigned' })}
                 >
                   Unassigned
                 </DropdownMenuItem>

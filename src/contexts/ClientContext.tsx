@@ -110,7 +110,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         const loadedClients = localStorageManager.getClients();
         const loadedServiceTypes = localStorageManager.getServiceTypes();
         const loadedClientServices = localStorageManager.getClientServices();
-        const loadedServiceRenewals = localStorageManager.getServiceRenewals();
+        const loadedServiceRenewals = localStorageManager.getClientRenewals();
         
         setClients(loadedClients);
         setServiceTypes(loadedServiceTypes.length > 0 ? loadedServiceTypes : defaultServiceTypes);
@@ -155,20 +155,8 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
 
   const addClient = async (clientData: ClientFormData): Promise<string> => {
     try {
-      // Handle address conversion properly
-      let processedAddress: string | Address | undefined;
-      
-      if (typeof clientData.address === 'string') {
-        processedAddress = clientData.address;
-      } else if (clientData.address && typeof clientData.address === 'object') {
-        // Handle the case where address is an object with registered/business properties
-        if ('registered' in clientData.address) {
-          processedAddress = clientData.address.registered;
-        } else {
-          // It's a full Address object
-          processedAddress = clientData.address as Address;
-        }
-      }
+      // Ensure address is always a string
+      const processedAddress = typeof clientData.address === 'string' ? clientData.address : '';
 
       const newClient: Client = {
         ...clientData,

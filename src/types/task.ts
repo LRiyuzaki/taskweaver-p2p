@@ -64,7 +64,7 @@ export interface SubTask {
   description?: string;
   completed: boolean;
   order: number;
-  orderPosition: number; // Alias for order
+  orderPosition: number; // Alias for order, keeping both for compatibility
   assignedTo?: string;
   assigneeName?: string;
 }

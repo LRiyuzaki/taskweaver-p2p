@@ -18,7 +18,7 @@ export interface Client {
   llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
-  address?: string | Address;
+  address?: string;
   bankAccount?: BankAccount;
   bankAccounts?: BankAccount[];
   services: string[];
@@ -39,6 +39,7 @@ export interface Client {
   statutoryDueDates?: {
     gstReturn?: number;
     tdsReturn?: number;
+    advanceTax?: number;
   };
   // Additional properties for recurring tasks
   isDirector?: boolean;
@@ -164,6 +165,7 @@ export interface ClientFormData {
   statutoryDueDates?: {
     gstReturn?: number;
     tdsReturn?: number;
+    advanceTax?: number;
   };
 }
 

@@ -24,7 +24,14 @@ export const ClientServicesTab: React.FC<{ clientId: string }> = ({ clientId }) 
   };
   
   const handleTaskFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
-    addTask(formData);
+    // Ensure the task data has all required properties
+    const taskData: Omit<Task, 'id' | 'createdAt'> = {
+      ...formData,
+      updatedAt: formData.updatedAt || new Date(),
+      subtasks: formData.subtasks || []
+    };
+    
+    addTask(taskData);
     setIsAddTaskDialogOpen(false);
     toast.success('Task created successfully');
   };
