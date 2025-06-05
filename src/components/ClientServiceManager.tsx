@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -27,7 +26,6 @@ import { ClientService } from '@/types/client';
 import { toast } from '@/hooks/use-toast-extensions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ClientServiceManagerProps {
   clientId: string;
@@ -103,6 +101,7 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
       clientId,
       serviceTypeId: selectedServiceId,
       serviceTypeName: selectedServiceType.name,
+      isActive: true,
       startDate,
       endDate,
       nextRenewalDate: endDate,
@@ -138,6 +137,8 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
       assignedTo: '',
       recurrence: 'none',
       recurrenceEndDate: undefined,
+      updatedAt: new Date(),
+      subtasks: []
     });
     
     // Only create renewal reminders for services that have an end date
@@ -158,6 +159,8 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
         recurrence: serviceType.frequency === 'annually' ? 'yearly' : 
                    serviceType.frequency === 'quarterly' ? 'quarterly' : 'monthly',
         recurrenceEndDate: undefined,
+        updatedAt: new Date(),
+        subtasks: []
       });
     }
   };
@@ -267,6 +270,8 @@ export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clie
             assignedTo: task.assignedTo || '',
             recurrence: task.recurrence,
             recurrenceEndDate: task.recurrenceEndDate,
+            updatedAt: new Date(),
+            subtasks: []
           });
         }
       });

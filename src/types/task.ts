@@ -53,7 +53,7 @@ export interface TaskTemplate {
   id: string;
   name: string;
   description?: string;
-  tasks: Omit<Task, 'id' | 'createdAt'>[];
+  subtasks: Omit<SubTask, 'id' | 'taskId'>[];
   category?: string;
 }
 
@@ -61,8 +61,30 @@ export interface SubTask {
   id: string;
   taskId: string;
   title: string;
+  description?: string;
   completed: boolean;
   order: number;
+  assignedTo?: string;
+  assigneeName?: string;
+}
+
+// Additional types for components
+export interface TaskCount {
+  total: number;
+  completed: number;
+  inProgress: number;
+  todo: number;
+  review: number;
+}
+
+export interface SortOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterOption {
+  value: string;
+  label: string;
 }
 
 // Export alias for backward compatibility

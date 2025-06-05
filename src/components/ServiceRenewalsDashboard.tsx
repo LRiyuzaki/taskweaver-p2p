@@ -24,7 +24,7 @@ export const ServiceRenewalsDashboard: React.FC = () => {
   // Create a reminder task for a service renewal
   const createReminderTask = (renewal: ServiceRenewal) => {
     const client = clients.find(c => c.id === renewal.clientId);
-    const service = clientServices.find(s => s.clientId === renewal.clientId && s.serviceTypeId === renewal.serviceId);
+    const service = clientServices.find(s => s.clientId === renewal.clientId && s.serviceTypeId === renewal.serviceTypeId);
     
     if (!client || !service) {
       toast.error('Client or service not found');
@@ -36,11 +36,13 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       description: `Renewal reminder for ${service.serviceTypeName}`,
       status: 'todo' as TaskStatus,
       priority: 'medium' as TaskPriority,
-      dueDate: new Date(renewal.dueDate),
+      dueDate: renewal.dueDate ? new Date(renewal.dueDate) : new Date(renewal.renewalDate),
       clientId: client.id,
       clientName: client.name,
       tags: [service.serviceTypeName || 'Renewal'],
-      recurrence: 'none' as RecurrenceType  // Required recurrence
+      recurrence: 'none' as RecurrenceType,
+      updatedAt: new Date(),
+      subtasks: []
     };
     
     addTask(task);
@@ -100,7 +102,9 @@ export const ServiceRenewalsDashboard: React.FC = () => {
       clientId: client.id,
       clientName: client.name,
       tags: ['Reminder', service.serviceTypeName || ''],
-      recurrence: 'none' as RecurrenceType  // Required recurrence
+      recurrence: 'none' as RecurrenceType,
+      updatedAt: new Date(),
+      subtasks: []
     };
     
     addTask(task);
@@ -109,8 +113,7 @@ export const ServiceRenewalsDashboard: React.FC = () => {
     updateClientService(service.clientId, service.serviceTypeId, {
       ...service,
       reminderDays: reminderSettings.reminderDays,
-      reminderType: reminderSettings.reminderType,
-      reminderDate: reminderSettings.reminderDate ? new Date(reminderSettings.reminderDate) : undefined
+      reminderType: reminderSettings.reminderType
     });
     
     toast.success('Reminder scheduled successfully');
