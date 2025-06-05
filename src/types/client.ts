@@ -148,7 +148,7 @@ export interface ClientFormData {
   llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
-  address?: { registered: string; business?: string };
+  address?: string | Address;
   bankAccount?: BankAccount;
   bankAccounts?: BankAccount[];
   requiredServices?: Record<string, boolean>;

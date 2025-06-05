@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, ClientFormData, ServiceType, ClientService, ServiceRenewal, ComplianceStatus } from '@/types/client';
+import { Client, ClientFormData, ServiceType, ClientService, ServiceRenewal, ComplianceStatus, Address } from '@/types/client';
 import { localStorageManager } from '@/utils/localStorage';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -156,6 +155,21 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
 
   const addClient = async (clientData: ClientFormData): Promise<string> => {
     try {
+      // Handle address conversion properly
+      let processedAddress: string | Address | undefined;
+      
+      if (typeof clientData.address === 'string') {
+        processedAddress = clientData.address;
+      } else if (clientData.address && typeof clientData.address === 'object') {
+        // Handle the case where address is an object with registered/business properties
+        if ('registered' in clientData.address) {
+          processedAddress = clientData.address.registered;
+        } else {
+          // It's a full Address object
+          processedAddress = clientData.address as Address;
+        }
+      }
+
       const newClient: Client = {
         ...clientData,
         id: uuidv4(),
@@ -165,10 +179,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         notes: [],
         documents: [],
         requiredServices: clientData.requiredServices || {},
-        // Convert address format if needed
-        address: typeof clientData.address === 'object' && clientData.address ? 
-          clientData.address.registered : 
-          clientData.address
+        address: processedAddress
       };
 
       setClients(prev => [...prev, newClient]);

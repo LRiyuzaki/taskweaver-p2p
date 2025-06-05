@@ -121,6 +121,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
           description: st.description,
           completed: st.completed,
           order: st.order,
+          orderPosition: st.orderPosition,
           assignedTo: st.assignedTo,
           assigneeName: st.assigneeName
         }));
@@ -173,6 +174,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
         description: st.description,
         completed: false,
         order: index,
+        orderPosition: index,
         assignedTo: st.assignedTo,
         assigneeName: st.assigneeName
       })));
@@ -186,7 +188,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
         { 
           title: subtaskInput.trim(), 
           completed: false, 
-          order: subtasks.length 
+          order: subtasks.length,
+          orderPosition: subtasks.length
         }
       ]);
       setSubtaskInput('');
@@ -248,6 +251,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
             description: subtask.description,
             completed: subtask.completed || false,
             order: index,
+            orderPosition: index,
             assignedTo: subtask.assignedTo,
             assigneeName: subtask.assigneeName
           });
@@ -380,7 +384,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="todo">To Do</SelectItem>
-                    <SelectItem value="inProgress">In Progress</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
                     <SelectItem value="review">In Review</SelectItem>
                     <SelectItem value="done">Done</SelectItem>
                   </SelectContent>
@@ -539,7 +543,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
                     <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="halfYearly">Half-yearly</SelectItem>
                     <SelectItem value="yearly">Yearly</SelectItem>
                   </SelectContent>
                 </Select>
