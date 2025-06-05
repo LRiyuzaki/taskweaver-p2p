@@ -12,6 +12,9 @@ export interface Task {
   dueDate?: Date;
   createdAt: Date;
   updatedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  completedDate?: Date; // For backward compatibility
   assignedTo?: string;
   assigneeName?: string;
   clientId?: string;
@@ -29,6 +32,7 @@ export interface Task {
   recurrence: RecurrenceType;
   recurrenceEndDate?: Date;
   subtasks: string[];
+  timeSpentMinutes?: number;
 }
 
 export interface Project {

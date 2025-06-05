@@ -15,15 +15,31 @@ export interface Client {
   pan?: string;
   tan?: string;
   cin?: string;
+  llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
+  address?: Address | string;
   bankAccount?: BankAccount;
+  bankAccounts?: BankAccount[];
   services: string[];
   notes: ClientNote[];
   documents: ClientDocument[];
   createdAt: Date;
+  startDate?: Date;
   active: boolean;
   requiredServices: Record<string, boolean>;
+  isGSTRegistered?: boolean;
+  isMSME?: boolean;
+  msmeNumber?: string;
+  isIECHolder?: boolean;
+  iecNumber?: string;
+  financialYearEnd?: string;
+  incorporationDate?: Date;
+  gstRegistrationDate?: Date;
+  statutoryDueDates?: {
+    gstReturn?: number;
+    tdsReturn?: number;
+  };
 }
 
 export interface Address {
@@ -32,6 +48,8 @@ export interface Address {
   state: string;
   pincode: string;
   country: string;
+  registered?: string;
+  business?: string;
 }
 
 export interface BankAccount {
@@ -74,11 +92,16 @@ export interface ClientService {
   id: string;
   clientId: string;
   serviceTypeId: string;
+  serviceTypeName?: string;
   isActive: boolean;
+  status?: 'active' | 'inactive' | 'completed';
   startDate: Date;
   endDate?: Date;
   renewalDate?: Date;
+  nextRenewalDate?: Date;
   notes?: string;
+  reminderDays?: number;
+  reminderType?: 'days' | 'months' | 'specificDate';
 }
 
 export interface ServiceRenewal {
@@ -108,8 +131,24 @@ export interface ClientFormData {
   pan?: string;
   tan?: string;
   cin?: string;
+  llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
+  address?: Address;
   bankAccount?: BankAccount;
+  bankAccounts?: BankAccount[];
   requiredServices?: Record<string, boolean>;
+  startDate?: Date;
+  isGSTRegistered?: boolean;
+  isMSME?: boolean;
+  msmeNumber?: string;
+  isIECHolder?: boolean;
+  iecNumber?: string;
+  financialYearEnd?: string;
+  incorporationDate?: Date;
+  gstRegistrationDate?: Date;
+  statutoryDueDates?: {
+    gstReturn?: number;
+    tdsReturn?: number;
+  };
 }
