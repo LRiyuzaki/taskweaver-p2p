@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -32,7 +33,7 @@ export const ClientServicesTab: React.FC<{ clientId: string }> = ({ clientId }) 
     toast.success('Task created successfully');
   };
   
-  const handleServiceStatusChange = (service: ClientService, status: 'active' | 'inactive' | 'pending') => {
+  const handleServiceStatusChange = (service: ClientService, status: 'active' | 'inactive' | 'completed') => {
     updateClientService(service.clientId, service.serviceTypeId, {
       ...service,
       status

@@ -4,8 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, X, User, Repeat, Check, List, ClipboardList, GitMerge } from 'lucide-react';
-import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
-import { SubTask } from '@/types/client';
+import { Task, TaskPriority, TaskStatus, RecurrenceType, SubTask } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -47,14 +46,14 @@ const teamMembers = [
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  status: z.enum(['todo', 'inProgress', 'review', 'done']),
+  status: z.enum(['todo', 'in-progress', 'review', 'done']),
   priority: z.enum(['low', 'medium', 'high']),
   dueDate: z.date().optional(),
   tags: z.array(z.string()).optional(),
   assignedTo: z.string().optional(),
   clientId: z.string().optional(),
   projectId: z.string().optional(),
-  recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
+  recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly']).default('none'),
   recurrenceEndDate: z.date().optional(),
   templateId: z.string().optional(),
 }).refine((data) => {
@@ -233,6 +232,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSub
         submitValues.clientName = client.name;
       }
     }
+
+    // Add required properties
+    submitValues.updatedAt = new Date();
+    submitValues.subtasks = [];
     
     onSubmit(submitValues);
     

@@ -64,6 +64,7 @@ export interface SubTask {
   description?: string;
   completed: boolean;
   order: number;
+  orderPosition: number; // Alias for order
   assignedTo?: string;
   assigneeName?: string;
 }
@@ -75,6 +76,8 @@ export interface TaskCount {
   inProgress: number;
   todo: number;
   review: number;
+  done: number;
+  upcoming: number;
 }
 
 export interface SortOption {
@@ -85,6 +88,7 @@ export interface SortOption {
 export interface FilterOption {
   value: string;
   label: string;
+  type: string;
 }
 
 // Export alias for backward compatibility

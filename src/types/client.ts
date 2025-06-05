@@ -18,7 +18,7 @@ export interface Client {
   llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
-  address?: string;
+  address?: string | Address;
   bankAccount?: BankAccount;
   bankAccounts?: BankAccount[];
   services: string[];
@@ -102,7 +102,7 @@ export interface ClientService {
   serviceTypeId: string;
   serviceTypeName?: string;
   isActive: boolean;
-  status?: 'active' | 'inactive' | 'completed';
+  status?: 'active' | 'inactive' | 'completed' | 'pending';
   startDate: Date;
   endDate?: Date;
   renewalDate?: Date;
@@ -110,6 +110,7 @@ export interface ClientService {
   notes?: string;
   reminderDays?: number;
   reminderType?: 'days' | 'months' | 'specificDate';
+  fee?: number;
 }
 
 export interface ServiceRenewal {
@@ -119,6 +120,7 @@ export interface ServiceRenewal {
   serviceId?: string;
   renewalDate: Date;
   dueDate?: Date;
+  reminderDate?: Date;
   isCompleted: boolean;
   reminderSent: boolean;
 }
@@ -164,3 +166,6 @@ export interface ClientFormData {
     tdsReturn?: number;
   };
 }
+
+// Re-export types from task module for backward compatibility
+export type { SubTask, TaskTemplate } from '@/types/task';

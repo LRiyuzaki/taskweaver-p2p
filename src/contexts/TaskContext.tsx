@@ -223,7 +223,8 @@ export const TaskProvider: React.FC<TaskProviderProps> = ({ children }) => {
       tags: taskData.tags || [],
       recurrence: taskData.recurrence || 'none',
       recurrenceEndDate: taskData.recurrenceEndDate,
-      subtasks: taskData.subtasks || []
+      subtasks: taskData.subtasks || [],
+      updatedAt: new Date() // Add required updatedAt
     });
   };
 

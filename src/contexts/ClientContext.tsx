@@ -164,7 +164,11 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         services: [],
         notes: [],
         documents: [],
-        requiredServices: clientData.requiredServices || {}
+        requiredServices: clientData.requiredServices || {},
+        // Convert address format if needed
+        address: typeof clientData.address === 'object' && clientData.address ? 
+          clientData.address.registered : 
+          clientData.address
       };
 
       setClients(prev => [...prev, newClient]);
