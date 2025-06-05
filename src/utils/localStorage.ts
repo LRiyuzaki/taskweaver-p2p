@@ -1,249 +1,290 @@
-import { Task } from '@/types/task';
-import { Client } from '@/types/client';
-import { ServiceType } from '@/types/client';
 
-// Storage keys
-const STORAGE_KEYS = {
-  TASKS: 'accountmaster_tasks',
-  CLIENTS: 'accountmaster_clients',
-  SERVICE_TYPES: 'accountmaster_service_types',
-  LAST_SYNC: 'accountmaster_last_sync',
-  USER_PREFERENCES: 'accountmaster_user_preferences'
-} as const;
+import { Task, Project, TaskTemplate, SubTask } from '@/types/task';
+import { Client, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 
-// Data validation helpers
-const isValidTask = (task: any): task is Task => {
-  return task && 
-    typeof task === 'object' && 
-    typeof task.id === 'string' && 
-    typeof task.title === 'string' &&
-    ['todo', 'inProgress', 'review', 'done'].includes(task.status) &&
-    ['low', 'medium', 'high'].includes(task.priority);
-};
+export interface LocalStorageData {
+  tasks: Task[];
+  clients: Client[];
+  projects: Project[];
+  serviceTypes: ServiceType[];
+  clientServices: ClientService[];
+  serviceRenewals: ServiceRenewal[];
+  taskTemplates: TaskTemplate[];
+  subtasks: SubTask[];
+}
 
-const isValidClient = (client: any): client is Client => {
-  return client && 
-    typeof client === 'object' && 
-    typeof client.id === 'string' && 
-    typeof client.name === 'string' &&
-    typeof client.email === 'string';
-};
+export interface DataIntegrityResult {
+  isValid: boolean;
+  errors: string[];
+}
 
-// Safe JSON operations
-const safeJsonParse = <T>(data: string, fallback: T): T => {
-  try {
-    const parsed = JSON.parse(data);
-    return parsed ?? fallback;
-  } catch (error) {
-    console.warn('Failed to parse localStorage data:', error);
-    return fallback;
+class LocalStorageManager {
+  private readonly STORAGE_KEYS = {
+    TASKS: 'accounting_app_tasks',
+    CLIENTS: 'accounting_app_clients',
+    PROJECTS: 'accounting_app_projects',
+    SERVICE_TYPES: 'accounting_app_service_types',
+    CLIENT_SERVICES: 'accounting_app_client_services',
+    SERVICE_RENEWALS: 'accounting_app_service_renewals',
+    TASK_TEMPLATES: 'accounting_app_task_templates',
+    SUBTASKS: 'accounting_app_subtasks',
+    DATA_VERSION: 'accounting_app_data_version'
+  };
+
+  private readonly CURRENT_VERSION = '1.0.0';
+
+  // Generic storage methods
+  private setItem<T>(key: string, data: T): void {
+    try {
+      const serialized = JSON.stringify(data);
+      localStorage.setItem(key, serialized);
+    } catch (error) {
+      console.error(`Failed to save data to localStorage (${key}):`, error);
+      throw new Error(`Failed to save data: ${error}`);
+    }
   }
-};
 
-const safeJsonStringify = (data: any): string | null => {
-  try {
-    return JSON.stringify(data);
-  } catch (error) {
-    console.error('Failed to stringify data for localStorage:', error);
-    return null;
+  private getItem<T>(key: string, defaultValue: T): T {
+    try {
+      const item = localStorage.getItem(key);
+      if (item === null) {
+        return defaultValue;
+      }
+      return JSON.parse(item);
+    } catch (error) {
+      console.error(`Failed to load data from localStorage (${key}):`, error);
+      return defaultValue;
+    }
   }
-};
 
-// Core storage operations
-export const localStorageManager = {
-  // Tasks
-  getTasks: (): Task[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.TASKS);
-    if (!data) return [];
-    
-    const tasks = safeJsonParse<Task[]>(data, []);
-    return tasks.filter(isValidTask).map(task => ({
-      ...task,
-      createdAt: new Date(task.createdAt),
-      updatedAt: task.updatedAt ? new Date(task.updatedAt) : undefined,
-      dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-      completedDate: task.completedDate ? new Date(task.completedDate) : undefined,
-      startedAt: task.startedAt ? new Date(task.startedAt) : undefined,
-      recurrenceEndDate: task.recurrenceEndDate ? new Date(task.recurrenceEndDate) : undefined
-    }));
-  },
+  // Task methods
+  saveTasks(tasks: Task[]): void {
+    this.setItem(this.STORAGE_KEYS.TASKS, tasks);
+  }
 
-  saveTasks: (tasks: Task[]): boolean => {
-    const data = safeJsonStringify(tasks);
-    if (!data) return false;
-    
-    try {
-      localStorage.setItem(STORAGE_KEYS.TASKS, data);
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      return true;
-    } catch (error) {
-      console.error('Failed to save tasks to localStorage:', error);
-      return false;
-    }
-  },
+  getTasks(): Task[] {
+    return this.getItem<Task[]>(this.STORAGE_KEYS.TASKS, []);
+  }
 
-  // Clients
-  getClients: (): Client[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-    if (!data) return [];
-    
-    const clients = safeJsonParse<Client[]>(data, []);
-    return clients.filter(isValidClient).map(client => ({
-      ...client,
-      createdAt: new Date(client.createdAt),
-      startDate: client.startDate ? new Date(client.startDate) : undefined,
-      gstRegistrationDate: client.gstRegistrationDate ? new Date(client.gstRegistrationDate) : undefined,
-      incorporationDate: client.incorporationDate ? new Date(client.incorporationDate) : undefined
-    }));
-  },
+  // Client methods
+  saveClients(clients: Client[]): void {
+    this.setItem(this.STORAGE_KEYS.CLIENTS, clients);
+  }
 
-  saveClients: (clients: Client[]): boolean => {
-    const data = safeJsonStringify(clients);
-    if (!data) return false;
-    
-    try {
-      localStorage.setItem(STORAGE_KEYS.CLIENTS, data);
-      localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-      return true;
-    } catch (error) {
-      console.error('Failed to save clients to localStorage:', error);
-      return false;
-    }
-  },
+  getClients(): Client[] {
+    return this.getItem<Client[]>(this.STORAGE_KEYS.CLIENTS, []);
+  }
 
-  // Service Types
-  getServiceTypes: (): ServiceType[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.SERVICE_TYPES);
-    if (!data) return [];
-    
-    return safeJsonParse<ServiceType[]>(data, []);
-  },
+  // Project methods
+  saveProjects(projects: Project[]): void {
+    this.setItem(this.STORAGE_KEYS.PROJECTS, projects);
+  }
 
-  saveServiceTypes: (serviceTypes: ServiceType[]): boolean => {
-    const data = safeJsonStringify(serviceTypes);
-    if (!data) return false;
-    
-    try {
-      localStorage.setItem(STORAGE_KEYS.SERVICE_TYPES, data);
-      return true;
-    } catch (error) {
-      console.error('Failed to save service types to localStorage:', error);
-      return false;
-    }
-  },
+  getProjects(): Project[] {
+    return this.getItem<Project[]>(this.STORAGE_KEYS.PROJECTS, []);
+  }
 
-  // User Preferences
-  getUserPreferences: () => {
-    const data = localStorage.getItem(STORAGE_KEYS.USER_PREFERENCES);
-    return safeJsonParse(data, {
-      theme: 'system',
-      defaultView: 'board',
-      showCompletedTasks: true,
-      taskSortBy: 'dueDate',
-      clientSortBy: 'name'
-    });
-  },
+  // Service Type methods
+  saveServiceTypes(serviceTypes: ServiceType[]): void {
+    this.setItem(this.STORAGE_KEYS.SERVICE_TYPES, serviceTypes);
+  }
 
-  saveUserPreferences: (preferences: any): boolean => {
-    const data = safeJsonStringify(preferences);
-    if (!data) return false;
-    
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, data);
-      return true;
-    } catch (error) {
-      console.error('Failed to save user preferences:', error);
-      return false;
-    }
-  },
+  getServiceTypes(): ServiceType[] {
+    return this.getItem<ServiceType[]>(this.STORAGE_KEYS.SERVICE_TYPES, []);
+  }
 
-  // Data integrity checks
-  validateDataIntegrity: (): { isValid: boolean; errors: string[] } => {
+  // Client Service methods
+  saveClientServices(clientServices: ClientService[]): void {
+    this.setItem(this.STORAGE_KEYS.CLIENT_SERVICES, clientServices);
+  }
+
+  getClientServices(): ClientService[] {
+    return this.getItem<ClientService[]>(this.STORAGE_KEYS.CLIENT_SERVICES, []);
+  }
+
+  // Service Renewal methods
+  saveServiceRenewals(serviceRenewals: ServiceRenewal[]): void {
+    this.setItem(this.STORAGE_KEYS.SERVICE_RENEWALS, serviceRenewals);
+  }
+
+  getServiceRenewals(): ServiceRenewal[] {
+    return this.getItem<ServiceRenewal[]>(this.STORAGE_KEYS.SERVICE_RENEWALS, []);
+  }
+
+  // Task Template methods
+  saveTaskTemplates(templates: TaskTemplate[]): void {
+    this.setItem(this.STORAGE_KEYS.TASK_TEMPLATES, templates);
+  }
+
+  getTaskTemplates(): TaskTemplate[] {
+    return this.getItem<TaskTemplate[]>(this.STORAGE_KEYS.TASK_TEMPLATES, []);
+  }
+
+  // Subtask methods
+  saveSubtasks(subtasks: SubTask[]): void {
+    this.setItem(this.STORAGE_KEYS.SUBTASKS, subtasks);
+  }
+
+  getSubtasks(): SubTask[] {
+    return this.getItem<SubTask[]>(this.STORAGE_KEYS.SUBTASKS, []);
+  }
+
+  // Data validation and integrity methods
+  validateDataIntegrity(): DataIntegrityResult {
     const errors: string[] = [];
     
     try {
-      const tasks = localStorageManager.getTasks();
-      const clients = localStorageManager.getClients();
-      
-      // Check for orphaned tasks (tasks with clientId that doesn't exist)
-      const clientIds = new Set(clients.map(c => c.id));
-      const orphanedTasks = tasks.filter(t => t.clientId && !clientIds.has(t.clientId));
-      
-      if (orphanedTasks.length > 0) {
-        errors.push(`Found ${orphanedTasks.length} tasks with invalid client references`);
-      }
-      
+      // Check if data exists and is valid
+      const tasks = this.getTasks();
+      const clients = this.getClients();
+      const projects = this.getProjects();
+      const subtasks = this.getSubtasks();
+
+      // Validate task references
+      tasks.forEach(task => {
+        if (task.clientId && !clients.find(c => c.id === task.clientId)) {
+          errors.push(`Task "${task.title}" references non-existent client`);
+        }
+        if (task.projectId && !projects.find(p => p.id === task.projectId)) {
+          errors.push(`Task "${task.title}" references non-existent project`);
+        }
+      });
+
+      // Validate subtask references
+      subtasks.forEach(subtask => {
+        if (!tasks.find(t => t.id === subtask.taskId)) {
+          errors.push(`Subtask "${subtask.title}" references non-existent task`);
+        }
+      });
+
       // Check for duplicate IDs
       const taskIds = tasks.map(t => t.id);
-      const duplicateTaskIds = taskIds.filter((id, index) => taskIds.indexOf(id) !== index);
-      
-      if (duplicateTaskIds.length > 0) {
-        errors.push(`Found duplicate task IDs: ${duplicateTaskIds.join(', ')}`);
+      const uniqueTaskIds = new Set(taskIds);
+      if (taskIds.length !== uniqueTaskIds.size) {
+        errors.push('Duplicate task IDs found');
       }
-      
-      const clientIdList = clients.map(c => c.id);
-      const duplicateClientIds = clientIdList.filter((id, index) => clientIdList.indexOf(id) !== index);
-      
-      if (duplicateClientIds.length > 0) {
-        errors.push(`Found duplicate client IDs: ${duplicateClientIds.join(', ')}`);
+
+      const clientIds = clients.map(c => c.id);
+      const uniqueClientIds = new Set(clientIds);
+      if (clientIds.length !== uniqueClientIds.size) {
+        errors.push('Duplicate client IDs found');
       }
-      
+
     } catch (error) {
-      errors.push(`Data validation failed: ${error}`);
+      errors.push(`Data validation error: ${error}`);
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
     };
-  },
+  }
 
-  // Cleanup and repair
-  repairData: (): boolean => {
+  repairData(): boolean {
     try {
-      const tasks = localStorageManager.getTasks();
-      const clients = localStorageManager.getClients();
-      
-      // Remove orphaned tasks
-      const clientIds = new Set(clients.map(c => c.id));
-      const validTasks = tasks.filter(t => !t.clientId || clientIds.has(t.clientId));
-      
-      // Remove duplicate tasks (keep the latest)
-      const taskMap = new Map<string, Task>();
-      validTasks.forEach(task => {
-        const existing = taskMap.get(task.id);
-        if (!existing || new Date(task.updatedAt || task.createdAt) > new Date(existing.updatedAt || existing.createdAt)) {
-          taskMap.set(task.id, task);
+      const tasks = this.getTasks();
+      const clients = this.getClients();
+      const projects = this.getProjects();
+      const subtasks = this.getSubtasks();
+
+      // Remove invalid references
+      const validTasks = tasks.filter(task => {
+        if (task.clientId && !clients.find(c => c.id === task.clientId)) {
+          task.clientId = undefined;
+          task.clientName = undefined;
         }
-      });
-      
-      // Remove duplicate clients (keep the latest)
-      const clientMap = new Map<string, Client>();
-      clients.forEach(client => {
-        const existing = clientMap.get(client.id);
-        if (!existing || new Date(client.createdAt) > new Date(existing.createdAt)) {
-          clientMap.set(client.id, client);
+        if (task.projectId && !projects.find(p => p.id === task.projectId)) {
+          task.projectId = undefined;
+          task.projectName = undefined;
         }
+        return true;
       });
-      
+
+      const validSubtasks = subtasks.filter(subtask => {
+        return tasks.find(t => t.id === subtask.taskId);
+      });
+
+      // Remove duplicates
+      const uniqueTasks = Array.from(new Map(validTasks.map(task => [task.id, task])).values());
+      const uniqueClients = Array.from(new Map(clients.map(client => [client.id, client])).values());
+      const uniqueProjects = Array.from(new Map(projects.map(project => [project.id, project])).values());
+      const uniqueSubtasks = Array.from(new Map(validSubtasks.map(subtask => [subtask.id, subtask])).values());
+
       // Save repaired data
-      const repairedTasks = Array.from(taskMap.values());
-      const repairedClients = Array.from(clientMap.values());
-      
-      localStorageManager.saveTasks(repairedTasks);
-      localStorageManager.saveClients(repairedClients);
-      
+      this.saveTasks(uniqueTasks);
+      this.saveClients(uniqueClients);
+      this.saveProjects(uniqueProjects);
+      this.saveSubtasks(uniqueSubtasks);
+
       return true;
     } catch (error) {
       console.error('Failed to repair data:', error);
       return false;
     }
-  },
+  }
+
+  // Backup and restore methods
+  exportData(): LocalStorageData {
+    return {
+      tasks: this.getTasks(),
+      clients: this.getClients(),
+      projects: this.getProjects(),
+      serviceTypes: this.getServiceTypes(),
+      clientServices: this.getClientServices(),
+      serviceRenewals: this.getServiceRenewals(),
+      taskTemplates: this.getTaskTemplates(),
+      subtasks: this.getSubtasks()
+    };
+  }
+
+  importData(data: Partial<LocalStorageData>): void {
+    try {
+      if (data.tasks) this.saveTasks(data.tasks);
+      if (data.clients) this.saveClients(data.clients);
+      if (data.projects) this.saveProjects(data.projects);
+      if (data.serviceTypes) this.saveServiceTypes(data.serviceTypes);
+      if (data.clientServices) this.saveClientServices(data.clientServices);
+      if (data.serviceRenewals) this.saveServiceRenewals(data.serviceRenewals);
+      if (data.taskTemplates) this.saveTaskTemplates(data.taskTemplates);
+      if (data.subtasks) this.saveSubtasks(data.subtasks);
+
+      // Update data version
+      this.setItem(this.STORAGE_KEYS.DATA_VERSION, this.CURRENT_VERSION);
+    } catch (error) {
+      console.error('Failed to import data:', error);
+      throw new Error(`Failed to import data: ${error}`);
+    }
+  }
 
   // Clear all data
-  clearAll: (): void => {
-    Object.values(STORAGE_KEYS).forEach(key => {
+  clearAllData(): void {
+    Object.values(this.STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
   }
-};
+
+  // Storage size management
+  getStorageSize(): number {
+    let total = 0;
+    Object.values(this.STORAGE_KEYS).forEach(key => {
+      const item = localStorage.getItem(key);
+      if (item) {
+        total += item.length;
+      }
+    });
+    return total;
+  }
+
+  getStorageSizeFormatted(): string {
+    const bytes = this.getStorageSize();
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+}
+
+export const localStorageManager = new LocalStorageManager();
