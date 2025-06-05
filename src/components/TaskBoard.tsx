@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { TaskColumn } from './TaskColumn';
+import { TaskCard } from './TaskCard';
 import { Task, TaskStatus } from '@/types/task';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ const COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
 
 export const TaskBoard: React.FC = () => {
   const { tasks, updateTask } = useTaskContext();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -55,6 +56,14 @@ export const TaskBoard: React.FC = () => {
   const getTasksByStatus = (status: TaskStatus): Task[] => {
     return tasks.filter(task => task.status === status);
   };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleDrop = (e: React.DragEvent, status: TaskStatus) => {
+    // This is handled by drag and drop context
+  };
   
   return (
     <div className="h-full p-6">
@@ -84,10 +93,29 @@ export const TaskBoard: React.FC = () => {
                       snapshot.isDraggingOver && "bg-blue-50"
                     )}
                   >
-                    <TaskColumn 
-                      status={column.id}
-                      tasks={getTasksByStatus(column.id)}
-                    />
+                    <div className="space-y-3">
+                      {getTasksByStatus(column.id).map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                "group",
+                                snapshot.isDragging && "opacity-50"
+                              )}
+                            >
+                              <TaskCard 
+                                task={task} 
+                                onClick={() => handleTaskClick(task)}
+                                showSubtasks={true}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                    </div>
                     {provided.placeholder}
                   </div>
                 )}

@@ -85,28 +85,21 @@ export const ComplianceDashboard = () => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
 
-    const taskData = type === 'GST' 
-      ? {
-          title: `GST Filing - ${client.name}`,
-          description: `Monthly GST return filing for ${format(new Date(), 'MMMM yyyy')}`,
-          tags: ['GST', 'Compliance', 'Monthly'],
-          dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), client.statutoryDueDates?.gstReturn || 20)
-        }
-      : {
-          title: `TDS Return - ${client.name}`,
-          description: `Quarterly TDS return filing for Q${Math.floor((new Date().getMonth() / 3)) + 1}`,
-          tags: ['TDS', 'Compliance', 'Quarterly'],
-          dueDate: addDays(addMonths(startOfMonth(new Date()), Math.floor(new Date().getMonth() / 3) * 3 + 3), (client.statutoryDueDates?.tdsReturn || 7) - 1)
-        };
-
-    addTask({
-      ...taskData,
-      clientId,
+    const task = {
+      clientId: client.id,
       clientName: client.name,
-      status: 'todo',
-      priority: 'high',
-      recurrence: type === 'GST' ? 'monthly' : 'quarterly'
-    });
+      status: 'todo' as TaskStatus,
+      priority: 'high' as TaskPriority,
+      recurrence: type === 'GST' ? 'monthly' as RecurrenceType : 'quarterly' as RecurrenceType,
+      title: `${type === 'GST' ? 'GST Filing' : 'TDS Return'} for ${client.name}`,
+      description: `Compliance task for ${type === 'GST' ? 'GST' : 'TDS'}`,
+      tags: [type === 'GST' ? 'GST' : 'TDS', 'Compliance'],
+      dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), client.statutoryDueDates?.gstReturn || 20),
+      updatedAt: new Date(),
+      subtasks: []
+    };
+
+    addTask(task);
   };
 
   return (

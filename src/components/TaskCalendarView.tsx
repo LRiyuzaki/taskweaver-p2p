@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { 
@@ -77,6 +76,8 @@ export const TaskCalendarView = () => {
       return [];
     }
   }, [selectedDate, tasks]);
+  
+  const completedTasks = tasks.filter(task => task.status === 'done');
   
   const getTasksForDay = (day: Date) => {
     try {

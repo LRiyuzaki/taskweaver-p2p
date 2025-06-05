@@ -1,243 +1,155 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ClientServiceSelector } from './ClientServiceSelector';
-import { ServiceRenewalSelector } from './ServiceRenewalSelector';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
-import { toast } from '@/hooks/use-toast';
-import { Client } from '@/types/client';
-import { SaveIcon } from 'lucide-react';
+import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
+import { toast } from '@/hooks/use-toast-extensions';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TaskForm } from '@/components/TaskForm';
+import { ClientService } from '@/types/client';
 
-interface ClientServicesTabProps {
-  client: Client;
-}
-
-export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) => {
-  const { updateClient, getAvailableServiceNames } = useClientContext();
+export const ClientServicesTab: React.FC<{ clientId: string }> = ({ clientId }) => {
+  const { clients, clientServices, updateClientService } = useClientContext();
   const { addTask } = useTaskContext();
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<ClientService | null>(null);
   
-  const availableServices = getAvailableServiceNames();
+  const client = clients.find(c => c.id === clientId);
+  const services = clientServices.filter(s => s.clientId === clientId);
   
-  // Initialize selected services with proper defaults from client data
-  const [selectedServices, setSelectedServices] = useState<Record<string, boolean>>(() => {
-    // Create a default object with all services set to false
-    const defaultServices = availableServices.reduce((acc, serviceName) => {
-      acc[serviceName] = false;
-      return acc;
-    }, {} as Record<string, boolean>);
-    
-    // Override with client's required services if they exist
-    if (client.requiredServices) {
-      return { ...defaultServices, ...client.requiredServices };
-    }
-    
-    return defaultServices;
-  });
+  const handleAddTask = (service: ClientService) => {
+    setSelectedService(service);
+    setIsAddTaskDialogOpen(true);
+  };
   
-  // Initialize renewal settings
-  const [renewalSettings, setRenewalSettings] = useState<Record<string, {
-    isRequired: boolean;
-    reminderDays: number;
-    reminderDate?: Date;
-    reminderType: 'days' | 'date';
-  }>>(() => {
-    return availableServices.reduce((acc, serviceName) => {
-      acc[serviceName] = {
-        isRequired: false,
-        reminderDays: 30,
-        reminderType: 'days'
-      };
-      return acc;
-    }, {} as Record<string, any>);
-  });
-  
-  // Update local state when client prop changes
-  useEffect(() => {
-    if (client.requiredServices) {
-      // Create a default object with all services set to false
-      const defaultServices = availableServices.reduce((acc, serviceName) => {
-        acc[serviceName] = false;
-        return acc;
-      }, {} as Record<string, boolean>);
-      
-      // Merge with client's required services
-      setSelectedServices({ ...defaultServices, ...client.requiredServices });
-    } else {
-      // Initialize with all services set to false
-      const defaultServices = availableServices.reduce((acc, serviceName) => {
-        acc[serviceName] = false;
-        return acc;
-      }, {} as Record<string, boolean>);
-      
-      setSelectedServices(defaultServices);
-    }
-  }, [client.id, client.requiredServices, availableServices]);
-  
-  const handleServiceChange = (serviceName: string, isSelected: boolean) => {
-    setSelectedServices(prev => {
-      const updated = {
-        ...prev,
-        [serviceName]: isSelected
-      };
-      return updated;
+  const handleTaskFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
+    addTask({
+      ...formData,
+      updatedAt: new Date(),
+      subtasks: []
     });
+    setIsAddTaskDialogOpen(false);
+    toast.success('Task created successfully');
   };
   
-  const handleRenewalRequiredChange = (serviceName: string, isRequired: boolean) => {
-    setRenewalSettings(prev => ({
-      ...prev,
-      [serviceName]: {
-        ...prev[serviceName],
-        isRequired
-      }
-    }));
-  };
-  
-  const handleReminderDaysChange = (serviceName: string, days: number) => {
-    setRenewalSettings(prev => ({
-      ...prev,
-      [serviceName]: {
-        ...prev[serviceName],
-        reminderDays: days
-      }
-    }));
-  };
-  
-  const handleReminderDateChange = (serviceName: string, date?: Date) => {
-    setRenewalSettings(prev => ({
-      ...prev,
-      [serviceName]: {
-        ...prev[serviceName],
-        reminderDate: date
-      }
-    }));
-  };
-  
-  const handleReminderTypeChange = (serviceName: string, type: 'days' | 'date') => {
-    setRenewalSettings(prev => ({
-      ...prev,
-      [serviceName]: {
-        ...prev[serviceName],
-        reminderType: type
-      }
-    }));
-  };
-  
-  const handleSaveServices = () => {
-    // Update client with selected services
-    updateClient(client.id, {
-      requiredServices: selectedServices
+  const handleServiceStatusChange = (service: ClientService, status: 'active' | 'inactive' | 'pending') => {
+    updateClientService(service.clientId, service.serviceTypeId, {
+      ...service,
+      status
     });
-    
-    // Create tasks for services with renewal required
-    const selectedServiceNames = Object.entries(selectedServices)
-      .filter(([_, isSelected]) => isSelected === true)
-      .map(([name]) => name);
-    
-    for (const serviceName of selectedServiceNames) {
-      const renewalSetting = renewalSettings[serviceName];
-      
-      if (renewalSetting?.isRequired) {
-        // Create a task for this service renewal
-        const today = new Date();
-        
-        let reminderDate: Date;
-        if (renewalSetting.reminderType === 'days') {
-          // Calculate date based on days before
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + renewalSetting.reminderDays);
-          reminderDate = dueDate;
-        } else {
-          reminderDate = renewalSetting.reminderDate || new Date();
-        }
-        
-        addTask({
-          title: `${serviceName} Renewal for ${client.name}`,
-          description: `Prepare and complete the renewal process for ${serviceName} service for client ${client.name}`,
-          status: 'todo',
-          priority: 'medium',
-          dueDate: reminderDate,
-          clientId: client.id,
-          clientName: client.name,
-          tags: [serviceName, 'Renewal', 'Compliance'],
-          recurrence: 'none'
-        });
-      }
-    }
-    
-    toast({
-      title: "Services Updated",
-      description: "Client services have been updated successfully.",
-    });
+    toast.success(`Service status updated to ${status}`);
   };
+  
+  if (!client) {
+    return <div>Client not found</div>;
+  }
   
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="select">
-        <TabsList>
-          <TabsTrigger value="select">Select Services</TabsTrigger>
-          <TabsTrigger value="renewal">Renewal Settings</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="select" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Services Selection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientServiceSelector 
-                clientId={client.id}
-                selectedServices={selectedServices}
-                onServiceChange={handleServiceChange}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="renewal" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Renewal Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(selectedServices)
-                  .filter(([_, isSelected]) => isSelected === true)
-                  .map(([serviceName]) => (
-                    <ServiceRenewalSelector
-                      key={serviceName}
-                      serviceName={serviceName}
-                      isRenewalRequired={renewalSettings[serviceName]?.isRequired || false}
-                      onRenewalChange={(isRequired) => handleRenewalRequiredChange(serviceName, isRequired)}
-                      reminderDays={renewalSettings[serviceName]?.reminderDays || 30}
-                      onReminderDaysChange={(days) => handleReminderDaysChange(serviceName, days)}
-                      reminderDate={renewalSettings[serviceName]?.reminderDate}
-                      onReminderDateChange={(date) => handleReminderDateChange(serviceName, date)}
-                      reminderType={renewalSettings[serviceName]?.reminderType || 'days'}
-                      onReminderTypeChange={(type) => handleReminderTypeChange(serviceName, type)}
-                    />
-                  ))}
+      <h2 className="text-2xl font-bold">Services for {client.name}</h2>
+      
+      {services.length === 0 ? (
+        <div className="text-center p-8 border rounded-lg">
+          <p className="text-muted-foreground">No services found for this client.</p>
+          <Button className="mt-4">Add Service</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {services.map((service) => (
+            <div key={service.serviceTypeId} className="border rounded-lg p-4 shadow-sm">
+              <div className="flex justify-between items-start">
+                <h3 className="font-medium">{service.serviceTypeName}</h3>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAddTask(service)}
+                  >
+                    Create Task
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="mt-2 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className="font-medium">{service.status || 'Active'}</span>
+                </div>
                 
-                {Object.entries(selectedServices).filter(([_, isSelected]) => isSelected === true).length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">
-                    No services selected. Please select services in the "Select Services" tab first.
-                  </p>
+                {service.startDate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Start Date:</span>
+                    <span>{new Date(service.startDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+                
+                {service.nextRenewalDate && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Next Renewal:</span>
+                    <span>{new Date(service.nextRenewalDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+                
+                {service.fee && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fee:</span>
+                    <span>${service.fee}</span>
+                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              
+              <div className="mt-4 pt-2 border-t flex justify-end gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleServiceStatusChange(service, 'active')}
+                  disabled={service.status === 'active'}
+                >
+                  Mark Active
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleServiceStatusChange(service, 'inactive')}
+                  disabled={service.status === 'inactive'}
+                >
+                  Mark Inactive
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       
-      <div className="flex justify-end">
-        <Button onClick={handleSaveServices}>
-          <SaveIcon className="mr-2 h-4 w-4" />
-          Save Service Settings
-        </Button>
-      </div>
+      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              Create Task for {selectedService?.serviceTypeName}
+            </DialogTitle>
+          </DialogHeader>
+          <TaskForm 
+            onSubmit={handleTaskFormSubmit}
+            initialClientId={clientId}
+            task={{
+              title: selectedService ? `${selectedService.serviceTypeName} for ${client.name}` : '',
+              description: '',
+              status: 'todo' as TaskStatus,
+              priority: 'medium' as TaskPriority,
+              clientId: clientId,
+              clientName: client.name,
+              serviceId: selectedService?.serviceTypeId,
+              serviceName: selectedService?.serviceTypeName,
+              tags: selectedService ? [selectedService.serviceTypeName] : [],
+              recurrence: 'none' as RecurrenceType,
+              updatedAt: new Date(),
+              subtasks: []
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+export default ClientServicesTab;
