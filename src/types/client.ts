@@ -18,7 +18,7 @@ export interface Client {
   llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
-  address?: Address | string;
+  address?: string;
   bankAccount?: BankAccount;
   bankAccounts?: BankAccount[];
   services: string[];
@@ -40,6 +40,14 @@ export interface Client {
     gstReturn?: number;
     tdsReturn?: number;
   };
+  // Additional properties for recurring tasks
+  isDirector?: boolean;
+  hasIECode?: boolean;
+  hasDSC?: boolean;
+  dscStartDate?: Date;
+  hasTrademark?: boolean;
+  trademarkDate?: Date;
+  licenseDate?: Date;
 }
 
 export interface Address {
@@ -108,7 +116,9 @@ export interface ServiceRenewal {
   id: string;
   clientId: string;
   serviceTypeId: string;
+  serviceId?: string;
   renewalDate: Date;
+  dueDate?: Date;
   isCompleted: boolean;
   reminderSent: boolean;
 }
@@ -118,6 +128,8 @@ export interface ComplianceStatus {
   status: 'current' | 'upcoming' | 'overdue';
   dueDate: Date;
   description: string;
+  missingDocuments?: string[];
+  isCompliant?: boolean;
 }
 
 export interface ClientFormData {
@@ -134,7 +146,7 @@ export interface ClientFormData {
   llpin?: string;
   registeredAddress?: Address;
   businessAddress?: Address;
-  address?: Address;
+  address?: { registered: string; business?: string };
   bankAccount?: BankAccount;
   bankAccounts?: BankAccount[];
   requiredServices?: Record<string, boolean>;

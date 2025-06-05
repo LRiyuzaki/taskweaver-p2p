@@ -45,13 +45,15 @@ export interface Project {
   startDate?: Date;
   endDate?: Date;
   createdAt: Date;
+  color?: string;
+  icon?: string;
 }
 
 export interface TaskTemplate {
   id: string;
   name: string;
   description?: string;
-  tasks: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>[];
+  tasks: Omit<Task, 'id' | 'createdAt'>[];
   category?: string;
 }
 
@@ -62,3 +64,6 @@ export interface SubTask {
   completed: boolean;
   order: number;
 }
+
+// Export alias for backward compatibility
+export type TaskSubtask = SubTask;

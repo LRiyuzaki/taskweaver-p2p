@@ -88,8 +88,21 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         entityType: client.entityType,
         gstin: client.gstin || '',
         pan: client.pan || '',
+        tan: client.tan || '',
+        cin: client.cin || '',
+        llpin: client.llpin || '',
+        bankAccounts: client.bankAccounts || [],
         address: formatAddress(client.address || { registered: '', business: '' }),
         startDate: client.startDate ? new Date(client.startDate) : new Date(),
+        isGSTRegistered: client.isGSTRegistered || false,
+        isMSME: client.isMSME || false,
+        msmeNumber: client.msmeNumber || '',
+        isIECHolder: client.isIECHolder || false,
+        iecNumber: client.iecNumber || '',
+        financialYearEnd: client.financialYearEnd || 'March',
+        incorporationDate: client.incorporationDate,
+        gstRegistrationDate: client.gstRegistrationDate,
+        statutoryDueDates: client.statutoryDueDates || { gstReturn: 20, tdsReturn: 7 }
       });
     } else {
       // Initialize requiredServices for new client
@@ -551,7 +564,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
             <div key={serviceName} className="flex items-center space-x-2">
               <Checkbox 
                 id={`service-${serviceName}`}
-                checked={formData.requiredServices[serviceName] || false}
+                checked={formData.requiredServices?.[serviceName] || false}
                 onCheckedChange={(checked) => {
                   handleServiceChange(serviceName, checked === true);
                 }}
