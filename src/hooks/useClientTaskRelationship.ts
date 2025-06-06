@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -122,6 +121,22 @@ export const useClientTaskRelationship = () => {
       completedTasks,
       pendingTasks: totalTasks - completedTasks,
       completionRate
+    };
+  };
+
+  // Get task statistics for a specific client
+  const getClientTaskStats = (clientId: string) => {
+    const clientTasks = tasks.filter(task => task.clientId === clientId);
+    const completedTasks = clientTasks.filter(task => task.status === 'done');
+    const inProgressTasks = clientTasks.filter(task => task.status === 'in-progress');
+    const todoTasks = clientTasks.filter(task => task.status === 'todo');
+    
+    return {
+      total: clientTasks.length,
+      completed: completedTasks.length,
+      inProgress: inProgressTasks.length,
+      todo: todoTasks.length,
+      completionRate: clientTasks.length > 0 ? Math.round((completedTasks.length / clientTasks.length) * 100) : 0
     };
   };
 

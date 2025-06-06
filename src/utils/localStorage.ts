@@ -1,289 +1,168 @@
-
-import { Task, Project, TaskTemplate, SubTask } from '@/types/task';
 import { Client, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
 
-export interface LocalStorageData {
-  tasks: Task[];
+interface LocalStorageData {
   clients: Client[];
-  projects: Project[];
   serviceTypes: ServiceType[];
   clientServices: ClientService[];
   serviceRenewals: ServiceRenewal[];
-  taskTemplates: TaskTemplate[];
-  subtasks: SubTask[];
-}
-
-export interface DataIntegrityResult {
-  isValid: boolean;
-  errors: string[];
 }
 
 class LocalStorageManager {
-  private readonly STORAGE_KEYS = {
-    TASKS: 'accounting_app_tasks',
-    CLIENTS: 'accounting_app_clients',
-    PROJECTS: 'accounting_app_projects',
-    SERVICE_TYPES: 'accounting_app_service_types',
-    CLIENT_SERVICES: 'accounting_app_client_services',
-    SERVICE_RENEWALS: 'accounting_app_service_renewals',
-    TASK_TEMPLATES: 'accounting_app_task_templates',
-    SUBTASKS: 'accounting_app_subtasks',
-    DATA_VERSION: 'accounting_app_data_version'
-  };
-
-  private readonly CURRENT_VERSION = '1.0.0';
-
-  // Generic storage methods
-  private setItem<T>(key: string, data: T): void {
-    try {
-      const serialized = JSON.stringify(data);
-      localStorage.setItem(key, serialized);
-    } catch (error) {
-      console.error(`Failed to save data to localStorage (${key}):`, error);
-      throw new Error(`Failed to save data: ${error}`);
-    }
-  }
-
-  private getItem<T>(key: string, defaultValue: T): T {
-    try {
-      const item = localStorage.getItem(key);
-      if (item === null) {
-        return defaultValue;
-      }
-      return JSON.parse(item);
-    } catch (error) {
-      console.error(`Failed to load data from localStorage (${key}):`, error);
-      return defaultValue;
-    }
-  }
-
-  // Task methods
-  saveTasks(tasks: Task[]): void {
-    this.setItem(this.STORAGE_KEYS.TASKS, tasks);
-  }
-
-  getTasks(): Task[] {
-    return this.getItem<Task[]>(this.STORAGE_KEYS.TASKS, []);
-  }
-
-  // Client methods
-  saveClients(clients: Client[]): void {
-    this.setItem(this.STORAGE_KEYS.CLIENTS, clients);
-  }
-
   getClients(): Client[] {
-    return this.getItem<Client[]>(this.STORAGE_KEYS.CLIENTS, []);
+    try {
+      const stored = localStorage.getItem('clients');
+      if (!stored) return [];
+      
+      const clients = JSON.parse(stored);
+      return Array.isArray(clients) ? clients.map((client: any) => ({
+        ...client,
+        createdAt: new Date(client.createdAt),
+        startDate: client.startDate ? new Date(client.startDate) : undefined,
+        incorporationDate: client.incorporationDate ? new Date(client.incorporationDate) : undefined,
+        gstRegistrationDate: client.gstRegistrationDate ? new Date(client.gstRegistrationDate) : undefined
+      })) : [];
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      return [];
+    }
   }
 
-  // Project methods
-  saveProjects(projects: Project[]): void {
-    this.setItem(this.STORAGE_KEYS.PROJECTS, projects);
-  }
-
-  getProjects(): Project[] {
-    return this.getItem<Project[]>(this.STORAGE_KEYS.PROJECTS, []);
-  }
-
-  // Service Type methods
-  saveServiceTypes(serviceTypes: ServiceType[]): void {
-    this.setItem(this.STORAGE_KEYS.SERVICE_TYPES, serviceTypes);
+  saveClients(clients: Client[]): void {
+    try {
+      localStorage.setItem('clients', JSON.stringify(clients));
+    } catch (error) {
+      console.error('Error saving clients:', error);
+    }
   }
 
   getServiceTypes(): ServiceType[] {
-    return this.getItem<ServiceType[]>(this.STORAGE_KEYS.SERVICE_TYPES, []);
+    try {
+      const stored = localStorage.getItem('serviceTypes');
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Error loading service types:', error);
+      return [];
+    }
   }
 
-  // Client Service methods
-  saveClientServices(clientServices: ClientService[]): void {
-    this.setItem(this.STORAGE_KEYS.CLIENT_SERVICES, clientServices);
+  saveServiceTypes(serviceTypes: ServiceType[]): void {
+    try {
+      localStorage.setItem('serviceTypes', JSON.stringify(serviceTypes));
+    } catch (error) {
+      console.error('Error saving service types:', error);
+    }
   }
 
   getClientServices(): ClientService[] {
-    return this.getItem<ClientService[]>(this.STORAGE_KEYS.CLIENT_SERVICES, []);
-  }
-
-  // Service Renewal methods
-  saveServiceRenewals(serviceRenewals: ServiceRenewal[]): void {
-    this.setItem(this.STORAGE_KEYS.SERVICE_RENEWALS, serviceRenewals);
-  }
-
-  getServiceRenewals(): ServiceRenewal[] {
-    return this.getItem<ServiceRenewal[]>(this.STORAGE_KEYS.SERVICE_RENEWALS, []);
-  }
-
-  // Task Template methods
-  saveTaskTemplates(templates: TaskTemplate[]): void {
-    this.setItem(this.STORAGE_KEYS.TASK_TEMPLATES, templates);
-  }
-
-  getTaskTemplates(): TaskTemplate[] {
-    return this.getItem<TaskTemplate[]>(this.STORAGE_KEYS.TASK_TEMPLATES, []);
-  }
-
-  // Subtask methods
-  saveSubtasks(subtasks: SubTask[]): void {
-    this.setItem(this.STORAGE_KEYS.SUBTASKS, subtasks);
-  }
-
-  getSubtasks(): SubTask[] {
-    return this.getItem<SubTask[]>(this.STORAGE_KEYS.SUBTASKS, []);
-  }
-
-  // Data validation and integrity methods
-  validateDataIntegrity(): DataIntegrityResult {
-    const errors: string[] = [];
-    
     try {
-      // Check if data exists and is valid
-      const tasks = this.getTasks();
-      const clients = this.getClients();
-      const projects = this.getProjects();
-      const subtasks = this.getSubtasks();
-
-      // Validate task references
-      tasks.forEach(task => {
-        if (task.clientId && !clients.find(c => c.id === task.clientId)) {
-          errors.push(`Task "${task.title}" references non-existent client`);
-        }
-        if (task.projectId && !projects.find(p => p.id === task.projectId)) {
-          errors.push(`Task "${task.title}" references non-existent project`);
-        }
-      });
-
-      // Validate subtask references
-      subtasks.forEach(subtask => {
-        if (!tasks.find(t => t.id === subtask.taskId)) {
-          errors.push(`Subtask "${subtask.title}" references non-existent task`);
-        }
-      });
-
-      // Check for duplicate IDs
-      const taskIds = tasks.map(t => t.id);
-      const uniqueTaskIds = new Set(taskIds);
-      if (taskIds.length !== uniqueTaskIds.size) {
-        errors.push('Duplicate task IDs found');
-      }
-
-      const clientIds = clients.map(c => c.id);
-      const uniqueClientIds = new Set(clientIds);
-      if (clientIds.length !== uniqueClientIds.size) {
-        errors.push('Duplicate client IDs found');
-      }
-
+      const stored = localStorage.getItem('clientServices');
+      if (!stored) return [];
+      
+      const services = JSON.parse(stored);
+      return Array.isArray(services) ? services.map((service: any) => ({
+        ...service,
+        startDate: new Date(service.startDate),
+        endDate: service.endDate ? new Date(service.endDate) : undefined,
+        renewalDate: service.renewalDate ? new Date(service.renewalDate) : undefined,
+        nextRenewalDate: service.nextRenewalDate ? new Date(service.nextRenewalDate) : undefined
+      })) : [];
     } catch (error) {
-      errors.push(`Data validation error: ${error}`);
+      console.error('Error loading client services:', error);
+      return [];
+    }
+  }
+
+  saveClientServices(clientServices: ClientService[]): void {
+    try {
+      localStorage.setItem('clientServices', JSON.stringify(clientServices));
+    } catch (error) {
+      console.error('Error saving client services:', error);
+    }
+  }
+
+  validateDataIntegrity(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    let isValid = true;
+
+    try {
+      const clients = this.getClients();
+      if (!Array.isArray(clients)) {
+        isValid = false;
+        errors.push('Clients data is not an array.');
+      }
+
+      const serviceTypes = this.getServiceTypes();
+      if (!Array.isArray(serviceTypes)) {
+        isValid = false;
+        errors.push('Service types data is not an array.');
+      }
+
+      const clientServices = this.getClientServices();
+      if (!Array.isArray(clientServices)) {
+        isValid = false;
+        errors.push('Client services data is not an array.');
+      }
+    } catch (error) {
+      isValid = false;
+      errors.push(`Error during validation: ${(error as Error).message}`);
     }
 
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+    return { isValid, errors };
   }
 
   repairData(): boolean {
     try {
-      const tasks = this.getTasks();
       const clients = this.getClients();
-      const projects = this.getProjects();
-      const subtasks = this.getSubtasks();
-
-      // Remove invalid references
-      const validTasks = tasks.filter(task => {
-        if (task.clientId && !clients.find(c => c.id === task.clientId)) {
-          task.clientId = undefined;
-          task.clientName = undefined;
-        }
-        if (task.projectId && !projects.find(p => p.id === task.projectId)) {
-          task.projectId = undefined;
-          task.projectName = undefined;
-        }
+      if (!Array.isArray(clients)) {
+        localStorage.setItem('clients', JSON.stringify([]));
         return true;
-      });
+      }
 
-      const validSubtasks = subtasks.filter(subtask => {
-        return tasks.find(t => t.id === subtask.taskId);
-      });
+      const serviceTypes = this.getServiceTypes();
+      if (!Array.isArray(serviceTypes)) {
+        localStorage.setItem('serviceTypes', JSON.stringify([]));
+        return true;
+      }
 
-      // Remove duplicates
-      const uniqueTasks = Array.from(new Map(validTasks.map(task => [task.id, task])).values());
-      const uniqueClients = Array.from(new Map(clients.map(client => [client.id, client])).values());
-      const uniqueProjects = Array.from(new Map(projects.map(project => [project.id, project])).values());
-      const uniqueSubtasks = Array.from(new Map(validSubtasks.map(subtask => [subtask.id, subtask])).values());
-
-      // Save repaired data
-      this.saveTasks(uniqueTasks);
-      this.saveClients(uniqueClients);
-      this.saveProjects(uniqueProjects);
-      this.saveSubtasks(uniqueSubtasks);
+      const clientServices = this.getClientServices();
+      if (!Array.isArray(clientServices)) {
+        localStorage.setItem('clientServices', JSON.stringify([]));
+        return true;
+      }
 
       return true;
     } catch (error) {
-      console.error('Failed to repair data:', error);
+      console.error('Repair failed:', error);
       return false;
     }
   }
 
-  // Backup and restore methods
-  exportData(): LocalStorageData {
-    return {
-      tasks: this.getTasks(),
-      clients: this.getClients(),
-      projects: this.getProjects(),
-      serviceTypes: this.getServiceTypes(),
-      clientServices: this.getClientServices(),
-      serviceRenewals: this.getServiceRenewals(),
-      taskTemplates: this.getTaskTemplates(),
-      subtasks: this.getSubtasks()
-    };
-  }
-
-  importData(data: Partial<LocalStorageData>): void {
+  // Add missing method for client renewals
+  getClientRenewals(): ServiceRenewal[] {
     try {
-      if (data.tasks) this.saveTasks(data.tasks);
-      if (data.clients) this.saveClients(data.clients);
-      if (data.projects) this.saveProjects(data.projects);
-      if (data.serviceTypes) this.saveServiceTypes(data.serviceTypes);
-      if (data.clientServices) this.saveClientServices(data.clientServices);
-      if (data.serviceRenewals) this.saveServiceRenewals(data.serviceRenewals);
-      if (data.taskTemplates) this.saveTaskTemplates(data.taskTemplates);
-      if (data.subtasks) this.saveSubtasks(data.subtasks);
-
-      // Update data version
-      this.setItem(this.STORAGE_KEYS.DATA_VERSION, this.CURRENT_VERSION);
+      const stored = localStorage.getItem('serviceRenewals');
+      if (!stored) return [];
+      
+      const renewals = JSON.parse(stored);
+      return Array.isArray(renewals) ? renewals.map((renewal: any) => ({
+        ...renewal,
+        renewalDate: new Date(renewal.renewalDate),
+        dueDate: renewal.dueDate ? new Date(renewal.dueDate) : undefined,
+        reminderDate: renewal.reminderDate ? new Date(renewal.reminderDate) : undefined
+      })) : [];
     } catch (error) {
-      console.error('Failed to import data:', error);
-      throw new Error(`Failed to import data: ${error}`);
+      console.error('Error loading service renewals:', error);
+      return [];
     }
   }
 
-  // Clear all data
-  clearAllData(): void {
-    Object.values(this.STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
-  }
-
-  // Storage size management
-  getStorageSize(): number {
-    let total = 0;
-    Object.values(this.STORAGE_KEYS).forEach(key => {
-      const item = localStorage.getItem(key);
-      if (item) {
-        total += item.length;
-      }
-    });
-    return total;
-  }
-
-  getStorageSizeFormatted(): string {
-    const bytes = this.getStorageSize();
-    if (bytes === 0) return '0 Bytes';
-    
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  saveServiceRenewals(renewals: ServiceRenewal[]): void {
+    try {
+      localStorage.setItem('serviceRenewals', JSON.stringify(renewals));
+    } catch (error) {
+      console.error('Error saving service renewals:', error);
+    }
   }
 }
 

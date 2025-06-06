@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,6 +120,21 @@ export const TaskReporting: React.FC<TaskReportingProps> = ({
       { name: 'Done', value: taskStats.done }
     ];
   }, [taskStats]);
+
+  const getCompletionRate = () => {
+    if (filteredTasks.length === 0) return 0;
+    const completed = filteredTasks.filter(task => task.status === 'done').length;
+    return Math.round((completed / filteredTasks.length) * 100);
+  };
+
+  const getTasksByStatus = () => {
+    return [
+      { status: 'To Do', count: filteredTasks.filter(task => task.status === 'todo').length },
+      { status: 'In Progress', count: filteredTasks.filter(task => task.status === 'in-progress').length },
+      { status: 'Review', count: filteredTasks.filter(task => task.status === 'review').length },
+      { status: 'Done', count: filteredTasks.filter(task => task.status === 'done').length }
+    ];
+  };
 
   // Group tasks by assignee (employee)
   const tasksByEmployee = useMemo(() => {

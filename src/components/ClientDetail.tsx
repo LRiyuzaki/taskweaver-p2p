@@ -366,7 +366,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         </TabsContent>
         
         <TabsContent value="services" className="mt-6">
-          <ClientServicesTab client={client} />
+          <ClientServicesTab clientId={clientId} />
         </TabsContent>
         
         <TabsContent value="documents" className="mt-6">

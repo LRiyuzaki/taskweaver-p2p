@@ -100,6 +100,21 @@ export const TaskCalendarView = () => {
     }
   };
   
+  const getTaskStatusColor = (status: TaskStatus) => {
+    switch (status) {
+      case 'todo':
+        return '#94a3b8'; // slate-400
+      case 'in-progress':
+        return '#3b82f6'; // blue-500
+      case 'review':
+        return '#f59e0b'; // amber-500
+      case 'done':
+        return '#10b981'; // emerald-500
+      default:
+        return '#6b7280'; // gray-500
+    }
+  };
+  
   const handlePreviousMonth = () => {
     try {
       setCurrentMonth(subMonths(currentMonth, 1));

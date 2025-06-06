@@ -68,6 +68,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   // Initialize form with client data if provided
   useEffect(() => {
     if (client) {
+      // Handle address conversion
+      let addressString = '';
+      if (typeof client.address === 'string') {
+        addressString = client.address;
+      } else if (client.address && typeof client.address === 'object') {
+        // Convert Address object to string
+        const addr = client.address;
+        addressString = [addr.street, addr.city, addr.state, addr.pincode, addr.country]
+          .filter(Boolean)
+          .join(', ');
+      }
+
       setFormData({
         name: client.name,
         email: client.email,
@@ -82,9 +94,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         cin: client.cin || '',
         llpin: client.llpin || '',
         bankAccounts: client.bankAccounts || [],
-        address: typeof client.address === 'string' ? client.address : 
-                 typeof client.address === 'object' && client.address ? 
-                 `${client.address.street || ''}, ${client.address.city || ''}, ${client.address.state || ''}, ${client.address.pincode || ''}, ${client.address.country || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') : '',
+        address: addressString,
         startDate: client.startDate ? new Date(client.startDate) : new Date(),
         isGSTRegistered: client.isGSTRegistered || false,
         isMSME: client.isMSME || false,
