@@ -1,109 +1,46 @@
 
-import { RouterProvider } from 'react-router-dom';
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toaster";
-import { router } from './router';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { TaskProvider } from './contexts/TaskContext';
 import { ClientProvider } from './contexts/ClientContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DatabaseProvider } from './contexts/DatabaseContext';
-import { P2PProvider } from './contexts/P2PContext';
-import { P2PAuthProvider } from './contexts/P2PAuthContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { MobileNavigation } from './components/MobileNavigation';
-import { useEffect, Suspense } from 'react';
-import { initializeWithSeedData } from './utils/seedData';
-import { performanceService } from './services/monitoring/performance-service';
-import { env } from './config/env';
-import { useIsMobile } from './hooks/use-mobile';
-
-// Create custom loading component
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-  </div>
-);
-
-const AppContent = () => {
-  const isMobile = useIsMobile();
-  
-  return (
-    <div className={`min-h-screen ${isMobile ? 'pb-16' : ''}`}>
-      <Suspense fallback={<LoadingFallback />}>
-        <RouterProvider router={router} />
-      </Suspense>
-      <Toaster />
-      {isMobile && <MobileNavigation />}
-    </div>
-  );
-};
+import { Toaster } from '@/components/ui/toaster';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import TasksPage from './pages/TasksPage';
+import ClientManagement from './pages/ClientManagement';
+import ClientDetailsPage from './pages/ClientDetailsPage';
+import CompliancePage from './pages/CompliancePage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        retry: 1,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      },
-      mutations: {
-        retry: 1,
-      }
-    }
-  });
-  
-  // Initialize performance monitoring
-  useEffect(() => {
-    try {
-      performanceService.init();
-      
-      if (env.isDevelopment) {
-        console.log(`Application initialized in ${env.isDevelopment ? 'development' : 'production'} mode`);
-        console.log(`Connected to Supabase project: ${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}`);
-      }
-    } catch (error) {
-      console.error('Failed to initialize performance service:', error);
-    }
-    
-    return () => {
-      try {
-        performanceService.dispose();
-      } catch (error) {
-        console.error('Failed to dispose performance service:', error);
-      }
-    };
-  }, []);
-  
-  // Initialize app with seed data if needed
-  useEffect(() => {
-    try {
-      initializeWithSeedData();
-    } catch (error) {
-      console.error('Failed to initialize seed data:', error);
-    }
-  }, []);
-  
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <PerformanceProvider>
-          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-            <DatabaseProvider>
-              <P2PAuthProvider>
-                <P2PProvider>
-                  <TaskProvider>
-                    <ClientProvider>
-                      <AppContent />
-                    </ClientProvider>
-                  </TaskProvider>
-                </P2PProvider>
-              </P2PAuthProvider>
-            </DatabaseProvider>
-          </ThemeProvider>
-        </PerformanceProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <PerformanceProvider>
+        <TaskProvider>
+          <ClientProvider>
+            <Router>
+              <div className="min-h-screen bg-background text-foreground">
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/tasks" element={<TasksPage />} />
+                    <Route path="/clients" element={<ClientManagement />} />
+                    <Route path="/client/:id" element={<ClientDetailsPage />} />
+                    <Route path="/compliance" element={<CompliancePage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Routes>
+                </Layout>
+                <Toaster />
+              </div>
+            </Router>
+          </ClientProvider>
+        </TaskProvider>
+      </PerformanceProvider>
+    </ThemeProvider>
   );
 }
 
