@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@chainsafe/libp2p-noise": "^16.1.0",
-    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^3.9.0",
     "@libp2p/bootstrap": "^11.0.33",
     "@libp2p/mplex": "^11.0.33",

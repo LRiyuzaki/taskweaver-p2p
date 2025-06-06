@@ -1,7 +1,7 @@
 
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'todo' | 'inProgress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'halfYearly' | 'yearly';
 
 export interface Task {
   id: string;
@@ -11,10 +11,10 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: Date;
   createdAt: Date;
-  updatedAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  completedDate?: Date; // For backward compatibility
+  updatedAt?: Date;
+  completedDate?: Date;
+  startedAt?: Date; // When the task was started
+  timeSpentMinutes?: number; // Time tracking in minutes
   assignedTo?: string;
   assigneeName?: string;
   clientId?: string;
@@ -27,12 +27,22 @@ export interface Task {
   reviewerId?: string;
   reviewerName?: string;
   reviewStatus?: 'pending' | 'approved' | 'rejected';
-  comments?: string;
+  comments?: string; // Comments on the task
   tags: string[];
   recurrence: RecurrenceType;
   recurrenceEndDate?: Date;
-  subtasks: string[];
-  timeSpentMinutes?: number;
+  subtasks?: TaskSubtask[];
+}
+
+export interface TaskSubtask {
+  id: string;
+  taskId: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  orderPosition: number;
+  createdAt: Date;
+  completedAt?: Date;
 }
 
 export interface Project {
@@ -41,55 +51,40 @@ export interface Project {
   description?: string;
   clientId?: string;
   clientName?: string;
-  status: 'active' | 'completed' | 'on-hold';
+  status: 'active' | 'completed' | 'onHold';
   startDate?: Date;
   endDate?: Date;
   createdAt: Date;
-  color?: string;
-  icon?: string;
+  color?: string; // Adding color for project visual distinction
+  icon?: string; // Adding icon for project visual distinction
 }
 
-export interface TaskTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  subtasks: Omit<SubTask, 'id' | 'taskId'>[];
-  category?: string;
-}
-
-export interface SubTask {
-  id: string;
-  taskId: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  order: number;
-  orderPosition: number; // Alias for order, keeping both for compatibility
-  assignedTo?: string;
-  assigneeName?: string;
-}
-
-// Additional types for components
 export interface TaskCount {
   total: number;
-  completed: number;
-  inProgress: number;
   todo: number;
-  review: number;
+  inProgress: number;
+  review: number; // Added review to task count
   done: number;
   upcoming: number;
 }
 
+export interface ServiceInfo {
+  id: string;
+  name: string;
+  description?: string;
+  standardTimeHours?: number;
+  requiresReview: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Add missing types for TaskListView
 export interface SortOption {
-  value: string;
   label: string;
+  value: string;
 }
 
 export interface FilterOption {
-  value: string;
-  label: string;
   type: string;
+  value: string;
 }
-
-// Export alias for backward compatibility
-export type TaskSubtask = SubTask;

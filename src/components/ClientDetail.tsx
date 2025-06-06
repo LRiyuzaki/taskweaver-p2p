@@ -24,7 +24,7 @@ interface ClientDetailProps {
 
 export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) => {
   const { getClientById, updateClient, deleteClient, getAvailableServiceNames } = useClientContext();
-  const { tasks, deleteTask } = useTaskContext();
+  const { tasks, deleteTasks } = useTaskContext();
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -149,7 +149,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
   
   const confirmDeleteTask = () => {
     if (taskToDelete) {
-      deleteTask(taskToDelete);
+      deleteTasks([taskToDelete]);
       setTaskToDelete(null);
       setIsDeleteTaskDialogOpen(false);
       toast({
@@ -159,20 +159,13 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
     }
   };
   
-  // Helper function to get address string
-  const getAddressString = (address: any): string => {
-    if (!address) return '';
-    if (typeof address === 'string') return address;
-    return address.registered || address.business || '';
-  };
-  
   // Get only the services that are explicitly marked as true
   const activeServices = client && client.requiredServices 
     ? Object.entries(client.requiredServices)
         .filter(([_, isRequired]) => isRequired === true)
         .map(([serviceName]) => serviceName)
     : [];
-
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -335,7 +328,9 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
             <div className="mt-6 border-t pt-4">
               <h3 className="text-sm font-medium mb-2">Address</h3>
               <p className="text-sm whitespace-pre-wrap">
-                {getAddressString(client.address)}
+                {typeof client.address === 'string' 
+                  ? client.address 
+                  : client.address.registered || client.address.business || ''}
               </p>
             </div>
           )}
@@ -366,7 +361,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
         </TabsContent>
         
         <TabsContent value="services" className="mt-6">
-          <ClientServicesTab clientId={clientId} />
+          <ClientServicesTab client={client} />
         </TabsContent>
         
         <TabsContent value="documents" className="mt-6">
@@ -398,11 +393,11 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack }) 
                       <div className="flex items-center gap-2">
                         <Badge className={cn(
                           task.status === 'todo' ? "bg-slate-500" :
-                          task.status === 'in-progress' ? "bg-blue-500" : 
+                          task.status === 'inProgress' ? "bg-blue-500" : 
                           "bg-green-500"
                         )}>
                           {task.status === 'todo' ? 'To Do' : 
-                           task.status === 'in-progress' ? 'In Progress' : 'Done'}
+                           task.status === 'inProgress' ? 'In Progress' : 'Done'}
                         </Badge>
                         <Button size="sm" variant="outline">View</Button>
                         <Button 

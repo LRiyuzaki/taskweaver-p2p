@@ -1,10 +1,9 @@
-
 import React, { useState, ReactNode } from 'react';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from '@/components/TaskCard';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, ChevronUp, ChevronDown, Plus, Filter, SortAsc } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, Plus, Filter, SortAsc, SortDesc, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -44,7 +43,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [sortOrder, setSortOrder] = useState<'default' | 'priority' | 'date' | 'timeSpent'>('default');
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]); 
-  const [showSubtasks, setShowSubtasks] = useState(true);
+  const [showSubtasks, setShowSubtasks] = useState(true); // Toggle for subtask visibility
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -67,10 +66,8 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
   const handleTaskFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
     addTask({
       ...formData,
-      status,
+      status, // Force the status to match this column
       recurrence: formData.recurrence || 'none',
-      updatedAt: new Date(),
-      subtasks: []
     });
     setIsAddTaskDialogOpen(false);
     toast.success(`Task added to ${title}`);
@@ -100,7 +97,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
         return [...filteredTasks].sort((a, b) => {
           const aTime = a.timeSpentMinutes || 0;
           const bTime = b.timeSpentMinutes || 0;
-          return bTime - aTime;
+          return bTime - aTime; // Sort by most time spent first
         });
       default:
         return filteredTasks;
@@ -120,10 +117,11 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
     });
   };
   
+  // Get appropriate status color
   const getStatusColor = () => {
     switch(status) {
       case 'todo': return 'border-slate-200';
-      case 'in-progress': return 'border-blue-200';
+      case 'inProgress': return 'border-blue-200';
       case 'review': return 'border-amber-200';
       case 'done': return 'border-green-200';
       default: return 'border-slate-200';
@@ -148,7 +146,7 @@ export const TaskColumn: React.FC<TaskColumnProps> = ({
             <h3 className="font-medium text-sm uppercase tracking-wide">{title}</h3>
             <Badge variant={
               status === 'todo' ? "outline" :
-              status === 'in-progress' ? "secondary" :
+              status === 'inProgress' ? "secondary" :
               status === 'review' ? "outline" : 
               "default"
             }>{processedTasks.length}</Badge>

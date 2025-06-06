@@ -1,310 +1,588 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { format, addDays, addMonths, addYears } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, Edit, Save, X } from 'lucide-react';
+import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
-import { Client, ClientService } from '@/types/client';
+import { useTaskContext } from '@/contexts/TaskContext';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, addMonths, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { CalendarIcon, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ClientService } from '@/types/client';
 import { toast } from '@/hooks/use-toast-extensions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ClientServiceManagerProps {
-  client: Client;
+  clientId: string;
+  clientName: string;
 }
 
-export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ client }) => {
-  const { updateClient, serviceTypes } = useClientContext();
-  const [selectedServiceType, setSelectedServiceType] = useState('');
-  const [customRenewalDate, setCustomRenewalDate] = useState<Date>();
-  const [renewalPeriod, setRenewalPeriod] = useState<'months' | 'days' | 'specificDate'>('months');
-  const [renewalValue, setRenewalValue] = useState('12');
-  const [reminderDays, setReminderDays] = useState('30');
-  const [isAddingService, setIsAddingService] = useState(false);
-  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+export const ClientServiceManager: React.FC<ClientServiceManagerProps> = ({ clientId, clientName }) => {
+  const { serviceTypes, clientServices, addClientService, updateClientService, deleteClientService } = useClientContext();
+  const { addTask, tasks, deleteTask } = useTaskContext();
+  
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [reminderType, setReminderType] = useState<'days' | 'months' | 'specificDate'>('days');
+  const [reminderDays, setReminderDays] = useState<number>(30);
+  const [reminderMonths, setReminderMonths] = useState<number>(1);
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<ClientService | null>(null);
+  const [editReminderType, setEditReminderType] = useState<'days' | 'months' | 'specificDate'>('days');
+  const [editReminderDays, setEditReminderDays] = useState<number>(30);
+  const [editReminderMonths, setEditReminderMonths] = useState<number>(1);
+  const [editReminderDate, setEditReminderDate] = useState<Date | undefined>(undefined);
+  
+  const clientActiveServices = clientServices.filter(
+    service => service.clientId === clientId && service.status !== 'completed'
+  );
 
-  // Ensure services is always an array of ClientService objects
-  const clientServices: ClientService[] = Array.isArray(client.services) 
-    ? client.services.filter((service): service is ClientService => 
-        typeof service === 'object' && service !== null
-      )
-    : [];
-
-  const handleAddService = async () => {
-    if (!selectedServiceType) {
-      toast.error('Please select a service type');
-      return;
-    }
-
-    const serviceType = serviceTypes.find(st => st.id === selectedServiceType);
-    if (!serviceType) {
-      toast.error('Service type not found');
-      return;
-    }
-
-    let nextRenewalDate: Date;
-    const startDate = new Date();
-
-    if (renewalPeriod === 'specificDate' && customRenewalDate) {
-      nextRenewalDate = customRenewalDate;
-    } else if (renewalPeriod === 'months') {
-      nextRenewalDate = addMonths(startDate, parseInt(renewalValue));
-    } else {
-      nextRenewalDate = addDays(startDate, parseInt(renewalValue));
-    }
-
-    const newService: ClientService = {
-      id: `service-${Date.now()}`,
-      serviceTypeId: serviceType.id,
-      serviceTypeName: serviceType.name,
-      startDate,
-      nextRenewalDate,
-      status: 'active',
-      reminderDays: parseInt(reminderDays),
-      reminderType: 'email',
-      isActive: true
-    };
-
-    const updatedServices: ClientService[] = [...clientServices, newService];
-
-    try {
-      await updateClient(client.id, { services: updatedServices });
-      toast.success('Service added successfully');
-      
-      // Reset form
-      setSelectedServiceType('');
-      setRenewalValue('12');
-      setReminderDays('30');
-      setCustomRenewalDate(undefined);
-      setIsAddingService(false);
-    } catch (error) {
-      toast.error('Failed to add service');
-      console.error('Error adding service:', error);
+  const getReminderDaysFromSettings = () => {
+    switch (reminderType) {
+      case 'days':
+        return reminderDays;
+      case 'months':
+        return reminderMonths * 30; // Approximate days in a month
+      case 'specificDate':
+        if (reminderDate) {
+          const diffTime = startDate.getTime() - reminderDate.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays > 0 ? diffDays : 30; // Default to 30 if date is after start date
+        }
+        return 30;
+      default:
+        return 30;
     }
   };
 
-  const handleRemoveService = async (serviceId: string) => {
-    const updatedServices = clientServices.filter(service => service.id !== serviceId);
+  const handleAddService = () => {
+    if (!selectedServiceId) {
+      toast.error("Please select a service");
+      return;
+    }
     
-    try {
-      await updateClient(client.id, { services: updatedServices });
-      toast.success('Service removed successfully');
-    } catch (error) {
-      toast.error('Failed to remove service');
-      console.error('Error removing service:', error);
+    const selectedServiceType = serviceTypes.find(type => type.id === selectedServiceId);
+    if (!selectedServiceType) return;
+    
+    const getEndDate = () => {
+      switch (selectedServiceType.frequency) {
+        case 'monthly':
+          return addMonths(startDate, 1);
+        case 'quarterly':
+          return addMonths(startDate, 3);
+        case 'annually':
+          return addMonths(startDate, 12);
+        default:
+          return undefined;
+      }
+    };
+    
+    const endDate = getEndDate();
+    const finalReminderDays = getReminderDaysFromSettings();
+    
+    const newClientService: Omit<ClientService, 'id'> = {
+      clientId,
+      serviceTypeId: selectedServiceId,
+      serviceTypeName: selectedServiceType.name,
+      startDate,
+      endDate,
+      nextRenewalDate: endDate,
+      status: 'active',
+      reminderDays: finalReminderDays,
+      reminderType: reminderType
+    };
+    
+    addClientService(newClientService);
+    
+    createServiceTasks(newClientService, selectedServiceType, clientName);
+    
+    setSelectedServiceId('');
+    setStartDate(new Date());
+    setReminderDays(30);
+    setReminderMonths(1);
+    setReminderDate(undefined);
+    setReminderType('days');
+    
+    toast.success(`${selectedServiceType.name} has been added to ${clientName}`);
+  };
+  
+  const createServiceTasks = (service: Omit<ClientService, 'id'>, serviceType: any, clientName: string) => {
+    // Add initial service task
+    addTask({
+      title: `${serviceType.name} for ${clientName}`,
+      description: `Complete ${serviceType.name} for ${clientName}`,
+      status: 'todo',
+      priority: serviceType.frequency === 'annually' ? 'high' : 'medium',
+      dueDate: service.startDate,
+      tags: [serviceType.name, 'Initial'],
+      clientId,
+      assignedTo: '',
+      recurrence: 'none',
+      recurrenceEndDate: undefined,
+    });
+    
+    // Only create renewal reminders for services that have an end date
+    if (service.endDate && service.reminderDays) {
+      const reminderDate = new Date(service.endDate);
+      reminderDate.setDate(reminderDate.getDate() - service.reminderDays);
+      
+      // Create a renewal task with the appropriate recurrence
+      addTask({
+        title: `Renewal: ${serviceType.name} for ${clientName}`,
+        description: `Prepare for renewal of ${serviceType.name} for ${clientName}. Due in ${service.reminderDays} days before expiry.`,
+        status: 'todo',
+        priority: 'medium',
+        dueDate: reminderDate,
+        tags: [serviceType.name, 'Renewal', 'Reminder'],
+        clientId,
+        assignedTo: '',
+        recurrence: serviceType.frequency === 'annually' ? 'yearly' : 
+                   serviceType.frequency === 'quarterly' ? 'quarterly' : 'monthly',
+        recurrenceEndDate: undefined,
+      });
     }
   };
 
-  const handleEditService = async (serviceId: string, updates: Partial<ClientService>) => {
-    const updatedServices = clientServices.map(service => 
-      service.id === serviceId ? { ...service, ...updates } : service
+  const removeServiceTasks = (serviceTypeId: string) => {
+    // Find all tasks related to this service and client and remove them
+    const relatedTasks = tasks.filter(
+      task => task.clientId === clientId && task.tags.includes(
+        serviceTypes.find(s => s.id === serviceTypeId)?.name || ''
+      )
     );
     
-    try {
-      await updateClient(client.id, { services: updatedServices });
-      toast.success('Service updated successfully');
-      setEditingServiceId(null);
-    } catch (error) {
-      toast.error('Failed to update service');
-      console.error('Error updating service:', error);
-    }
+    relatedTasks.forEach(task => {
+      deleteTask(task.id);
+    });
   };
 
-  const getServiceStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge variant="default">Active</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
-      case 'expired':
-        return <Badge variant="destructive">Expired</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const handleCancelService = (serviceTypeId: string, serviceTypeName: string) => {
+    if (window.confirm(`Are you sure you want to cancel ${serviceTypeName}?`)) {
+      // First, remove related tasks
+      removeServiceTasks(serviceTypeId);
+      
+      // Then mark the service as inactive or delete it
+      deleteClientService(clientId, serviceTypeId);
+      
+      toast.success(`${serviceTypeName} has been cancelled and related tasks removed`);
     }
+  };
+  
+  const handleEditService = (service: ClientService) => {
+    setEditingService(service);
+    
+    // Set default editing values based on the service's current settings
+    setEditReminderDays(service.reminderDays || 30);
+    setEditReminderMonths(Math.round((service.reminderDays || 30) / 30));
+    setEditReminderType(service.reminderType || 'days');
+    
+    // If there's a specific date stored, calculate it from the end date and reminder days
+    if (service.endDate && service.reminderDays) {
+      const specificDate = new Date(service.endDate);
+      specificDate.setDate(specificDate.getDate() - service.reminderDays);
+      setEditReminderDate(specificDate);
+    } else {
+      setEditReminderDate(undefined);
+    }
+    
+    setIsEditModalOpen(true);
+  };
+  
+  const getEditReminderDays = () => {
+    switch (editReminderType) {
+      case 'days':
+        return editReminderDays;
+      case 'months':
+        return editReminderMonths * 30; // Approximate days in a month
+      case 'specificDate':
+        if (editReminderDate && editingService?.endDate) {
+          const endDate = new Date(editingService.endDate);
+          const diffTime = endDate.getTime() - editReminderDate.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays > 0 ? diffDays : 30; // Default to 30 if date is after end date
+        }
+        return 30;
+      default:
+        return 30;
+    }
+  };
+  
+  const saveServiceChanges = () => {
+    if (!editingService) return;
+    
+    const finalReminderDays = getEditReminderDays();
+    
+    // Update the service with new reminder settings
+    updateClientService(clientId, editingService.serviceTypeId, {
+      reminderDays: finalReminderDays,
+      reminderType: editReminderType
+    });
+    
+    // Update related tasks with the new reminder settings
+    if (editingService.endDate) {
+      const reminderDate = new Date(editingService.endDate);
+      reminderDate.setDate(reminderDate.getDate() - finalReminderDays);
+      
+      // Find and update all reminder tasks for this service
+      const reminderTasks = tasks.filter(
+        task => task.clientId === clientId && 
+               task.tags.includes('Reminder') &&
+               task.tags.includes(editingService.serviceTypeName || '')
+      );
+      
+      reminderTasks.forEach(task => {
+        // Update the task with new due date
+        if (task.id) {
+          // Find and remove old reminder tasks
+          deleteTask(task.id);
+          
+          // Create a new reminder task with updated settings
+          addTask({
+            title: task.title,
+            description: `Prepare for renewal of ${editingService.serviceTypeName} for ${clientName}. Due in ${finalReminderDays} days before expiry.`,
+            status: 'todo',
+            priority: task.priority,
+            dueDate: reminderDate,
+            tags: task.tags,
+            clientId,
+            assignedTo: task.assignedTo || '',
+            recurrence: task.recurrence,
+            recurrenceEndDate: task.recurrenceEndDate,
+          });
+        }
+      });
+    }
+    
+    toast.success(`Reminder settings updated for ${editingService.serviceTypeName}`);
+    setIsEditModalOpen(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Client Services</h3>
-        <Button
-          onClick={() => setIsAddingService(true)}
-          size="sm"
-          disabled={isAddingService}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Service
-        </Button>
-      </div>
-
-      {isAddingService && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Service</CardTitle>
-            <CardDescription>
-              Configure a new service for this client
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="serviceType">Service Type</Label>
-              <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a service type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((serviceType) => (
-                    <SelectItem key={serviceType.id} value={serviceType.id}>
-                      {serviceType.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Renewal Schedule</Label>
-              <div className="space-y-2">
-                <Select 
-                  value={renewalPeriod} 
-                  onValueChange={(value: 'months' | 'days' | 'specificDate') => setRenewalPeriod(value)}
+    <div className="space-y-8">
+      <div className="bg-muted/30 p-6 rounded-lg border">
+        <h3 className="text-lg font-medium mb-4">Add New Service</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="serviceType">Select Service</Label>
+            <Select
+              value={selectedServiceId}
+              onValueChange={setSelectedServiceId}
+            >
+              <SelectTrigger id="serviceType">
+                <SelectValue placeholder="Select service" />
+              </SelectTrigger>
+              <SelectContent>
+                {serviceTypes.map(serviceType => (
+                  <SelectItem key={serviceType.id} value={serviceType.id}>
+                    {serviceType.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="startDate"
+                  variant="outline"
+                  className={cn(
+                    "w-full pl-3 text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="months">Every X Months</SelectItem>
-                    <SelectItem value="days">Every X Days</SelectItem>
-                    <SelectItem value="specificDate">Specific Date</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {renewalPeriod !== 'specificDate' && (
-                  <div>
-                    <Label htmlFor="renewalValue">
-                      {renewalPeriod === 'months' ? 'Months' : 'Days'}
-                    </Label>
-                    <Input
-                      id="renewalValue"
-                      type="number"
-                      value={renewalValue}
-                      onChange={(e) => setRenewalValue(e.target.value)}
-                      placeholder={renewalPeriod === 'months' ? '12' : '365'}
-                    />
-                  </div>
-                )}
-
-                {renewalPeriod === 'specificDate' && (
-                  <div>
-                    <Label>Renewal Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !customRenewalDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {customRenewalDate ? format(customRenewalDate, 'PPP') : 'Pick a date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={customRenewalDate}
-                          onSelect={setCustomRenewalDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reminderDays">Reminder Days Before Renewal</Label>
-              <Input
-                id="reminderDays"
-                type="number"
-                value={reminderDays}
-                onChange={(e) => setReminderDays(e.target.value)}
-                placeholder="30"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleAddService}>
-                <Save className="h-4 w-4 mr-2" />
-                Add Service
-              </Button>
-              <Button variant="outline" onClick={() => setIsAddingService(false)}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {clientServices.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">No services assigned to this client yet.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          clientServices.map((service) => (
-            <Card key={service.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium">{service.serviceTypeName}</h4>
-                      {getServiceStatusBadge(service.status)}
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Start Date: {format(new Date(service.startDate), 'PPP')}</p>
-                      {service.nextRenewalDate && (
-                        <p>Next Renewal: {format(new Date(service.nextRenewalDate), 'PPP')}</p>
-                      )}
-                      {service.reminderDays && (
-                        <p>Reminder: {service.reminderDays} days before renewal</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingServiceId(service.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveService(service.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? (
+                    format(startDate, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => setStartDate(date || new Date())}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          <div className="space-y-2 col-span-1 lg:col-span-2">
+            <Label>Reminder Settings</Label>
+            <Tabs value={reminderType} onValueChange={(v) => setReminderType(v as 'days' | 'months' | 'specificDate')}>
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="days">Days Before</TabsTrigger>
+                <TabsTrigger value="months">Months Before</TabsTrigger>
+                <TabsTrigger value="specificDate">Specific Date</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="days" className="pt-2">
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    value={reminderDays}
+                    onChange={(e) => setReminderDays(parseInt(e.target.value) || 30)}
+                    min={1}
+                    max={365}
+                    className="w-24"
+                  />
+                  <span>days before due date</span>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </TabsContent>
+              
+              <TabsContent value="months" className="pt-2">
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    value={reminderMonths}
+                    onChange={(e) => setReminderMonths(parseInt(e.target.value) || 1)}
+                    min={1}
+                    max={12}
+                    className="w-24"
+                  />
+                  <span>months before due date</span>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="specificDate" className="pt-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !reminderDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {reminderDate ? (
+                        format(reminderDate, "PPP")
+                      ) : (
+                        <span>Pick a reminder date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={reminderDate}
+                      onSelect={setReminderDate}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div className="flex items-end lg:col-span-4">
+            <Button onClick={handleAddService} className="w-full lg:w-auto">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Service
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-4">Active Services</h3>
+        {clientActiveServices.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {clientActiveServices.map(service => {
+              const serviceType = serviceTypes.find(type => type.id === service.serviceTypeId);
+              return (
+                <Card key={`${service.clientId}-${service.serviceTypeId}`} className="border-l-4 border-l-blue-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-base">{serviceType?.name || 'Unknown Service'}</CardTitle>
+                      <Badge variant={service.status === 'active' ? 'default' : 'secondary'}>
+                        {service.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Start Date:</span>
+                        <p>{format(new Date(service.startDate), "MMM d, yyyy")}</p>
+                      </div>
+                      {service.endDate && (
+                        <div>
+                          <span className="text-muted-foreground">End/Renewal Date:</span>
+                          <p>{format(new Date(service.endDate), "MMM d, yyyy")}</p>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-muted-foreground">Frequency:</span>
+                        <p className="capitalize">{serviceType?.frequency || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Reminder:</span>
+                        <p>
+                          {service.reminderType === 'months' 
+                            ? `${Math.round((service.reminderDays || 30) / 30)} months before due` 
+                            : `${service.reminderDays || 30} days before due`}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditService(service)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleCancelService(service.serviceTypeId, serviceType?.name || 'this service')}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Cancel Service
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center p-8 border rounded-lg bg-muted/30">
+            <p className="text-muted-foreground">No active services found for this client.</p>
+          </div>
         )}
       </div>
+      
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Service Reminder</DialogTitle>
+            <DialogDescription>
+              Update the reminder settings for {editingService?.serviceTypeName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Tabs value={editReminderType} onValueChange={(v) => setEditReminderType(v as 'days' | 'months' | 'specificDate')}>
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="days">Days Before</TabsTrigger>
+                <TabsTrigger value="months">Months Before</TabsTrigger>
+                <TabsTrigger value="specificDate">Specific Date</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="days" className="pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editReminderDays">Days Before Due</Label>
+                  <Input
+                    id="editReminderDays"
+                    type="number"
+                    value={editReminderDays}
+                    onChange={(e) => setEditReminderDays(parseInt(e.target.value) || 30)}
+                    min={1}
+                    max={365}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Tasks will be created {editReminderDays} days before the service is due for renewal.
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="months" className="pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editReminderMonths">Months Before Due</Label>
+                  <Input
+                    id="editReminderMonths"
+                    type="number"
+                    value={editReminderMonths}
+                    onChange={(e) => setEditReminderMonths(parseInt(e.target.value) || 1)}
+                    min={1}
+                    max={12}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Tasks will be created approximately {editReminderMonths} {editReminderMonths === 1 ? 'month' : 'months'} before the service is due for renewal.
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="specificDate" className="pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editReminderDate">Specific Reminder Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="editReminderDate"
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !editReminderDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editReminderDate ? (
+                          format(editReminderDate, "PPP")
+                        ) : (
+                          <span>Pick a reminder date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={editReminderDate}
+                        onSelect={setEditReminderDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-sm text-muted-foreground">
+                    Tasks will be created on the specific date you select.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveServiceChanges}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

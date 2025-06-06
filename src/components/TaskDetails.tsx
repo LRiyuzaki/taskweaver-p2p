@@ -58,7 +58,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'done': return 'bg-green-500 text-white';
-      case 'in-progress': return 'bg-blue-500 text-white';
+      case 'inProgress': return 'bg-blue-500 text-white';
       case 'todo': return 'bg-slate-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
@@ -92,7 +92,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({ task, onClose }) => {
           <div className="flex flex-wrap gap-2 mt-4">
             <Badge className={getStatusColor(task.status)}>
               {task.status === 'todo' ? 'To Do' : 
-               task.status === 'in-progress' ? 'In Progress' : 'Done'}
+               task.status === 'inProgress' ? 'In Progress' : 'Done'}
             </Badge>
             
             <Badge className={getPriorityColor(task.priority)}>

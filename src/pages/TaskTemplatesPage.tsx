@@ -4,22 +4,12 @@ import { Header } from '@/components/Header';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 const TaskTemplatesPage = () => {
-  const handleSave = () => {
-    // Handle save functionality
-    console.log('Template saved');
-  };
-
-  const handleCancel = () => {
-    // Handle cancel functionality
-    console.log('Template cancelled');
-  };
-
   return (
     <div className="flex flex-col h-screen">
       <Header />
       <main className="flex-1 overflow-auto">
         <div className="container mx-auto px-4 py-6">
-          <TaskTemplateManager onSave={handleSave} onCancel={handleCancel} />
+          <TaskTemplateManager />
         </div>
       </main>
     </div>

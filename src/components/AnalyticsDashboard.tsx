@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -40,7 +39,7 @@ export const AnalyticsDashboard = () => {
   // Count metrics
   const totalClients = clients.length;
   const completedTasks = tasks.filter(task => task.status === 'done').length;
-  const pendingTasks = tasks.filter(task => task.status === 'todo' || task.status === 'in-progress').length;
+  const pendingTasks = tasks.filter(task => task.status === 'todo' || task.status === 'inProgress').length;
   
   // Calculate overdue tasks
   const overdueTasks = tasks.filter(task => 
@@ -65,7 +64,7 @@ export const AnalyticsDashboard = () => {
   // Calculate task status distribution for pie chart
   const statusCounts = {
     todo: tasks.filter(task => task.status === 'todo').length,
-    inProgress: tasks.filter(task => task.status === 'in-progress').length,
+    inProgress: tasks.filter(task => task.status === 'inProgress').length,
     review: tasks.filter(task => task.status === 'review').length,
     done: tasks.filter(task => task.status === 'done').length,
   };
@@ -126,7 +125,7 @@ export const AnalyticsDashboard = () => {
   // Get recent tasks with full details for the task list
   const recentCompletedTasks = tasks
     .filter(task => task.status === 'done')
-    .sort((a, b) => new Date(b.completedAt || b.completedDate || 0).getTime() - new Date(a.completedAt || a.completedDate || 0).getTime())
+    .sort((a, b) => new Date(b.completedDate || 0).getTime() - new Date(a.completedDate || 0).getTime())
     .slice(0, 5);
   
   // Format time spent function

@@ -1,233 +1,298 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Header } from "@/components/Header";
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { CheckCircle, Clock, Users, FileText, AlertTriangle, TrendingUp } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TaskListView } from '@/components/TaskListView';
+import { Button } from '@/components/ui/button';
+import { Plus, Calendar, ClipboardList, AlertCircle, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { TaskForm } from '@/components/TaskForm';
+import { useNavigate } from 'react-router-dom';
+import { ClientList } from '@/components/ClientList';
+import { TaskCalendarView } from '@/components/TaskCalendarView';
+import { ComplianceDashboard } from '@/components/ComplianceDashboard';
+import { useComplianceScheduler } from '@/hooks/useComplianceScheduler';
 
-const Dashboard: React.FC = () => {
-  const { tasks } = useTaskContext();
+const Dashboard = () => {
+  const { tasks, addTask } = useTaskContext();
   const { clients } = useClientContext();
-
-  // Calculate task statistics
-  const todoTasks = tasks.filter(task => task.status === 'todo').length;
-  const inProgressTasks = tasks.filter(task => task.status === 'in-progress').length;
-  const completedTasks = tasks.filter(task => task.status === 'done').length;
-  const overdueTasks = tasks.filter(task => 
-    task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done'
-  ).length;
-
-  // Task status distribution data
-  const taskStatusData = [
-    { name: 'To Do', value: todoTasks, color: '#ef4444' },
-    { name: 'In Progress', value: inProgressTasks, color: '#f59e0b' },
-    { name: 'Completed', value: completedTasks, color: '#10b981' },
-  ];
-
-  // Task priority distribution
-  const priorityData = [
-    { name: 'High', value: tasks.filter(task => task.priority === 'high').length },
-    { name: 'Medium', value: tasks.filter(task => task.priority === 'medium').length },
-    { name: 'Low', value: tasks.filter(task => task.priority === 'low').length },
-  ];
-
-  // Recent tasks (last 5)
-  const recentTasks = tasks
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = React.useState(false);
+  const navigate = useNavigate();
+  
+  // Get upcoming deadlines (due in the next 7 days)
+  const today = new Date();
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  const upcomingDeadlines = tasks
+    .filter(task => 
+      task.status !== 'done' && 
+      task.dueDate && 
+      new Date(task.dueDate) > today && 
+      new Date(task.dueDate) < nextWeek
+    )
+    .sort((a, b) => 
+      a.dueDate && b.dueDate ? new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() : 0
+    );
+  
+  // Get overdue tasks
+  const overdueTasks = tasks
+    .filter(task => 
+      task.status !== 'done' && 
+      task.dueDate && 
+      new Date(task.dueDate) < today
+    )
+    .sort((a, b) => 
+      a.dueDate && b.dueDate ? new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() : 0
+    );
+  
+  // Get recent clients
+  const recentClients = [...clients]
+    .sort((a, b) => {
+      if (a.startDate && b.startDate) {
+        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      }
+      return 0;
+    })
     .slice(0, 5);
+  
+  const handleTaskFormSubmit = (formData: any) => {
+    addTask(formData);
+    setIsTaskDialogOpen(false);
+  };
+  
+  const handleTaskView = (taskId: string) => {
+    // If the task has a clientId, navigate to that client's page
+    const task = tasks.find(t => t.id === taskId);
+    if (task && task.clientId) {
+      navigate(`/client/${task.clientId}`);
+    }
+  };
 
-  // Active clients
-  const activeClients = clients.filter(client => client.status === 'active').length;
-
+  // Initialize compliance task scheduler
+  useComplianceScheduler();
+  
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Badge variant="outline" className="text-sm">
-          {format(new Date(), 'EEEE, MMMM do, yyyy')}
-        </Badge>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tasks.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {completedTasks} completed this week
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeClients}</div>
-            <p className="text-xs text-muted-foreground">
-              {clients.length} total clients
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todoTasks + inProgressTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              {inProgressTasks} in progress
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{overdueTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              Require immediate attention
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Status Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Task Status Distribution</CardTitle>
-            <CardDescription>
-              Overview of all tasks by their current status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={taskStatusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {taskStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Priority Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Task Priority Distribution</CardTitle>
-            <CardDescription>
-              Tasks categorized by priority level
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={priorityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Tasks */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Recent Tasks
-          </CardTitle>
-          <CardDescription>
-            Latest tasks created in the system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentTasks.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              No tasks available. Create your first task to get started.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{task.title}</span>
-                      <Badge 
-                        variant={
-                          task.status === 'done' ? 'default' :
-                          task.status === 'in-progress' ? 'secondary' :
-                          'outline'
-                        }
-                      >
-                        {task.status}
-                      </Badge>
-                      <Badge 
-                        variant={
-                          task.priority === 'high' ? 'destructive' :
-                          task.priority === 'medium' ? 'secondary' :
-                          'outline'
-                        }
-                      >
-                        {task.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {task.description || 'No description'}
-                    </p>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Created: {format(new Date(task.createdAt), 'MMM d, yyyy')}
-                      {task.dueDate && (
-                        <span className="ml-4">
-                          Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {task.status === 'done' && (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+    <div className="flex flex-col h-screen">
+      <Header />
+      <main className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <Button onClick={() => setIsTaskDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Task
+            </Button>
+          </div>
+          
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="clients">Clients</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="space-y-6">
+              <AnalyticsDashboard />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="col-span-1">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-2" />
+                      Upcoming Deadlines
+                    </CardTitle>
+                    <CardDescription>Tasks due in the next 7 days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {upcomingDeadlines.length > 0 ? (
+                      <div className="space-y-4">
+                        {upcomingDeadlines.slice(0, 5).map(task => (
+                          <div key={task.id} className="flex justify-between items-center p-3 border rounded-md">
+                            <div>
+                              <h4 className="font-medium">{task.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {task.dueDate && new Date(task.dueDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleTaskView(task.id)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                        
+                        {upcomingDeadlines.length > 5 && (
+                          <Button 
+                            variant="link" 
+                            className="w-full" 
+                            onClick={() => {
+                              const tasksTab = document.querySelector('[data-value="tasks"]') as HTMLElement;
+                              if (tasksTab) tasksTab.click();
+                            }}
+                          >
+                            View all ({upcomingDeadlines.length})
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-center py-4 text-muted-foreground">No upcoming deadlines</p>
                     )}
-                    {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done' && (
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                  </CardContent>
+                </Card>
+                
+                <Card className={overdueTasks.length > 0 ? "col-span-1 border-destructive/30" : "col-span-1"}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <AlertCircle className={`h-5 w-5 mr-2 ${overdueTasks.length > 0 ? "text-destructive" : ""}`} />
+                      Overdue Tasks
+                    </CardTitle>
+                    <CardDescription>Tasks past their due date</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {overdueTasks.length > 0 ? (
+                      <div className="space-y-4">
+                        {overdueTasks.slice(0, 5).map(task => (
+                          <div key={task.id} className="flex justify-between items-center p-3 border border-destructive/30 rounded-md">
+                            <div>
+                              <h4 className="font-medium">{task.title}</h4>
+                              <p className="text-sm text-destructive">
+                                Due {task.dueDate && new Date(task.dueDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleTaskView(task.id)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                        
+                        {overdueTasks.length > 5 && (
+                          <Button 
+                            variant="link" 
+                            className="w-full" 
+                            onClick={() => {
+                              const tasksTab = document.querySelector('[data-value="tasks"]') as HTMLElement;
+                              if (tasksTab) tasksTab.click();
+                            }}
+                          >
+                            View all ({overdueTasks.length})
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-center py-4 text-muted-foreground">No overdue tasks</p>
                     )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-1 md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      Recent Clients
+                    </CardTitle>
+                    <CardDescription>Recently added or updated clients</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {recentClients.length > 0 ? (
+                      <div className="space-y-4">
+                        {recentClients.map(client => (
+                          <div key={client.id} className="flex justify-between items-center p-3 border rounded-md">
+                            <div>
+                              <h4 className="font-medium">{client.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {client.contactPerson || client.email}
+                              </p>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate(`/client/${client.id}`)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                        
+                        <Button variant="link" className="w-full" onClick={() => navigate('/client-management')}>
+                          View all clients
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-center py-4 text-muted-foreground">No clients found</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tasks" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <ClipboardList className="h-5 w-5 mr-2" />
+                    All Tasks
+                  </CardTitle>
+                  <CardDescription>Manage and track all your tasks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TaskListView />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="clients" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    All Clients
+                  </CardTitle>
+                  <CardDescription>View and manage all clients</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ClientList 
+                    clients={clients}
+                    onClientClick={(id) => navigate(`/client/${id}`)}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="calendar" className="space-y-6">
+              <TaskCalendarView />
+            </TabsContent>
+
+            <TabsContent value="compliance" className="space-y-6">
+              <ComplianceDashboard />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>
+              Add a new task to your board.
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm onSubmit={handleTaskFormSubmit} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

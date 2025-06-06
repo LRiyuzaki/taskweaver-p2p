@@ -1,279 +1,243 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ClientServiceSelector } from './ClientServiceSelector';
+import { ServiceRenewalSelector } from './ServiceRenewalSelector';
+import { Button } from '@/components/ui/button';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
-import { ClientService, ClientServicesTabProps, Client } from '@/types/client';
-import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { MoreVertical, Edit, Trash, Plus } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { CalendarIcon } from 'lucide-react';
-import { toast } from '@/hooks/use-toast-extensions';
-import { Separator } from "@/components/ui/separator";
-import { useServiceAssignment } from '@/hooks/useServiceAssignment';
+import { toast } from '@/hooks/use-toast';
+import { Client } from '@/types/client';
+import { SaveIcon } from 'lucide-react';
 
-export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ clientId }) => {
-  const { clients } = useClientContext();
+interface ClientServicesTabProps {
+  client: Client;
+}
+
+export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ client }) => {
+  const { updateClient, getAvailableServiceNames } = useClientContext();
   const { addTask } = useTaskContext();
-  const { assignServiceToClient, removeServiceFromClient, serviceTypes } = useServiceAssignment();
-
-  const [isAssigningService, setIsAssigningService] = useState(false);
-  const [selectedService, setSelectedService] = useState('');
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [isRemovingService, setIsRemovingService] = useState(false);
-  const [serviceToRemove, setServiceToRemove] = useState<string | null>(null);
-
-  const client = clients.find(c => c.id === clientId);
-  if (!client) return <div>Client not found</div>;
-
-  const handleAssignService = async () => {
-    if (!selectedService) {
-      toast.error('Please select a service to assign.');
-      return;
-    }
-
-    setIsAssigningService(true);
-    try {
-      const success = await assignServiceToClient(clientId, selectedService, startDate);
-      if (success) {
-        toast.success('Service assigned successfully!');
-      } else {
-        toast.error('Failed to assign service.');
-      }
-    } finally {
-      setIsAssigningService(false);
-      setSelectedService('');
-    }
-  };
-
-  const handleRemoveService = async () => {
-    if (!serviceToRemove) return;
-
-    setIsRemovingService(true);
-    try {
-      const success = await removeServiceFromClient(clientId, serviceToRemove);
-      if (success) {
-        toast.success('Service removed successfully!');
-      } else {
-        toast.error('Failed to remove service.');
-      }
-    } finally {
-      setIsRemovingService(false);
-      setServiceToRemove(null);
-    }
-  };
-
-  const getClientServices = (): ClientService[] => {
-    return (client.services || []).filter(service => typeof service !== 'string') as ClientService[];
-  };
-
-  const createComplianceTask = (client: Client, serviceName: string, dueDate: Date) => {
-    const newTask = {
-      id: `task_${Date.now()}`,
-      title: `${serviceName} for ${client.name}`,
-      description: `Compliance task for ${serviceName}`,
-      status: 'todo' as TaskStatus,
-      priority: 'medium' as TaskPriority,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      clientId: client.id,
-      clientName: client.name,
-      serviceId: 'compliance',
-      serviceName: serviceName,
-      tags: ['Compliance'],
-      recurrence: 'none' as RecurrenceType,
-      subtasks: []
-    };
+  
+  const availableServices = getAvailableServiceNames();
+  
+  // Initialize selected services with proper defaults from client data
+  const [selectedServices, setSelectedServices] = useState<Record<string, boolean>>(() => {
+    // Create a default object with all services set to false
+    const defaultServices = availableServices.reduce((acc, serviceName) => {
+      acc[serviceName] = false;
+      return acc;
+    }, {} as Record<string, boolean>);
     
-    addTask(newTask);
-    toast.success('Compliance task created');
+    // Override with client's required services if they exist
+    if (client.requiredServices) {
+      return { ...defaultServices, ...client.requiredServices };
+    }
+    
+    return defaultServices;
+  });
+  
+  // Initialize renewal settings
+  const [renewalSettings, setRenewalSettings] = useState<Record<string, {
+    isRequired: boolean;
+    reminderDays: number;
+    reminderDate?: Date;
+    reminderType: 'days' | 'date';
+  }>>(() => {
+    return availableServices.reduce((acc, serviceName) => {
+      acc[serviceName] = {
+        isRequired: false,
+        reminderDays: 30,
+        reminderType: 'days'
+      };
+      return acc;
+    }, {} as Record<string, any>);
+  });
+  
+  // Update local state when client prop changes
+  useEffect(() => {
+    if (client.requiredServices) {
+      // Create a default object with all services set to false
+      const defaultServices = availableServices.reduce((acc, serviceName) => {
+        acc[serviceName] = false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      // Merge with client's required services
+      setSelectedServices({ ...defaultServices, ...client.requiredServices });
+    } else {
+      // Initialize with all services set to false
+      const defaultServices = availableServices.reduce((acc, serviceName) => {
+        acc[serviceName] = false;
+        return acc;
+      }, {} as Record<string, boolean>);
+      
+      setSelectedServices(defaultServices);
+    }
+  }, [client.id, client.requiredServices, availableServices]);
+  
+  const handleServiceChange = (serviceName: string, isSelected: boolean) => {
+    setSelectedServices(prev => {
+      const updated = {
+        ...prev,
+        [serviceName]: isSelected
+      };
+      return updated;
+    });
   };
-
+  
+  const handleRenewalRequiredChange = (serviceName: string, isRequired: boolean) => {
+    setRenewalSettings(prev => ({
+      ...prev,
+      [serviceName]: {
+        ...prev[serviceName],
+        isRequired
+      }
+    }));
+  };
+  
+  const handleReminderDaysChange = (serviceName: string, days: number) => {
+    setRenewalSettings(prev => ({
+      ...prev,
+      [serviceName]: {
+        ...prev[serviceName],
+        reminderDays: days
+      }
+    }));
+  };
+  
+  const handleReminderDateChange = (serviceName: string, date?: Date) => {
+    setRenewalSettings(prev => ({
+      ...prev,
+      [serviceName]: {
+        ...prev[serviceName],
+        reminderDate: date
+      }
+    }));
+  };
+  
+  const handleReminderTypeChange = (serviceName: string, type: 'days' | 'date') => {
+    setRenewalSettings(prev => ({
+      ...prev,
+      [serviceName]: {
+        ...prev[serviceName],
+        reminderType: type
+      }
+    }));
+  };
+  
+  const handleSaveServices = () => {
+    // Update client with selected services
+    updateClient(client.id, {
+      requiredServices: selectedServices
+    });
+    
+    // Create tasks for services with renewal required
+    const selectedServiceNames = Object.entries(selectedServices)
+      .filter(([_, isSelected]) => isSelected === true)
+      .map(([name]) => name);
+    
+    for (const serviceName of selectedServiceNames) {
+      const renewalSetting = renewalSettings[serviceName];
+      
+      if (renewalSetting?.isRequired) {
+        // Create a task for this service renewal
+        const today = new Date();
+        
+        let reminderDate: Date;
+        if (renewalSetting.reminderType === 'days') {
+          // Calculate date based on days before
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + renewalSetting.reminderDays);
+          reminderDate = dueDate;
+        } else {
+          reminderDate = renewalSetting.reminderDate || new Date();
+        }
+        
+        addTask({
+          title: `${serviceName} Renewal for ${client.name}`,
+          description: `Prepare and complete the renewal process for ${serviceName} service for client ${client.name}`,
+          status: 'todo',
+          priority: 'medium',
+          dueDate: reminderDate,
+          clientId: client.id,
+          clientName: client.name,
+          tags: [serviceName, 'Renewal', 'Compliance'],
+          recurrence: 'none'
+        });
+      }
+    }
+    
+    toast({
+      title: "Services Updated",
+      description: "Client services have been updated successfully.",
+    });
+  };
+  
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Assigned Services</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            {getClientServices().map((service) => (
-              <div key={service.id} className="border rounded-md p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold">{service.serviceTypeName}</h3>
-                    <Badge variant="secondary">{service.status}</Badge>
-                    <p className="text-sm text-muted-foreground">
-                      Start Date: {format(new Date(service.startDate), 'PPP')}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem disabled>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem>
-                            <Trash className="mr-2 h-4 w-4" /> Remove
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently remove the service from the client.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => {
-                              setServiceToRemove(service.serviceTypeId);
-                              handleRemoveService();
-                            }}
-                            >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))}
-            {getClientServices().length === 0 && (
-              <div className="text-center py-4 text-muted-foreground">
-                No services assigned to this client.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Assign New Service</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="service">Service</Label>
-              <Select onValueChange={setSelectedService} value={selectedService}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.name}
-                    </SelectItem>
+    <div className="space-y-6">
+      <Tabs defaultValue="select">
+        <TabsList>
+          <TabsTrigger value="select">Select Services</TabsTrigger>
+          <TabsTrigger value="renewal">Renewal Settings</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="select" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Services Selection</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClientServiceSelector 
+                clientId={client.id}
+                selectedServices={selectedServices}
+                onServiceChange={handleServiceChange}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="renewal" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Renewal Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(selectedServices)
+                  .filter(([_, isSelected]) => isSelected === true)
+                  .map(([serviceName]) => (
+                    <ServiceRenewalSelector
+                      key={serviceName}
+                      serviceName={serviceName}
+                      isRenewalRequired={renewalSettings[serviceName]?.isRequired || false}
+                      onRenewalChange={(isRequired) => handleRenewalRequiredChange(serviceName, isRequired)}
+                      reminderDays={renewalSettings[serviceName]?.reminderDays || 30}
+                      onReminderDaysChange={(days) => handleReminderDaysChange(serviceName, days)}
+                      reminderDate={renewalSettings[serviceName]?.reminderDate}
+                      onReminderDateChange={(date) => handleReminderDateChange(serviceName, date)}
+                      reminderType={renewalSettings[serviceName]?.reminderType || 'days'}
+                      onReminderTypeChange={(type) => handleReminderTypeChange(serviceName, type)}
+                    />
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full pl-3 text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    {startDate ? (
-                      format(startDate, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date('1900-01-01')
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          <Button
-            className="mt-4"
-            onClick={handleAssignService}
-            disabled={isAssigningService || !selectedService}
-          >
-            {isAssigningService ? 'Assigning...' : 'Assign Service'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={isRemovingService}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Removing Service</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please wait while we remove the service from the client.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-        </AlertDialogContent>
-      </AlertDialog>
+                
+                {Object.entries(selectedServices).filter(([_, isSelected]) => isSelected === true).length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">
+                    No services selected. Please select services in the "Select Services" tab first.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      <div className="flex justify-end">
+        <Button onClick={handleSaveServices}>
+          <SaveIcon className="mr-2 h-4 w-4" />
+          Save Service Settings
+        </Button>
+      </div>
     </div>
   );
 };

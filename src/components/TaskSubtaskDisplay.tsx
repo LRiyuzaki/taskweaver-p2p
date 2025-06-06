@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Task, SubTask } from '@/types/task';
+import { Task, TaskSubtask } from '@/types/task';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -18,23 +18,22 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({
   showAll = false,
   editable = false
 }) => {
-  const { updateTask, subtasks } = useTaskContext();
+  const { updateTask } = useTaskContext();
 
-  // Get actual subtask objects from the context
-  const taskSubtasks = subtasks.filter(s => task.subtasks.includes(s.id));
-
-  if (!taskSubtasks || taskSubtasks.length === 0) {
+  if (!task.subtasks || task.subtasks.length === 0) {
     return null;
   }
 
   const handleSubtaskToggle = (subtaskId: string, checked: boolean) => {
-    const updatedSubtasks = taskSubtasks.map(subtask => 
+    if (!task.subtasks) return;
+    
+    const updatedSubtasks = task.subtasks.map(subtask => 
       subtask.id === subtaskId 
         ? { ...subtask, completed: checked }
         : subtask
     );
     
-    updateTask(task.id, { subtasks: updatedSubtasks.map(s => s.id) });
+    updateTask(task.id, { subtasks: updatedSubtasks });
     
     // Check if all subtasks are now completed
     const allCompleted = updatedSubtasks.every(subtask => subtask.completed);
@@ -46,7 +45,7 @@ export const TaskSubtaskDisplay: React.FC<TaskSubtaskDisplayProps> = ({
 
   return (
     <div className="space-y-1.5">
-      {taskSubtasks.sort((a, b) => (a.orderPosition || a.order) - (b.orderPosition || b.order)).map(subtask => (
+      {task.subtasks.sort((a, b) => a.orderPosition - b.orderPosition).map(subtask => (
         <div 
           key={subtask.id} 
           className={cn(

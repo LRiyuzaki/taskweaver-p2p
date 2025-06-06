@@ -1,67 +1,73 @@
 
-export type ClientStatus = 'active' | 'inactive' | 'pending';
-export type ServiceCategory = 'accounting' | 'tax' | 'consulting' | 'other' | 'registration' | 'gst' | 'incometax' | 'tds' | 'audit';
-export type ServiceFrequency = 'one-time' | 'monthly' | 'quarterly' | 'annually';
-
-export interface Address {
-  street?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  country?: string;
-  registered?: string;
-  business?: string;
-}
-
-export interface BankAccount {
-  id: string;
-  accountNumber: string;
-  bankName: string;
-  ifscCode: string;
-  accountType: string;
-  branch: string;
-}
+import { Task } from './task';
 
 export interface Client {
   id: string;
   name: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  address?: string | Address;
-  status: ClientStatus;
-  createdAt: Date;
-  updatedAt?: Date;
-  notes?: Note[];
-  contacts?: Contact[];
-  services?: string[] | ClientService[];
-  requiredServices?: Record<string, boolean>;
-  financialDetails?: FinancialDetails;
-  businessDetails?: BusinessDetails;
-  startDate?: Date;
-  incorporationDate?: Date;
-  gstRegistrationDate?: Date;
-  documents?: Document[];
-  
-  // Additional properties
+  email: string;
+  company: string;
   contactPerson?: string;
-  entityType?: string;
+  phone?: string;
+  createdAt: Date;
+  active: boolean;
+  
+  // Service requirements will be stored here
+  requiredServices: Record<string, boolean>;
+  
+  // Collections
+  services: Service[];
+  notes: Note[];
+  documents: Document[];
+  
+  // Entity information
+  entityType?: 'Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF';
   gstin?: string;
   pan?: string;
   tan?: string;
-  cin?: string;
-  llpin?: string;
-  bankAccounts?: BankAccount[];
+  cin?: string; // Company Incorporation Number
+  llpin?: string; // LLP Identification Number
+  
+  // Bank account details for tax purposes
+  bankAccounts?: {
+    accountNumber: string;
+    ifscCode: string;
+    bankName: string;
+    branch: string;
+  }[];
+  
+  // Registration details
+  gstRegistrationDate?: Date;
+  incorporationDate?: Date;
+  financialYearEnd?: 'March' | 'December';
+  
+  // Additional fields
+  startDate?: Date;
+  address?: {
+    registered: string;
+    business?: string;
+  };
+  tasks?: Task[];
+  
+  // Compliance-specific flags
   isGSTRegistered?: boolean;
   isMSME?: boolean;
   msmeNumber?: string;
   isIECHolder?: boolean;
   iecNumber?: string;
-  financialYearEnd?: string;
-  statutoryDueDates?: Record<string, number>;
-  active?: boolean;
   
-  // Additional compliance properties
+  // Statutory due dates
+  statutoryDueDates?: {
+    gstReturn?: number; // Day of month
+    tdsReturn?: number; // Day of month
+    advanceTax?: {
+      q1: Date;
+      q2: Date;
+      q3: Date;
+      q4: Date;
+    };
+  };
+  
+  // Additional properties for compliance and services
   isDirector?: boolean;
   hasIECode?: boolean;
   hasDSC?: boolean;
@@ -71,161 +77,84 @@ export interface Client {
   licenseDate?: Date;
 }
 
-export interface Contact {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  position?: string;
-}
+export interface ClientFormData extends Omit<Client, 'id' | 'createdAt' | 'tasks' | 'active' | 'services' | 'notes' | 'documents'> {}
 
-export interface FinancialDetails {
-  annualRevenue?: number;
-  currency?: string;
-  paymentTerms?: string;
-}
-
-export interface BusinessDetails {
-  industry?: string;
-  numberOfEmployees?: number;
-  businessType?: string;
-  registeredNumber?: string;
-}
-
-export interface ServiceType {
+export interface Service {
   id: string;
   name: string;
   description?: string;
-  category: ServiceCategory;
-  frequency?: ServiceFrequency;
-  isRecurring: boolean;
-  reminderDays?: number;
-  renewalPeriod?: number;
-  complianceRequirements?: string[];
-  documentRequirements?: string[];
-  isActive: boolean;
-  createdAt: Date;
-  requiresGST?: boolean;
-  requiresPAN?: boolean;
-  requiresTAN?: boolean;
-  applicableEntities?: string[];
-}
-
-export interface ClientService {
-  id: string;
-  clientId: string;
-  serviceTypeId: string;
-  serviceTypeName: string;
-  isActive: boolean;
-  startDate: Date;
+  startDate?: Date;
   endDate?: Date;
   renewalDate?: Date;
-  nextRenewalDate?: Date;
-  status: 'active' | 'inactive' | 'completed';
-  fee?: number;
-  reminderDays?: number;
-  reminderType?: string;
-}
-
-export interface ServiceRenewal {
-  id: string;
-  clientId?: string;
-  clientServiceId: string;
-  serviceTypeId: string;
-  renewalDate: Date;
-  dueDate?: Date;
-  reminderDate?: Date;
-  status: 'pending' | 'completed' | 'overdue';
-  notes?: string;
+  status?: 'active' | 'inactive' | 'completed';
 }
 
 export interface Note {
   id: string;
   content: string;
   createdAt: Date;
-  updatedAt: Date;
   createdBy?: string;
 }
 
 export interface Document {
   id: string;
   name: string;
-  url: string;
-  type: string;
-  uploadedAt: Date;
-  fileUrl?: string;
-  fileType?: string;
+  fileUrl: string;
+  fileType: string;
   fileSize?: number;
+  uploadedAt: Date;
   uploadedBy?: string;
   description?: string;
 }
 
-export interface Service {
+export interface ServiceType {
   id: string;
   name: string;
-  description?: string;
-  category: ServiceCategory;
-  frequency?: ServiceFrequency;
-  isRecurring: boolean;
-  reminderDays?: number;
-  renewalPeriod?: number;
-  complianceRequirements?: string[];
-  documentRequirements?: string[];
-  isActive: boolean;
-  createdAt: Date;
-  startDate?: Date;
-  endDate?: Date;
-  renewalDate?: Date;
-  status?: 'active' | 'inactive';
-}
-
-export interface ComplianceStatus {
-  type: string;
-  status: 'current' | 'upcoming' | 'overdue';
-  dueDate: Date;
   description: string;
-  missingDocuments?: string[];
+  frequency: 'one-time' | 'monthly' | 'quarterly' | 'annually';
+  category: 'gst' | 'incometax' | 'tds' | 'compliance' | 'audit' | 'registration' | 'other';
+  dueDate?: {
+    type: 'fixed' | 'relative';
+    day?: number; // Fixed day of month (1-31)
+    monthOffset?: number; // Number of months after fiscal year end
+    daysOffset?: number; // Number of days after period end
+  };
+  requiresGST?: boolean;
+  requiresPAN?: boolean;
+  requiresTAN?: boolean;
+  applicableEntities?: ('Individual' | 'Proprietorship' | 'Company' | 'LLP' | 'Partnership' | 'Trust' | 'HUF')[];
+  renewalPeriod?: number; // Period in months
+  taskTemplate?: SubTask[]; // Default subtasks for this service type
+  documentRequirements?: {
+    name: string;
+    description?: string;
+    required: boolean;
+  }[];
 }
 
-export interface ClientFormData {
-  name: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  address?: string | Address;
-  status: ClientStatus;
-  contactPerson?: string;
-  entityType?: string;
-  gstin?: string;
-  pan?: string;
-  tan?: string;
-  cin?: string;
-  llpin?: string;
-  bankAccounts?: BankAccount[];
-  isGSTRegistered?: boolean;
-  isMSME?: boolean;
-  msmeNumber?: string;
-  isIECHolder?: boolean;
-  iecNumber?: string;
-  financialYearEnd?: string;
-  statutoryDueDates?: Record<string, number>;
-  requiredServices?: Record<string, boolean>;
-  financialDetails?: FinancialDetails;
-  businessDetails?: BusinessDetails;
-  startDate?: Date;
-  incorporationDate?: Date;
-  gstRegistrationDate?: Date;
-}
-
-export interface ClientServicesTabProps {
+export interface ClientService {
   clientId: string;
+  serviceTypeId: string;
+  serviceTypeName?: string;
+  startDate: Date;
+  endDate?: Date;
+  nextRenewalDate?: Date;
+  status: 'active' | 'inactive' | 'completed';
+  reminderDays?: number; // Days before due date to start reminder
+  reminderType?: 'days' | 'months' | 'specificDate';
+  reminderDate?: Date; // Specific date for reminder when using 'specificDate' type
 }
 
-export interface ClientDetailsTabProps {
-  client: Client;
+export interface ServiceRenewal {
+  id: string;
+  clientId: string;
+  serviceId: string;
+  dueDate: Date;
+  completedDate?: Date;
+  status: 'pending' | 'completed' | 'overdue';
+  notes?: string;
 }
 
-// Add SubTask export for seedData
 export interface SubTask {
   id: string;
   taskId: string;
@@ -235,4 +164,11 @@ export interface SubTask {
   order: number;
   assignedTo?: string;
   assigneeName?: string;
+}
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  subtasks: SubTask[];
 }

@@ -1,406 +1,743 @@
-
 import React, { useState, useEffect } from 'react';
-import { Task, TaskStatus, TaskPriority, RecurrenceType, SubTask } from '@/types/task';
-import { useClientContext } from '@/contexts/ClientContext';
-import { useTaskContext } from '@/contexts/TaskContext';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Plus, X, User, Repeat, Check, List, ClipboardList, GitMerge } from 'lucide-react';
+import { Task, TaskPriority, TaskStatus, RecurrenceType } from '@/types/task';
+import { SubTask } from '@/types/client';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from 'date-fns';
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Plus, Trash2, GripVertical } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { v4 as uuidv4 } from 'uuid';
+import { useTaskContext } from '@/contexts/TaskContext';
+import { useClientContext } from '@/contexts/ClientContext';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card } from "@/components/ui/card";
+
+const teamMembers = [
+  { id: '1', name: 'John Doe', email: 'john@example.com' },
+  { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
+  { id: '3', name: 'Alex Johnson', email: 'alex@example.com' },
+];
+
+const formSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  status: z.enum(['todo', 'inProgress', 'review', 'done']),
+  priority: z.enum(['low', 'medium', 'high']),
+  dueDate: z.date().optional(),
+  tags: z.array(z.string()).optional(),
+  assignedTo: z.string().optional(),
+  clientId: z.string().optional(),
+  projectId: z.string().optional(),
+  recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'quarterly', 'halfYearly', 'yearly']).default('none'),
+  recurrenceEndDate: z.date().optional(),
+  templateId: z.string().optional(),
+}).refine((data) => {
+  if (data.recurrenceEndDate && data.dueDate) {
+    if (data.recurrence !== 'none') {
+      return data.recurrenceEndDate > data.dueDate;
+    }
+  }
+  return true;
+}, {
+  message: "End date must be after the due date",
+  path: ["recurrenceEndDate"]
+}).refine((data) => {
+  if (data.recurrence !== 'none' && !data.dueDate) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Due date is required for recurring tasks",
+  path: ["dueDate"]
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
   task?: Task;
-  onSubmit: (data: Omit<Task, 'id' | 'createdAt'>) => void;
   initialClientId?: string;
+  onSubmit: (values: Omit<Task, 'id' | 'createdAt'>) => void;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, initialClientId }) => {
+export const TaskForm: React.FC<TaskFormProps> = ({ task, initialClientId, onSubmit }) => {
+  const [tagInput, setTagInput] = useState('');
+  const [subtasks, setSubtasks] = useState<Partial<SubTask>[]>([]);
+  const [subtaskInput, setSubtaskInput] = useState('');
+  const [useTemplate, setUseTemplate] = useState(false);
+  const { projects, templates, subtasks: existingSubtasks, addSubtask } = useTaskContext();
   const { clients } = useClientContext();
-  const { subtasks, addSubtask, updateSubtask, deleteSubtask } = useTaskContext();
   
-  const [formData, setFormData] = useState<Omit<Task, 'id' | 'createdAt'>>({
-    title: '',
-    description: '',
-    status: 'todo',
-    priority: 'medium',
-    dueDate: undefined,
-    updatedAt: new Date(),
-    assignedTo: '',
-    assigneeName: '',
-    clientId: initialClientId || '',
-    clientName: '',
-    projectId: '',
-    projectName: '',
-    serviceId: '',
-    serviceName: '',
-    requiresReview: false,
-    reviewerId: '',
-    reviewerName: '',
-    reviewStatus: undefined,
-    comments: '',
-    tags: [],
-    recurrence: 'none',
-    recurrenceEndDate: undefined,
-    subtasks: [],
-    timeSpentMinutes: 0
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: task?.title || '',
+      description: task?.description || '',
+      status: task?.status || 'todo',
+      priority: task?.priority || 'medium',
+      dueDate: task?.dueDate,
+      tags: task?.tags || [],
+      assignedTo: task?.assignedTo || '',
+      clientId: task?.clientId || initialClientId || '',
+      projectId: task?.projectId || '',
+      recurrence: task?.recurrence || 'none',
+      recurrenceEndDate: task?.recurrenceEndDate,
+      templateId: '',
+    },
   });
 
-  const [newTag, setNewTag] = useState('');
-  const [localSubtasks, setLocalSubtasks] = useState<Omit<SubTask, 'id' | 'taskId'>[]>([]);
-
-  // Initialize form with task data if provided
   useEffect(() => {
-    if (task) {
-      setFormData({
-        title: task.title,
-        description: task.description || '',
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate,
-        updatedAt: new Date(),
-        assignedTo: task.assignedTo || '',
-        assigneeName: task.assigneeName || '',
-        clientId: task.clientId || '',
-        clientName: task.clientName || '',
-        projectId: task.projectId || '',
-        projectName: task.projectName || '',
-        serviceId: task.serviceId || '',
-        serviceName: task.serviceName || '',
-        requiresReview: task.requiresReview || false,
-        reviewerId: task.reviewerId || '',
-        reviewerName: task.reviewerName || '',
-        reviewStatus: task.reviewStatus,
-        comments: task.comments || '',
-        tags: task.tags || [],
-        recurrence: task.recurrence || 'none',
-        recurrenceEndDate: task.recurrenceEndDate,
-        subtasks: task.subtasks || [],
-        timeSpentMinutes: task.timeSpentMinutes || 0
-      });
+    if (task?.id) {
+      const taskSubtasks = existingSubtasks
+        .filter(st => st.taskId === task.id)
+        .sort((a, b) => a.order - b.order)
+        .map(st => ({
+          id: st.id,
+          title: st.title,
+          description: st.description,
+          completed: st.completed,
+          order: st.order,
+          assignedTo: st.assignedTo,
+          assigneeName: st.assigneeName
+        }));
+      
+      setSubtasks(taskSubtasks);
+    }
+  }, [task?.id, existingSubtasks]);
 
-      // Load existing subtasks
-      if (task.id) {
-        const taskSubtasks = subtasks.filter(s => s.taskId === task.id);
-        setLocalSubtasks(taskSubtasks.map(s => ({
-          title: s.title,
-          description: s.description || '',
-          completed: s.completed,
-          order: s.order,
-          orderPosition: s.orderPosition,
-          assignedTo: s.assignedTo || '',
-          assigneeName: s.assigneeName || ''
-        })));
+  useEffect(() => {
+    if (initialClientId) {
+      form.setValue('clientId', initialClientId);
+    }
+  }, [initialClientId, form]);
+
+  const showRecurrenceEndDate = form.watch('recurrence') !== 'none';
+  const selectedClientId = form.watch('clientId');
+  const selectedTemplateId = form.watch('templateId');
+  
+  const selectedClient = selectedClientId ? 
+    clients.find(client => client.id === selectedClientId) : null;
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      const currentTags = form.getValues('tags') || [];
+      if (!currentTags.includes(tagInput.trim())) {
+        form.setValue('tags', [...currentTags, tagInput.trim()]);
       }
-    }
-  }, [task, subtasks]);
-
-  const handleChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleClientSelect = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    setFormData(prev => ({
-      ...prev,
-      clientId,
-      clientName: client?.name || ''
-    }));
-  };
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
+      setTagInput('');
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
+  const handleRemoveTag = (tag: string) => {
+    const currentTags = form.getValues('tags') || [];
+    form.setValue(
+      'tags',
+      currentTags.filter((t) => t !== tag)
+    );
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    if (!templateId || templateId === 'no-template') {
+      return;
+    }
+    
+    const template = templates.find(t => t.id === templateId);
+    if (template && template.subtasks) {
+      setSubtasks(template.subtasks.map((st, index) => ({
+        title: st.title,
+        description: st.description,
+        completed: false,
+        order: index,
+        assignedTo: st.assignedTo,
+        assigneeName: st.assigneeName
+      })));
+    }
   };
 
   const handleAddSubtask = () => {
-    const newSubtask: Omit<SubTask, 'id' | 'taskId'> = {
-      title: '',
-      description: '',
-      completed: false,
-      order: localSubtasks.length,
-      orderPosition: localSubtasks.length,
-      assignedTo: '',
-      assigneeName: ''
-    };
-    setLocalSubtasks(prev => [...prev, newSubtask]);
-  };
-
-  const handleUpdateSubtask = (index: number, field: keyof Omit<SubTask, 'id' | 'taskId'>, value: any) => {
-    setLocalSubtasks(prev => prev.map((subtask, i) => 
-      i === index ? { ...subtask, [field]: value } : subtask
-    ));
+    if (subtaskInput.trim()) {
+      setSubtasks([
+        ...subtasks, 
+        { 
+          title: subtaskInput.trim(), 
+          completed: false, 
+          order: subtasks.length 
+        }
+      ]);
+      setSubtaskInput('');
+    }
   };
 
   const handleRemoveSubtask = (index: number) => {
-    setLocalSubtasks(prev => prev.filter((_, i) => i !== index));
+    setSubtasks(subtasks.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Create final form data with properly formatted subtasks
-    const finalFormData: Omit<Task, 'id' | 'createdAt'> = {
-      ...formData,
-      updatedAt: new Date(),
-      subtasks: localSubtasks.map((_, index) => `subtask-${index}`) // Simple array of IDs
-    };
+  const handleToggleSubtaskComplete = (index: number) => {
+    setSubtasks(
+      subtasks.map((st, i) => 
+        i === index ? { ...st, completed: !st.completed } : st
+      )
+    );
+  };
 
-    onSubmit(finalFormData);
+  const handleSubmitWithSubtasks = (values: FormValues) => {
+    const submitValues = { ...values } as any;
+
+    if (subtasks.length > 0) {
+      submitValues.status = 'todo';
+    }
+    
+    if (values.assignedTo) {
+      const assignee = teamMembers.find(member => member.id === values.assignedTo);
+      if (assignee) {
+        submitValues.assigneeName = assignee.name;
+      }
+    }
+    
+    if (values.projectId && values.projectId !== 'no-project') {
+      const project = projects.find(p => p.id === values.projectId);
+      if (project) {
+        submitValues.projectName = project.name;
+      }
+    }
+    
+    if (values.clientId && values.clientId !== 'no-client') {
+      const client = clients.find(c => c.id === values.clientId);
+      if (client) {
+        submitValues.clientName = client.name;
+      }
+    }
+    
+    onSubmit(submitValues);
+    
+    if (subtasks.length > 0 && addSubtask) {
+      subtasks.forEach((subtask, index) => {
+        if (subtask.title) {
+          addSubtask({
+            taskId: task?.id || '',
+            title: subtask.title,
+            description: subtask.description,
+            completed: subtask.completed || false,
+            order: index,
+            assignedTo: subtask.assignedTo,
+            assigneeName: subtask.assigneeName
+          });
+        }
+      });
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Basic Information */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Task Details</h3>
-        
-        <div className="space-y-2">
-          <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => handleChange('title', e.target.value)}
-            required
-          />
-        </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmitWithSubtasks)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Task title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            rows={3}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Add details..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value: TaskStatus) => handleChange('status', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todo">To Do</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="review">Review</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <FormField
+          control={form.control}
+          name="templateId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <GitMerge className="h-4 w-4" />
+                Use Template
+              </FormLabel>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  handleTemplateChange(value);
+                }}
+                value={field.value || 'no-template'}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="no-template">No Template</SelectItem>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.subtasks.length} steps)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <div className="space-y-2">
-            <Label>Priority</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value: TaskPriority) => handleChange('priority', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.dueDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.dueDate ? format(formData.dueDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.dueDate}
-                  onSelect={(date) => handleChange('dueDate', date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      </div>
-
-      {/* Client Assignment */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Assignment</h3>
-        
-        <div className="space-y-2">
-          <Label>Client</Label>
-          <Select
-            value={formData.clientId}
-            onValueChange={handleClientSelect}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a client" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="assigneeName">Assigned To</Label>
-            <Input
-              id="assigneeName"
-              value={formData.assigneeName}
-              onChange={(e) => handleChange('assigneeName', e.target.value)}
-              placeholder="Team member name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Recurrence</Label>
-            <Select
-              value={formData.recurrence}
-              onValueChange={(value: RecurrenceType) => handleChange('recurrence', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Tags</h3>
-        
-        <div className="flex gap-2">
-          <Input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            placeholder="Add a tag"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddTag();
-              }
-            }}
-          />
-          <Button type="button" onClick={handleAddTag} size="sm">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {formData.tags.map(tag => (
-            <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => handleRemoveTag(tag)}>
-              {tag} ×
-            </Badge>
-          ))}
-        </div>
-      </div>
-
-      {/* Subtasks */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Subtasks</h3>
-          <Button type="button" onClick={handleAddSubtask} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Subtask
-          </Button>
-        </div>
-
-        {localSubtasks.map((subtask, index) => (
-          <Card key={index}>
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-2">
-                <GripVertical className="h-4 w-4 text-gray-400 mt-2" />
-                <div className="flex-1 space-y-2">
-                  <Input
-                    value={subtask.title}
-                    onChange={(e) => handleUpdateSubtask(index, 'title', e.target.value)}
-                    placeholder="Subtask title"
-                  />
-                  <Input
-                    value={subtask.description}
-                    onChange={(e) => handleUpdateSubtask(index, 'description', e.target.value)}
-                    placeholder="Subtask description (optional)"
-                  />
+        <FormField
+          control={form.control}
+          name="clientId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Associated Client</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || ''}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="no-client">No Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name} ({client.company})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+              
+              {selectedClient && (
+                <div className="mt-2 p-2 bg-muted/40 rounded-md">
+                  <p className="text-sm">
+                    <span className="font-medium">Selected Client:</span> {selectedClient.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedClient.email} • {selectedClient.phone || "No phone"}
+                  </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveSubtask(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              )}
+            </FormItem>
+          )}
+        />
 
-      <div className="flex justify-end">
-        <Button type="submit">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="inProgress">In Progress</SelectItem>
+                    <SelectItem value="review">In Review</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Due Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="assignedTo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assign To</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="projectId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="no-project">No Project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="recurrence"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Recurrence</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">One-time (No recurrence)</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="halfYearly">Half-yearly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {showRecurrenceEndDate && (
+          <FormField
+            control={form.control}
+            name="recurrenceEndDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Recurrence End Date (Optional)</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>No end date</span>
+                        )}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-2">
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start mb-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          field.onChange(undefined);
+                        }}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Clear date
+                      </Button>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date < new Date()
+                      }
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <FormField
+          control={form.control}
+          name="tags"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tags</FormLabel>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {field.value?.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-xs leading-none"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center">
+                <Input
+                  placeholder="Add tag (press Enter)"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleAddTag}
+                  className="flex-1"
+                />
+                {tagInput && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="ml-2"
+                    onClick={() => {
+                      const currentTags = form.getValues('tags') || [];
+                      if (tagInput.trim() && !currentTags.includes(tagInput.trim())) {
+                        form.setValue('tags', [...currentTags, tagInput.trim()]);
+                      }
+                      setTagInput('');
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="subtasks">
+            <AccordionTrigger className="font-medium text-sm">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Task Steps/Subtasks {subtasks.length > 0 && `(${subtasks.length})`}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Add a subtask"
+                    value={subtaskInput}
+                    onChange={(e) => setSubtaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSubtask();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button"
+                    size="sm" 
+                    onClick={handleAddSubtask}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                
+                {subtasks.length > 0 ? (
+                  <div className="space-y-2">
+                    {subtasks.map((subtask, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
+                        <Checkbox 
+                          checked={subtask.completed}
+                          onCheckedChange={() => handleToggleSubtaskComplete(index)}
+                        />
+                        <div className="flex-1">
+                          <p className={cn(
+                            "text-sm font-medium",
+                            subtask.completed && "line-through text-muted-foreground"
+                          )}>
+                            {subtask.title}
+                          </p>
+                          {subtask.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {subtask.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button 
+                          type="button"
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleRemoveSubtask(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    No subtasks added yet
+                  </p>
+                )}
+                
+                <div className="text-xs text-muted-foreground">
+                  Add steps to track the progress of this task. Each step can be marked as completed individually.
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <Button type="submit" className="w-full">
           {task ? 'Update Task' : 'Create Task'}
         </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 };

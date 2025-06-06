@@ -1,192 +1,342 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Calendar, AlertTriangle, CheckCircle, Clock, Plus } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
-import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
-import { ComplianceStatus } from '@/types/client';
-import { format, addDays, isAfter, isBefore } from 'date-fns';
-import { toast } from '@/hooks/use-toast-extensions';
+import { format, addMonths, isBefore, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { Calendar, Receipt, AlertCircle, BarChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ComplianceAnalytics } from './ComplianceAnalytics';
+import { ComplianceReporting } from './ComplianceReporting';
 
-export const ComplianceDashboard: React.FC = () => {
-  const { clients, serviceTypes, clientServices } = useClientContext();
-  const { addTask, tasks } = useTaskContext();
-  const [selectedClient, setSelectedClient] = useState<string>('');
+export const ComplianceDashboard = () => {
+  const { clients } = useClientContext();
+  const { tasks, addTask } = useTaskContext();
 
-  const complianceData: ComplianceStatus[] = useMemo(() => {
-    if (!selectedClient) return [];
-    return [
-      {
-        type: 'GST Filing',
-        status: 'current',
-        dueDate: addDays(new Date(), 30),
-        description: 'Monthly GST return filing'
-      },
-      {
-        type: 'Income Tax',
-        status: 'upcoming',
-        dueDate: addDays(new Date(), 90),
-        description: 'Annual income tax return'
-      }
-    ];
-  }, [selectedClient]);
+  // Get current month's GST filing deadlines
+  const currentMonthGSTDeadlines = clients
+    .filter(client => client.isGSTRegistered)
+    .map(client => {
+      const dueDate = new Date();
+      dueDate.setDate(client.statutoryDueDates?.gstReturn || 20);
+      
+      const isOverdue = isBefore(dueDate, new Date());
+      const filingTask = tasks.find(task => 
+        task.clientId === client.id && 
+        task.tags.includes('GST') &&
+        isBefore(task.dueDate || new Date(), endOfMonth(new Date())) &&
+        isBefore(startOfMonth(new Date()), task.dueDate || new Date())
+      );
 
-  const totalCompliance = complianceData.length;
-  const currentCompliance = complianceData.filter(c => c.status === 'current').length;
-  const upcomingCompliance = complianceData.filter(c => c.status === 'upcoming').length;
-  const overdueCompliance = complianceData.filter(c => c.status === 'overdue').length;
+      return {
+        clientId: client.id,
+        clientName: client.name,
+        gstin: client.gstin,
+        dueDate,
+        status: filingTask?.status || 'pending',
+        isOverdue
+      };
+    });
 
-  const complianceProgress = useMemo(() => {
-    if (totalCompliance === 0) return 0;
-    return Math.round((currentCompliance / totalCompliance) * 100);
-  }, [currentCompliance, totalCompliance]);
+  // Get upcoming TDS deadlines
+  const upcomingTDSDeadlines = clients
+    .filter(client => client.tan)
+    .map(client => {
+      const currentQuarter = Math.floor((new Date().getMonth() / 3));
+      const quarterEndDate = addDays(addMonths(startOfMonth(new Date()), (currentQuarter + 1) * 3), -1);
+      const dueDate = addDays(quarterEndDate, client.statutoryDueDates?.tdsReturn || 7);
 
-  const createComplianceTask = async (compliance: ComplianceStatus, clientId: string) => {
+      const tdsTask = tasks.find(task => 
+        task.clientId === client.id && 
+        task.tags.includes('TDS') &&
+        task.dueDate && 
+        isBefore(task.dueDate, addDays(dueDate, 1)) &&
+        isBefore(quarterEndDate, task.dueDate)
+      );
+
+      return {
+        clientId: client.id,
+        clientName: client.name,
+        tan: client.tan,
+        dueDate,
+        status: tdsTask?.status || 'pending'
+      };
+    });
+
+  // Calculate compliance status
+  const totalClients = clients.length;
+  const gstRegistered = clients.filter(c => c.isGSTRegistered).length;
+  const withPAN = clients.filter(c => c.pan).length;
+  const withTAN = clients.filter(c => c.tan).length;
+  const msmeRegistered = clients.filter(c => c.isMSME).length;
+  const iecHolders = clients.filter(c => c.isIECHolder).length;
+
+  const handleCreateTask = (clientId: string, type: 'GST' | 'TDS') => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
 
-    const taskData: Omit<Task, 'id' | 'createdAt'> = {
+    const taskData = type === 'GST' 
+      ? {
+          title: `GST Filing - ${client.name}`,
+          description: `Monthly GST return filing for ${format(new Date(), 'MMMM yyyy')}`,
+          tags: ['GST', 'Compliance', 'Monthly'],
+          dueDate: new Date(new Date().getFullYear(), new Date().getMonth(), client.statutoryDueDates?.gstReturn || 20)
+        }
+      : {
+          title: `TDS Return - ${client.name}`,
+          description: `Quarterly TDS return filing for Q${Math.floor((new Date().getMonth() / 3)) + 1}`,
+          tags: ['TDS', 'Compliance', 'Quarterly'],
+          dueDate: addDays(addMonths(startOfMonth(new Date()), Math.floor(new Date().getMonth() / 3) * 3 + 3), (client.statutoryDueDates?.tdsReturn || 7) - 1)
+        };
+
+    addTask({
+      ...taskData,
       clientId,
       clientName: client.name,
-      status: 'todo' as TaskStatus,
-      priority: 'high' as TaskPriority,
-      recurrence: compliance.type.includes('Monthly') ? 'monthly' as RecurrenceType : 'quarterly' as RecurrenceType,
-      title: `${compliance.type} - ${client.name}`,
-      description: compliance.description,
-      tags: [compliance.type, 'Compliance'],
-      dueDate: compliance.dueDate,
-      updatedAt: new Date(),
-      subtasks: []
-    };
-
-    try {
-      await addTask(taskData);
-      toast.success(`Compliance task created for ${client.name}`);
-    } catch (error) {
-      toast.error('Failed to create compliance task');
-    }
+      status: 'todo',
+      priority: 'high',
+      recurrence: type === 'GST' ? 'monthly' : 'quarterly'
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Compliance Dashboard</h2>
-        <select
-          className="border rounded px-4 py-2"
-          value={selectedClient}
-          onChange={(e) => setSelectedClient(e.target.value)}
-        >
-          <option value="">Select a Client</option>
-          {clients.map(client => (
-            <option key={client.id} value={client.id}>{client.name}</option>
-          ))}
-        </select>
-      </div>
+    <Tabs defaultValue="overview" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="filings">Filing Status</TabsTrigger>
+        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsTrigger value="reports">Reports</TabsTrigger>
+      </TabsList>
 
-      {selectedClient ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <TabsContent value="overview" className="space-y-6">
+        {/* Compliance Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Total Compliance</CardTitle>
-              <CardDescription>All compliance tasks</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalCompliance}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Compliance</CardTitle>
-              <CardDescription>Tasks that are up-to-date</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{currentCompliance}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Compliance</CardTitle>
-              <CardDescription>Tasks due soon</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{upcomingCompliance}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Overdue Compliance</CardTitle>
-              <CardDescription>Tasks that are past due</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{overdueCompliance}</div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="text-center p-8 border rounded-lg">
-          <p className="text-muted-foreground">Select a client to view compliance data.</p>
-        </div>
-      )}
-
-      {selectedClient && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Compliance Tasks</h3>
-          {complianceData.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {complianceData.map(compliance => (
-                <Card key={compliance.type} className="shadow-sm">
-                  <CardHeader className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-semibold">{compliance.type}</CardTitle>
-                      {compliance.status === 'current' && (
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Current
-                        </Badge>
-                      )}
-                      {compliance.status === 'upcoming' && (
-                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                          <Clock className="h-4 w-4 mr-1" />
-                          Upcoming
-                        </Badge>
-                      )}
-                      {compliance.status === 'overdue' && (
-                        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                          <AlertTriangle className="h-4 w-4 mr-1" />
-                          Overdue
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription className="text-sm text-muted-foreground">{compliance.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>Due Date: {format(compliance.dueDate, 'MMM dd, yyyy')}</span>
-                    </div>
-                  </CardContent>
-                  <div className="p-4 border-t">
-                    <Button size="sm" className="w-full" onClick={() => createComplianceTask(compliance, selectedClient)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Task
-                    </Button>
+              <div className="flex justify-between items-center">
+                <span className="text-2xl font-bold">{totalClients}</span>
+                <div className="space-y-1 text-right">
+                  <div className="text-sm">
+                    GST Registered: <Badge variant="outline">{gstRegistered}</Badge>
                   </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center p-8 border rounded-lg">
-              <p className="text-muted-foreground">No compliance tasks found for this client.</p>
-            </div>
+                  <div className="text-sm">
+                    With PAN: <Badge variant="outline">{withPAN}</Badge>
+                  </div>
+                  <div className="text-sm">
+                    With TAN: <Badge variant="outline">{withTAN}</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Additional Registrations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>MSME Registered</span>
+                  <Badge>{msmeRegistered}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>IEC Holders</span>
+                  <Badge>{iecHolders}</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Missing Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Clients without PAN: {totalClients - withPAN}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Companies without CIN: {
+                    clients.filter(c => c.entityType === 'Company' && !c.cin).length
+                  }
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  LLPs without LLPIN: {
+                    clients.filter(c => c.entityType === 'LLP' && !c.llpin).length
+                  }
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Alerts */}
+        <div className="space-y-4">
+          {clients.filter(c => c.entityType === 'Company' && !c.cin).length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Missing CIN</AlertTitle>
+              <AlertDescription>
+                {clients.filter(c => c.entityType === 'Company' && !c.cin).length} companies don't have their CIN registered.
+                Update their profile to ensure compliance.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {clients.filter(c => !c.pan).length > 0 && (
+            <Alert>
+              <Receipt className="h-4 w-4" />
+              <AlertTitle>Missing PAN</AlertTitle>
+              <AlertDescription>
+                {clients.filter(c => !c.pan).length} clients don't have their PAN registered.
+                Update their profile to ensure proper documentation.
+              </AlertDescription>
+            </Alert>
           )}
         </div>
-      )}
-    </div>
+      </TabsContent>
+
+      <TabsContent value="filings" className="space-y-6">
+        {/* Filing Status Tables */}
+        <Card>
+          <CardHeader>
+            <CardTitle>GST Filing Status - Current Month</CardTitle>
+            <CardDescription>
+              Monthly GST return filing status for {format(new Date(), 'MMMM yyyy')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>GSTIN</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentMonthGSTDeadlines.map(deadline => (
+                  <TableRow key={deadline.clientId}>
+                    <TableCell>{deadline.clientName}</TableCell>
+                    <TableCell>{deadline.gstin}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {format(deadline.dueDate, 'dd MMM yyyy')}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          deadline.status === 'done' ? 'default' :
+                          deadline.isOverdue ? 'destructive' : 'outline'
+                        }
+                      >
+                        {deadline.status === 'done' ? 'Completed' :
+                         deadline.isOverdue ? 'Overdue' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {deadline.status !== 'done' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCreateTask(deadline.clientId, 'GST')}
+                        >
+                          Create Task
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>TDS Return Status - Current Quarter</CardTitle>
+            <CardDescription>
+              Quarterly TDS return filing status for Q{Math.floor((new Date().getMonth() / 3)) + 1}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>TAN</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {upcomingTDSDeadlines.map(deadline => (
+                  <TableRow key={deadline.clientId}>
+                    <TableCell>{deadline.clientName}</TableCell>
+                    <TableCell>{deadline.tan}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {format(deadline.dueDate, 'dd MMM yyyy')}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          deadline.status === 'done' ? 'default' :
+                          isBefore(deadline.dueDate, new Date()) ? 'destructive' : 'outline'
+                        }
+                      >
+                        {deadline.status === 'done' ? 'Completed' :
+                         isBefore(deadline.dueDate, new Date()) ? 'Overdue' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {deadline.status !== 'done' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleCreateTask(deadline.clientId, 'TDS')}
+                        >
+                          Create Task
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="analytics" className="space-y-6">
+        <ComplianceAnalytics />
+      </TabsContent>
+
+      <TabsContent value="reports" className="space-y-6">
+        <ComplianceReporting />
+      </TabsContent>
+    </Tabs>
   );
 };

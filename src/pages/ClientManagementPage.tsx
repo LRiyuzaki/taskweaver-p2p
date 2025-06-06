@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +22,6 @@ import { ServicesManagement } from "@/components/ServicesManagement";
 import { Input } from "@/components/ui/input";
 import { toast } from '@/hooks/use-toast';
 import { SeedDataButton } from "@/components/SeedDataButton";
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
@@ -34,21 +33,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const ClientManagementPage = () => {
-  const { clients = [], addClient, getAvailableServiceNames } = useClientContext();
+  const { clients, addClient, getAvailableServiceNames } = useClientContext();
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilters, setServiceFilters] = useState<string[]>([]);
-  
-  const availableServices = React.useMemo(() => {
-    try {
-      return getAvailableServiceNames();
-    } catch (error) {
-      console.error('Error getting available services:', error);
-      return [];
-    }
-  }, [getAvailableServiceNames]);
+  const availableServices = getAvailableServiceNames();
 
   const handleClientClick = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -85,226 +76,202 @@ const ClientManagementPage = () => {
     });
   };
 
-  // Filter clients based on search term and service filters with error handling
-  const filteredClients = React.useMemo(() => {
-    try {
-      if (!Array.isArray(clients)) {
-        console.warn('Clients is not an array:', clients);
-        return [];
-      }
-
-      return clients.filter(client => {
-        if (!client) return false;
-        
-        // First check search term
-        const matchesSearch = 
-          client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (client.contactPerson && client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-        // Then check if we need to filter by services
-        if (serviceFilters.length === 0) return matchesSearch;
-        
-        // Check if client has any of the required services
-        return matchesSearch && serviceFilters.some(service => 
-          client.requiredServices && client.requiredServices[service]
-        );
-      });
-    } catch (error) {
-      console.error('Error filtering clients:', error);
-      return [];
-    }
-  }, [clients, searchTerm, serviceFilters]);
+  // Filter clients based on search term and service filters
+  const filteredClients = clients.filter(client => {
+    // First check search term
+    const matchesSearch = 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.contactPerson && client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.phone && client.phone.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Then check if we need to filter by services
+    if (serviceFilters.length === 0) return matchesSearch;
+    
+    // Check if client has any of the required services
+    return matchesSearch && serviceFilters.some(service => 
+      client.requiredServices && client.requiredServices[service]
+    );
+  });
 
   return (
-    <ErrorBoundary>
-      <div className="flex flex-col h-screen">
-        <Header />
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-3xl font-bold flex items-center">
-                <UsersIcon className="mr-2 h-8 w-8" /> 
-                Client Management
-              </h1>
-              <div className="flex items-center space-x-2">
-                <SeedDataButton />
-                <Button onClick={() => setIsAddClientDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Client
-                </Button>
-              </div>
+    <div className="flex flex-col h-screen">
+      <Header />
+      <main className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold flex items-center">
+              <UsersIcon className="mr-2 h-8 w-8" /> 
+              Client Management
+            </h1>
+            <div className="flex items-center space-x-2">
+              <SeedDataButton />
+              <Button onClick={() => setIsAddClientDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Client
+              </Button>
             </div>
+          </div>
 
-            <Tabs 
-              value={activeTab} 
-              onValueChange={(value) => {
-                setActiveTab(value);
-                setSelectedClientId(null);
-              }}
-              className="w-full"
-            >
-              <TabsList className="mb-6">
-                <TabsTrigger value="clients" className="flex items-center gap-1">
-                  <UsersIcon className="h-4 w-4" />
-                  Clients
-                </TabsTrigger>
-                <TabsTrigger value="services" className="flex items-center gap-1">
-                  <Briefcase className="h-4 w-4" />
-                  Services
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="flex items-center gap-1">
-                  <FileTextIcon className="h-4 w-4" />
-                  Reports
-                </TabsTrigger>
-                <TabsTrigger value="templates" className="flex items-center gap-1">
-                  <ClipboardIcon className="h-4 w-4" />
-                  Templates
-                </TabsTrigger>
-              </TabsList>
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(value) => {
+              setActiveTab(value);
+              setSelectedClientId(null);
+            }}
+            className="w-full"
+          >
+            <TabsList className="mb-6">
+              <TabsTrigger value="clients" className="flex items-center gap-1">
+                <UsersIcon className="h-4 w-4" />
+                Clients
+              </TabsTrigger>
+              <TabsTrigger value="services" className="flex items-center gap-1">
+                <Briefcase className="h-4 w-4" />
+                Services
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-1">
+                <FileTextIcon className="h-4 w-4" />
+                Reports
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="flex items-center gap-1">
+                <ClipboardIcon className="h-4 w-4" />
+                Templates
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="clients" className="space-y-6">
-                {!selectedClientId && (
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search clients..." 
-                        className="pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-1">
-                          <Filter className="h-4 w-4" />
-                          Filter
-                          {serviceFilters.length > 0 && (
-                            <Badge variant="secondary" className="ml-1 h-5 px-1">
-                              {serviceFilters.length}
-                            </Badge>
-                          )}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem disabled className="font-semibold">
-                          Filter by Service
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {availableServices.map(service => (
-                          <DropdownMenuCheckboxItem
-                            key={service}
-                            checked={serviceFilters.includes(service)}
-                            onCheckedChange={() => toggleServiceFilter(service)}
-                          >
-                            {service}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                        {serviceFilters.length > 0 && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setServiceFilters([])}>
-                              Clear Filters
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setServiceFilters([]);
-                      }}
-                      disabled={searchTerm === '' && serviceFilters.length === 0}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {selectedClientId ? (
-                  <ErrorBoundary fallback={<div className="p-8 text-center text-muted-foreground">Failed to load client details</div>}>
-                    <ClientDetail 
-                      clientId={selectedClientId} 
-                      onBack={handleBackToList}
+            <TabsContent value="clients" className="space-y-6">
+              {!selectedClientId && (
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search clients..." 
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                  </ErrorBoundary>
-                ) : (
-                  <>
-                    <ErrorBoundary fallback={<div className="p-8 text-center text-muted-foreground">Failed to load client list</div>}>
-                      <ClientList 
-                        clients={filteredClients}
-                        onClientClick={handleClientClick}
-                      />
-                    </ErrorBoundary>
-                    
-                    {filteredClients.length === 0 && searchTerm !== '' && (
-                      <div className="text-center p-8 border rounded-lg bg-muted/20">
-                        <p className="text-muted-foreground">No clients match your search criteria.</p>
-                        <Button 
-                          variant="link" 
-                          onClick={() => setSearchTerm('')}
-                          className="mt-2"
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="gap-1">
+                        <Filter className="h-4 w-4" />
+                        Filter
+                        {serviceFilters.length > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 px-1">
+                            {serviceFilters.length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem disabled className="font-semibold">
+                        Filter by Service
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {availableServices.map(service => (
+                        <DropdownMenuCheckboxItem
+                          key={service}
+                          checked={serviceFilters.includes(service)}
+                          onCheckedChange={() => toggleServiceFilter(service)}
                         >
-                          Clear Search
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="services" className="space-y-6">
-                <ErrorBoundary fallback={<div className="p-8 text-center text-muted-foreground">Failed to load services management</div>}>
-                  <ServicesManagement />
-                </ErrorBoundary>
-              </TabsContent>
-
-              <TabsContent value="reports" className="space-y-6">
-                <div className="bg-muted/50 p-8 rounded-lg text-center">
-                  <h3 className="text-xl font-medium mb-2">Reports Coming Soon</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Generate comprehensive reports for compliance tracking and team performance.
-                  </p>
-                  <Button onClick={() => window.location.href = '/reports-list'}>
-                    Go to Reports
+                          {service}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                      {serviceFilters.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setServiceFilters([])}>
+                            Clear Filters
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setServiceFilters([]);
+                    }}
+                    disabled={searchTerm === '' && serviceFilters.length === 0}
+                  >
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
-              </TabsContent>
+              )}
 
-              <TabsContent value="templates" className="space-y-6">
-                <div className="bg-muted/50 p-8 rounded-lg text-center">
-                  <h3 className="text-xl font-medium mb-2">Templates Coming Soon</h3>
-                  <p className="text-muted-foreground">
-                    Create customizable templates for different client types and service packages.
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
+              {selectedClientId ? (
+                <ClientDetail 
+                  clientId={selectedClientId} 
+                  onBack={handleBackToList}
+                />
+              ) : (
+                <>
+                  <ClientList 
+                    clients={filteredClients}
+                    onClientClick={handleClientClick}
+                  />
+                  
+                  {filteredClients.length === 0 && searchTerm !== '' && (
+                    <div className="text-center p-8 border rounded-lg bg-muted/20">
+                      <p className="text-muted-foreground">No clients match your search criteria.</p>
+                      <Button 
+                        variant="link" 
+                        onClick={() => setSearchTerm('')}
+                        className="mt-2"
+                      >
+                        Clear Search
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
 
-        <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Add New Client</DialogTitle>
-              <DialogDescription>
-                Enter client information to add them to your management system.
-              </DialogDescription>
-            </DialogHeader>
-            <ErrorBoundary fallback={<div className="p-4 text-center text-muted-foreground">Failed to load client form</div>}>
-              <ClientForm onSubmit={handleAddClientSubmit} />
-            </ErrorBoundary>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </ErrorBoundary>
+            <TabsContent value="services" className="space-y-6">
+              <ServicesManagement />
+            </TabsContent>
+
+            <TabsContent value="reports" className="space-y-6">
+              <div className="bg-muted/50 p-8 rounded-lg text-center">
+                <h3 className="text-xl font-medium mb-2">Reports Coming Soon</h3>
+                <p className="text-muted-foreground mb-4">
+                  Generate comprehensive reports for compliance tracking and team performance.
+                </p>
+                <Button onClick={() => window.location.href = '/reports-list'}>
+                  Go to Reports
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="templates" className="space-y-6">
+              <div className="bg-muted/50 p-8 rounded-lg text-center">
+                <h3 className="text-xl font-medium mb-2">Templates Coming Soon</h3>
+                <p className="text-muted-foreground">
+                  Create customizable templates for different client types and service packages.
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Add New Client</DialogTitle>
+            <DialogDescription>
+              Enter client information to add them to your management system.
+            </DialogDescription>
+          </DialogHeader>
+          <ClientForm onSubmit={handleAddClientSubmit} />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
