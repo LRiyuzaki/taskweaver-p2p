@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check, CircleCheck, CircleMinus, CircleX, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,7 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
     );
   });
   
-  // Count only services explicitly set to true
+  // Calculate selected count correctly - only count items that are explicitly true
   const selectedCount = Object.values(selectedServices)
     .filter(isSelected => isSelected === true)
     .length;
@@ -67,18 +67,21 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
       <ProgressBar
         value={selectionProgress}
         max={100}
-        variant={selectedCount > 0 ? "success" : "default"}
         className="h-1.5"
+        style={{ backgroundColor: selectedCount > 0 ? '#10b981' : undefined }}
       />
       
       <div className="relative">
-        <input
-          type="text"
-          placeholder="Search services..."
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search services..."
+            className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
       
       <div className="max-h-[500px] overflow-y-auto pr-1">
@@ -100,7 +103,7 @@ export const ClientServiceSelector: React.FC<ClientServiceSelectorProps> = ({
                       const isChecked = selectedServices[service.name] === true;
                       
                       return (
-                        <div key={service.id} className="flex items-center space-x-2 py-1.5">
+                        <div key={service.id} className="flex items-center space-x-2 py-1.5 hover:bg-muted/20 rounded px-1">
                           <Checkbox
                             id={`service-${service.id}`}
                             checked={isChecked}

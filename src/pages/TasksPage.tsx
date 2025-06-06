@@ -6,15 +6,52 @@ import {
   ClipboardList, 
   Calendar as CalendarIcon, 
   ListFilter,
-  RepeatIcon
+  RepeatIcon,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TaskListView } from '@/components/TaskListView';
 import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useTaskContext } from "@/contexts/TaskContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from '@/hooks/use-toast';
 
 const TasksPage = () => {
   const [activeView, setActiveView] = useState('board');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const navigate = useNavigate();
+  const { deleteTasks } = useTaskContext();
+
+  const handleCreateTask = () => {
+    navigate('/tasks/new');
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedTasks.length > 0) {
+      setIsDeleteDialogOpen(true);
+    } else {
+      toast({
+        title: "No Tasks Selected",
+        description: "Please select at least one task to delete.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const confirmDelete = () => {
+    deleteTasks(selectedTasks);
+    setSelectedTasks([]);
+    setIsDeleteDialogOpen(false);
+    toast({
+      title: "Tasks Deleted",
+      description: `${selectedTasks.length} task(s) deleted successfully.`,
+    });
+  };
 
   return (
     <div className="flex flex-col h-screen">
@@ -26,6 +63,16 @@ const TasksPage = () => {
               <ClipboardList className="mr-2 h-8 w-8" />
               Tasks Management
             </h1>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateTask}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Task
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteSelected}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Selected
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
@@ -49,15 +96,15 @@ const TasksPage = () => {
             </TabsList>
 
             <TabsContent value="board" className="space-y-6">
-              <TaskBoard />
+              <TaskBoard onTaskSelect={(taskIds) => setSelectedTasks(taskIds)} />
             </TabsContent>
 
             <TabsContent value="list" className="space-y-6">
-              <TaskListView />
+              <TaskListView filterClient={undefined} />
             </TabsContent>
 
             <TabsContent value="calendar" className="space-y-6">
-              <TaskCalendarView />
+              <TaskCalendarView onSelectedTaskIdsChange={(taskIds) => setSelectedTasks(taskIds)} />
             </TabsContent>
             
             <TabsContent value="recurring" className="space-y-6">
@@ -66,6 +113,25 @@ const TasksPage = () => {
           </Tabs>
         </div>
       </main>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Tasks</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedTasks.length} selected task(s)? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete Tasks
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
