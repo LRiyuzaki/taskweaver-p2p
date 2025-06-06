@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Client, ServiceType, ClientService } from '@/types/client';
@@ -65,14 +66,17 @@ export const useServiceAssignment = () => {
         status: 'active' as const
       };
 
-      // Update client with new service
-      const updatedServices = clientServices.filter((s: any) => {
-        if (typeof s === 'string') {
-          return s !== serviceType.name;
+      // Update client with new service - ensure we maintain proper array type
+      const updatedServices: ClientService[] = [];
+      
+      // Add existing ClientService objects
+      clientServices.forEach((service: any) => {
+        if (typeof service === 'object' && service.serviceTypeName !== serviceType.name) {
+          updatedServices.push(service);
         }
-        return s.serviceTypeName !== serviceType.name;
       });
       
+      // Add the new service
       updatedServices.push(newClientService);
 
       // Update required services flag

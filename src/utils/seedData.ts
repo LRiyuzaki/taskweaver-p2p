@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Client, Note, Document, Service, ClientService, ServiceType, SubTask } from '@/types/client';
 import { Task, RecurrenceType, TaskStatus, TaskPriority, Project } from '@/types/task';
@@ -63,22 +64,29 @@ export const generateClients = (count: number = 10): Client[] => {
       pan: `ABCDE${i}234F`,
       startDate: randomDate(subDays(new Date(), 730), subDays(new Date(), 30)),
       address: {
-        registered: `${i + 100} Business Park, Corporate Lane\nCity - 400001`,
-        business: `${i + 100} Business Park, Corporate Lane\nCity - 400001`,
+        street: `${i + 100} Business Park`,
+        city: 'Corporate Lane',
+        state: 'State',
+        pincode: '400001',
+        country: 'India'
       },
+      status: 'active'
     };
     
     // Create some services for this client
-    const clientServices: Service[] = [];
+    const clientServices: ClientService[] = [];
     Object.entries(requiredServices).forEach(([serviceName, isRequired]) => {
       if (isRequired) {
         clientServices.push({
           id: uuidv4(),
-          name: serviceName,
+          clientId: newClient.id,
+          serviceTypeId: uuidv4(),
+          serviceTypeName: serviceName,
+          isActive: true,
           startDate: randomDate(subDays(new Date(), 180), new Date()),
           endDate: randomDate(new Date(), addDays(new Date(), 180)),
-          renewalDate: randomDate(addDays(new Date(), 30), addDays(new Date(), 120)),
-          status: Math.random() > 0.2 ? 'active' : 'inactive',
+          nextRenewalDate: randomDate(addDays(new Date(), 30), addDays(new Date(), 120)),
+          status: Math.random() > 0.2 ? 'active' : 'inactive'
         });
       }
     });
@@ -91,7 +99,8 @@ export const generateClients = (count: number = 10): Client[] => {
         id: uuidv4(),
         content: `Important note ${j + 1} for ${name}. This client requires special attention.`,
         createdAt: randomDate(subDays(new Date(), 60), new Date()),
-        createdBy: 'System Admin',
+        updatedAt: randomDate(subDays(new Date(), 60), new Date()),
+        createdBy: 'System Admin'
       });
     }
     
@@ -104,12 +113,14 @@ export const generateClients = (count: number = 10): Client[] => {
       documents.push({
         id: uuidv4(),
         name: `Document ${j + 1} - ${name}.${fileType.toLowerCase()}`,
+        url: `https://example.com/docs/${j}`,
+        type: fileType,
+        uploadedAt: randomDate(subDays(new Date(), 60), new Date()),
         fileUrl: `https://example.com/docs/${j}`,
         fileType,
         fileSize: Math.floor(Math.random() * 1000000) + 100000,
-        uploadedAt: randomDate(subDays(new Date(), 60), new Date()),
         uploadedBy: 'System Admin',
-        description: `Important document for ${name}`,
+        description: `Important document for ${name}`
       });
     }
     
@@ -133,7 +144,7 @@ export const generateProjects = (clients: Client[], count: number = 5): Project[
     'Legal Documentation', 'Registration Process', 'Corporate Filing'
   ];
   
-  const projectStatuses: ('active' | 'completed' | 'onHold')[] = ['active', 'completed', 'onHold'];
+  const projectStatuses: ('active' | 'completed' | 'on-hold')[] = ['active', 'completed', 'on-hold'];
   const projectColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500'];
   const projectIcons = ['file-text', 'briefcase', 'check-circle', 'bar-chart', 'shield'];
   
@@ -162,7 +173,7 @@ export const generateProjects = (clients: Client[], count: number = 5): Project[
       endDate,
       createdAt: subDays(startDate, Math.floor(Math.random() * 30) + 1),
       color: pickRandom(projectColors),
-      icon: pickRandom(projectIcons),
+      icon: pickRandom(projectIcons)
     });
   }
   
@@ -180,7 +191,7 @@ export const generateTasks = (clients: Client[], projects: Project[], count: num
     'Resolve Tax Notice', 'Draft Agreement', 'Submit Regulatory Filing'
   ];
   
-  const taskStatuses: TaskStatus[] = ['todo', 'inProgress', 'done'];
+  const taskStatuses: TaskStatus[] = ['todo', 'in-progress', 'done'];
   const taskPriorities: TaskPriority[] = ['low', 'medium', 'high'];
   const recurrenceTypes: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
   
@@ -241,6 +252,7 @@ export const generateTasks = (clients: Client[], projects: Project[], count: num
       tags: taskTags,
       recurrence,
       recurrenceEndDate: recurrence !== 'none' ? addMonths(new Date(), 12) : undefined,
+      subtasks: []
     };
     
     tasks.push(newTask);
@@ -268,7 +280,7 @@ export const generateSubtasks = (tasks: Task[], count: number = 30): SubTask[] =
           completed: task.status === 'done' || (Math.random() > 0.7),
           order: i,
           assignedTo: task.assignedTo,
-          assigneeName: task.assigneeName,
+          assigneeName: task.assigneeName
         });
       }
     }
@@ -286,13 +298,12 @@ export const generateServiceTypes = (): ServiceType[] => {
       description: 'Monthly/Quarterly GST return filing service',
       frequency: 'monthly',
       category: 'gst',
-      dueDate: {
-        type: 'fixed',
-        day: 20,
-      },
+      isRecurring: true,
       requiresGST: true,
       applicableEntities: ['Proprietorship', 'Company', 'LLP', 'Partnership'],
-      taskTemplate: []
+      documentRequirements: [],
+      isActive: true,
+      createdAt: new Date()
     },
     {
       id: uuidv4(),
@@ -300,14 +311,12 @@ export const generateServiceTypes = (): ServiceType[] => {
       description: 'Annual income tax return filing',
       frequency: 'annually',
       category: 'incometax',
-      dueDate: {
-        type: 'fixed',
-        day: 31,
-        monthOffset: 7,
-      },
+      isRecurring: true,
       requiresPAN: true,
       applicableEntities: ['Individual', 'Proprietorship', 'Company', 'LLP', 'Partnership', 'Trust', 'HUF'],
-      taskTemplate: []
+      documentRequirements: [],
+      isActive: true,
+      createdAt: new Date()
     },
     {
       id: uuidv4(),
@@ -315,9 +324,12 @@ export const generateServiceTypes = (): ServiceType[] => {
       description: 'Quarterly TDS return filing',
       frequency: 'quarterly',
       category: 'tds',
+      isRecurring: true,
       requiresTAN: true,
       applicableEntities: ['Company', 'LLP', 'Partnership'],
-      taskTemplate: []
+      documentRequirements: [],
+      isActive: true,
+      createdAt: new Date()
     },
     {
       id: uuidv4(),
@@ -325,13 +337,15 @@ export const generateServiceTypes = (): ServiceType[] => {
       description: 'New company registration with MCA',
       frequency: 'one-time',
       category: 'registration',
+      isRecurring: false,
       applicableEntities: ['Company'],
       documentRequirements: [
-        { name: 'PAN Card', description: 'PAN card of all directors', required: true },
-        { name: 'Address Proof', description: 'Address proof of registered office', required: true },
-        { name: 'ID Proof', description: 'ID proof of all directors', required: true }
+        'PAN Card',
+        'Address Proof',
+        'ID Proof'
       ],
-      taskTemplate: []
+      isActive: true,
+      createdAt: new Date()
     },
     {
       id: uuidv4(),
@@ -339,9 +353,12 @@ export const generateServiceTypes = (): ServiceType[] => {
       description: 'Trademark registration service',
       frequency: 'one-time',
       category: 'registration',
+      isRecurring: false,
       renewalPeriod: 120, // 10 years in months
       applicableEntities: ['Individual', 'Proprietorship', 'Company', 'LLP', 'Partnership'],
-      taskTemplate: []
+      documentRequirements: [],
+      isActive: true,
+      createdAt: new Date()
     }
   ];
 };
@@ -366,9 +383,11 @@ export const generateClientServices = (clients: Client[], serviceTypes: ServiceT
         }
         
         clientServices.push({
+          id: uuidv4(),
           clientId: client.id,
           serviceTypeId: serviceType.id,
           serviceTypeName: serviceType.name,
+          isActive: true,
           startDate,
           endDate,
           nextRenewalDate: endDate,

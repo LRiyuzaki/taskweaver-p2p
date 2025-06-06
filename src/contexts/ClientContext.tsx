@@ -1,29 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Client, ClientFormData, ServiceType, ClientService, ServiceRenewal, ComplianceStatus, Address } from '@/types/client';
-import { localStorageManager } from '@/utils/localStorage';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { Client, ClientService, ServiceType } from '@/types/client';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ClientContextType {
   clients: Client[];
-  serviceTypes: ServiceType[];
-  clientServices: ClientService[];
-  serviceRenewals: ServiceRenewal[];
-  addClient: (client: ClientFormData) => Promise<string>;
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  createClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
   getClientById: (id: string) => Client | undefined;
-  getAvailableServiceNames: () => string[];
   getAvailableServiceTypes: () => ServiceType[];
-  bulkUpdateClients: (updates: Array<{ id: string; updates: Partial<Client> }>) => Promise<void>;
-  addServiceType: (serviceType: Omit<ServiceType, 'id'>) => Promise<string>;
-  updateServiceType: (id: string, updates: Partial<ServiceType>) => Promise<void>;
-  deleteServiceType: (id: string) => Promise<void>;
-  addClientService: (clientService: Omit<ClientService, 'id'>) => Promise<string>;
-  updateClientService: (clientId: string, serviceTypeId: string, updates: Partial<ClientService>) => Promise<void>;
-  deleteClientService: (clientId: string, serviceTypeId: string) => Promise<void>;
-  addServiceRenewal: (renewal: Omit<ServiceRenewal, 'id'>) => Promise<string>;
-  getClientComplianceStatus: (clientId: string) => ComplianceStatus[];
-  isLoading: boolean;
+  assignServiceToClient: (clientId: string, serviceTypeId: string) => Promise<void>;
+  removeServiceFromClient: (clientId: string, serviceTypeId: string) => Promise<void>;
+  loading: boolean;
   error: string | null;
 }
 
@@ -32,205 +21,77 @@ const ClientContext = createContext<ClientContextType | undefined>(undefined);
 export const useClientContext = () => {
   const context = useContext(ClientContext);
   if (!context) {
-    throw new Error('useClientContext must be used within a ClientProvider');
+    throw new Error('useClientContext must be used within a ClientContextProvider');
   }
   return context;
 };
 
-const defaultServiceTypes: ServiceType[] = [
-  {
-    id: 'gst-filing',
-    name: 'GST Filing',
-    description: 'Monthly/Quarterly GST return filing',
-    frequency: 'monthly',
-    category: 'gst',
-    requiresGST: true,
-    applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship'],
-    renewalPeriod: 12,
-    isRecurring: true,
-    isActive: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'income-tax',
-    name: 'Income Tax Filing',
-    description: 'Annual income tax return filing',
-    frequency: 'annually',
-    category: 'incometax',
-    requiresPAN: true,
-    applicableEntities: ['Individual', 'Company', 'LLP', 'Partnership', 'Proprietorship', 'Trust', 'HUF'],
-    renewalPeriod: 12,
-    isRecurring: true,
-    isActive: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'tds-filing',
-    name: 'TDS Filing',
-    description: 'TDS return filing and compliance',
-    frequency: 'quarterly',
-    category: 'tds',
-    requiresTAN: true,
-    applicableEntities: ['Company', 'LLP', 'Partnership'],
-    renewalPeriod: 12,
-    isRecurring: true,
-    isActive: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'bookkeeping',
-    name: 'Bookkeeping',
-    description: 'Monthly bookkeeping and accounts maintenance',
-    frequency: 'monthly',
-    category: 'other',
-    applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship'],
-    renewalPeriod: 12,
-    isRecurring: true,
-    isActive: true,
-    createdAt: new Date()
-  },
-  {
-    id: 'audit',
-    name: 'Statutory Audit',
-    description: 'Annual statutory audit',
-    frequency: 'annually',
-    category: 'audit',
-    applicableEntities: ['Company', 'LLP'],
-    renewalPeriod: 12,
-    isRecurring: true,
-    isActive: true,
-    createdAt: new Date()
-  }
-];
-
-interface ClientProviderProps {
-  children: ReactNode;
-}
-
-export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [clientServices, setClientServices] = useState<ClientService[]>([]);
-  const [serviceRenewals, setServiceRenewals] = useState<ServiceRenewal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [clients, setClients] = useState<Client[]>(() => {
+    try {
+      const storedClients = localStorage.getItem('clients');
+      return storedClients ? JSON.parse(storedClients) : [];
+    } catch (error) {
+      console.error("Failed to load clients from local storage:", error);
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load data from localStorage on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const loadedClients = localStorageManager.getClients();
-        const loadedServiceTypes = localStorageManager.getServiceTypes();
-        const loadedClientServices = localStorageManager.getClientServices();
-        const loadedServiceRenewals = localStorageManager.getClientRenewals();
-        
-        setClients(loadedClients);
-        setServiceTypes(loadedServiceTypes.length > 0 ? loadedServiceTypes : defaultServiceTypes);
-        setClientServices(loadedClientServices);
-        setServiceRenewals(loadedServiceRenewals);
-        
-        // Initialize service types if not present
-        if (loadedServiceTypes.length === 0) {
-          localStorageManager.saveServiceTypes(defaultServiceTypes);
-        }
-        
-        // Validate data integrity
-        const { isValid, errors } = localStorageManager.validateDataIntegrity();
-        if (!isValid) {
-          console.warn('Data integrity issues found:', errors);
-          const repaired = localStorageManager.repairData();
-          if (repaired) {
-            const repairedClients = localStorageManager.getClients();
-            setClients(repairedClients);
-          }
-        }
-      } catch (err) {
-        setError('Failed to load data');
-        console.error('Failed to load data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Save data to localStorage whenever data changes
-  useEffect(() => {
-    if (!isLoading) {
-      localStorageManager.saveClients(clients);
-      localStorageManager.saveServiceTypes(serviceTypes);
-      localStorageManager.saveClientServices(clientServices);
-      localStorageManager.saveServiceRenewals(serviceRenewals);
-    }
-  }, [clients, serviceTypes, clientServices, serviceRenewals, isLoading]);
-
-  const addClient = async (clientData: ClientFormData): Promise<string> => {
     try {
-      // Ensure address is always a string
-      const processedAddress = typeof clientData.address === 'string' ? clientData.address : '';
+      localStorage.setItem('clients', JSON.stringify(clients));
+    } catch (error) {
+      console.error("Failed to save clients to local storage:", error);
+      setError("Failed to save clients to local storage.");
+    }
+  }, [clients]);
 
+  const addClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
+    setLoading(true);
+    setError(null);
+    try {
       const newClient: Client = {
-        ...clientData,
         id: uuidv4(),
         createdAt: new Date(),
-        active: true,
-        services: [],
-        notes: [],
-        documents: [],
-        requiredServices: clientData.requiredServices || {},
-        address: processedAddress
+        ...clientData,
       };
-
-      setClients(prev => [...prev, newClient]);
-      return newClient.id;
-    } catch (err) {
+      setClients(prevClients => [...prevClients, newClient]);
+    } catch (e) {
       setError('Failed to add client');
-      throw err;
+    } finally {
+      setLoading(false);
     }
   };
+  
+  const createClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
+    return addClient(clientData);
+  };
 
-  const updateClient = async (id: string, updates: Partial<Client>): Promise<void> => {
+  const updateClient = async (id: string, updates: Partial<Client>) => {
+    setLoading(true);
+    setError(null);
     try {
-      setClients(prev => prev.map(client => 
-        client.id === id 
-          ? { ...client, ...updates }
-          : client
-      ));
-    } catch (err) {
+      setClients(prevClients =>
+        prevClients.map(client => (client.id === id ? { ...client, ...updates } : client))
+      );
+    } catch (e) {
       setError('Failed to update client');
-      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteClient = async (id: string): Promise<void> => {
+  const deleteClient = async (id: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      setClients(prev => prev.filter(client => client.id !== id));
-      setClientServices(prev => prev.filter(service => service.clientId !== id));
-      setServiceRenewals(prev => prev.filter(renewal => renewal.clientId !== id));
-    } catch (err) {
+      setClients(prevClients => prevClients.filter(client => client.id !== id));
+    } catch (e) {
       setError('Failed to delete client');
-      throw err;
-    }
-  };
-
-  const bulkUpdateClients = async (updates: Array<{ id: string; updates: Partial<Client> }>): Promise<void> => {
-    try {
-      setClients(prev => {
-        const updatesMap = new Map(updates.map(u => [u.id, u.updates]));
-        return prev.map(client => {
-          const clientUpdates = updatesMap.get(client.id);
-          return clientUpdates 
-            ? { ...client, ...clientUpdates }
-            : client;
-        });
-      });
-    } catch (err) {
-      setError('Failed to bulk update clients');
-      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -238,151 +99,91 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     return clients.find(client => client.id === id);
   };
 
-  const getAvailableServiceNames = (): string[] => {
-    return serviceTypes.map(st => st.name);
-  };
-
   const getAvailableServiceTypes = (): ServiceType[] => {
-    return serviceTypes;
-  };
-
-  // Service Type methods
-  const addServiceType = async (serviceTypeData: Omit<ServiceType, 'id'>): Promise<string> => {
     try {
-      const newServiceType: ServiceType = {
-        ...serviceTypeData,
-        id: uuidv4()
-      };
-
-      setServiceTypes(prev => [...prev, newServiceType]);
-      return newServiceType.id;
-    } catch (err) {
-      setError('Failed to add service type');
-      throw err;
+      const storedServiceTypes = localStorage.getItem('serviceTypes');
+      return storedServiceTypes ? JSON.parse(storedServiceTypes) : [];
+    } catch (error) {
+      console.error("Failed to load service types from local storage:", error);
+      return [];
     }
   };
 
-  const updateServiceType = async (id: string, updates: Partial<ServiceType>): Promise<void> => {
+  const assignServiceToClient = async (clientId: string, serviceTypeId: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      setServiceTypes(prev => prev.map(serviceType => 
-        serviceType.id === id 
-          ? { ...serviceType, ...updates }
-          : serviceType
-      ));
-    } catch (err) {
-      setError('Failed to update service type');
-      throw err;
+      // Logic to assign service to client
+      setClients(prevClients =>
+        prevClients.map(client => {
+          if (client.id === clientId) {
+            const serviceType = getAvailableServiceTypes().find(st => st.id === serviceTypeId);
+            if (serviceType) {
+              const newService: ClientService = {
+                id: uuidv4(),
+                clientId: client.id,
+                serviceTypeId: serviceType.id,
+                serviceTypeName: serviceType.name,
+                isActive: true,
+                startDate: new Date(),
+                status: 'active' as const
+              };
+              return {
+                ...client,
+                services: [...(client.services || []), newService],
+              };
+            }
+          }
+          return client;
+        })
+      );
+    } catch (e) {
+      setError('Failed to assign service to client');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteServiceType = async (id: string): Promise<void> => {
+  const removeServiceFromClient = async (clientId: string, serviceTypeId: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      setServiceTypes(prev => prev.filter(serviceType => serviceType.id !== id));
-      setClientServices(prev => prev.filter(service => service.serviceTypeId !== id));
-    } catch (err) {
-      setError('Failed to delete service type');
-      throw err;
+      // Logic to remove service from client
+      setClients(prevClients =>
+        prevClients.map(client => {
+          if (client.id === clientId) {
+            return {
+              ...client,
+              services: (client.services || []).filter((service: any) => {
+                if (typeof service === 'string') {
+                  return service !== serviceTypeId;
+                } else {
+                  return service.serviceTypeId !== serviceTypeId;
+                }
+              }),
+            };
+          }
+          return client;
+        })
+      );
+    } catch (e) {
+      setError('Failed to remove service from client');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  // Client Service methods
-  const addClientService = async (clientServiceData: Omit<ClientService, 'id'>): Promise<string> => {
-    try {
-      const newClientService: ClientService = {
-        ...clientServiceData,
-        id: uuidv4()
-      };
-
-      setClientServices(prev => [...prev, newClientService]);
-      return newClientService.id;
-    } catch (err) {
-      setError('Failed to add client service');
-      throw err;
-    }
-  };
-
-  const updateClientService = async (clientId: string, serviceTypeId: string, updates: Partial<ClientService>): Promise<void> => {
-    try {
-      setClientServices(prev => prev.map(service => 
-        service.clientId === clientId && service.serviceTypeId === serviceTypeId
-          ? { ...service, ...updates }
-          : service
-      ));
-    } catch (err) {
-      setError('Failed to update client service');
-      throw err;
-    }
-  };
-
-  const deleteClientService = async (clientId: string, serviceTypeId: string): Promise<void> => {
-    try {
-      setClientServices(prev => prev.filter(service => 
-        !(service.clientId === clientId && service.serviceTypeId === serviceTypeId)
-      ));
-    } catch (err) {
-      setError('Failed to delete client service');
-      throw err;
-    }
-  };
-
-  // Service Renewal methods
-  const addServiceRenewal = async (renewalData: Omit<ServiceRenewal, 'id'>): Promise<string> => {
-    try {
-      const newRenewal: ServiceRenewal = {
-        ...renewalData,
-        id: uuidv4()
-      };
-
-      setServiceRenewals(prev => [...prev, newRenewal]);
-      return newRenewal.id;
-    } catch (err) {
-      setError('Failed to add service renewal');
-      throw err;
-    }
-  };
-
-  const getClientComplianceStatus = (clientId: string): ComplianceStatus[] => {
-    // This is a mock implementation - in a real app this would come from a compliance service
-    const client = clients.find(c => c.id === clientId);
-    if (!client) return [];
-
-    return [
-      {
-        type: 'GST Filing',
-        status: 'current',
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        description: 'Monthly GST return filing'
-      },
-      {
-        type: 'Income Tax',
-        status: 'upcoming',
-        dueDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
-        description: 'Annual income tax return'
-      }
-    ];
   };
 
   const value: ClientContextType = {
     clients,
-    serviceTypes,
-    clientServices,
-    serviceRenewals,
     addClient,
+    createClient,
     updateClient,
     deleteClient,
     getClientById,
-    getAvailableServiceNames,
     getAvailableServiceTypes,
-    bulkUpdateClients,
-    addServiceType,
-    updateServiceType,
-    deleteServiceType,
-    addClientService,
-    updateClientService,
-    deleteClientService,
-    addServiceRenewal,
-    getClientComplianceStatus,
-    isLoading,
+    assignServiceToClient,
+    removeServiceFromClient,
+    loading,
     error
   };
 

@@ -9,6 +9,8 @@ export interface Address {
   state?: string;
   pincode?: string;
   country?: string;
+  registered?: string;
+  business?: string;
 }
 
 export interface BankAccount {
@@ -142,6 +144,7 @@ export interface Note {
   content: string;
   createdAt: Date;
   updatedAt: Date;
+  createdBy?: string;
 }
 
 export interface Document {
@@ -150,6 +153,11 @@ export interface Document {
   url: string;
   type: string;
   uploadedAt: Date;
+  fileUrl?: string;
+  fileType?: string;
+  fileSize?: number;
+  uploadedBy?: string;
+  description?: string;
 }
 
 export interface Service {
@@ -165,6 +173,10 @@ export interface Service {
   documentRequirements?: string[];
   isActive: boolean;
   createdAt: Date;
+  startDate?: Date;
+  endDate?: Date;
+  renewalDate?: Date;
+  status?: 'active' | 'inactive';
 }
 
 export interface ComplianceStatus {
@@ -211,4 +223,16 @@ export interface ClientServicesTabProps {
 
 export interface ClientDetailsTabProps {
   client: Client;
+}
+
+// Add SubTask export for seedData
+export interface SubTask {
+  id: string;
+  taskId: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  order: number;
+  assignedTo?: string;
+  assigneeName?: string;
 }

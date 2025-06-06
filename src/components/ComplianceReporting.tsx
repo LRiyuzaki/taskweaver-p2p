@@ -49,8 +49,7 @@ export const ComplianceReporting: React.FC = () => {
           status: 'upcoming',
           dueDate: new Date(2024, 2, 20), // March 20th
           description: `GST return filing for ${client.name}`,
-          missingDocuments: [],
-          isCompliant: true
+          missingDocuments: []
         });
       }
       
@@ -60,8 +59,7 @@ export const ComplianceReporting: React.FC = () => {
         status: 'upcoming',
         dueDate: new Date(2024, 6, 31), // July 31st
         description: `Income tax return filing for ${client.name}`,
-        missingDocuments: [],
-        isCompliant: true
+        missingDocuments: []
       });
     });
     
