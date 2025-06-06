@@ -51,6 +51,22 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
     onSelectedTaskIdsChange(updatedSelection);
   };
 
+  const getDayClassNames = (date: Date) => {
+    const tasksForDay = tasks.filter(task => 
+      task.dueDate && isSameDay(new Date(task.dueDate), date)
+    );
+    
+    if (tasksForDay.length === 0) return "";
+    
+    const hasPriorityHigh = tasksForDay.some(task => task.priority === 'high');
+    
+    if (hasPriorityHigh) {
+      return "bg-red-100 border-red-200 font-bold";
+    }
+    
+    return "bg-blue-50 border-blue-100 font-medium";
+  };
+
   const getDayContent = (date: Date) => {
     const tasksForDay = tasks.filter(task => 
       task.dueDate && isSameDay(new Date(task.dueDate), date)
@@ -81,17 +97,10 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                 return tasks.some(task => 
                   task.dueDate && isSameDay(new Date(task.dueDate), date)
                 );
-              },
-              highPriorityDay: (date) => {
-                return tasks.some(task => 
-                  task.dueDate && isSameDay(new Date(task.dueDate), date) && task.priority === 'high'
-                );
               }
             }}
             modifiersClassNames={{
-              taskDay: "bg-blue-50 font-medium border-blue-100",
-              highPriorityDay: "bg-red-100 font-bold border-red-200",
-              selected: "bg-primary text-primary-foreground font-bold"
+              taskDay: "relative"
             }}
             components={{
               DayContent: ({ date }) => (
@@ -102,9 +111,33 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
               )
             }}
             classNames={{
-              day: "relative",
-              selected: "bg-primary text-primary-foreground font-bold",
-              today: "bg-accent text-accent-foreground"
+              day: "relative"
+            }}
+            styles={{
+              day: {
+                "&[aria-selected=true]": {
+                  backgroundColor: "var(--primary)",
+                  color: "var(--primary-foreground)",
+                  fontWeight: "bold"
+                },
+                "&[data-high-priority=true]": {
+                  backgroundColor: "var(--red-100)",
+                  fontWeight: "bold",
+                  borderColor: "var(--red-200)"
+                },
+                "&[data-has-tasks=true]": {
+                  backgroundColor: "var(--blue-50)",
+                  fontWeight: 500,
+                  borderColor: "var(--blue-100)"
+                }
+              }
+            }}
+            modifiersStyles={{
+              selected: {
+                fontWeight: "bold",
+                backgroundColor: "var(--primary)",
+                color: "var(--primary-foreground)"
+              }
             }}
           />
         </CardContent>
@@ -140,8 +173,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ onSelectedTa
                     <div className="flex justify-between">
                       <label 
                         htmlFor={`task-${task.id}`}
-                        className="font-medium cursor-pointer"
-                        onClick={() => handleTaskSelect(task.id)}
+                        className="font-medium"
                       >
                         {task.title}
                       </label>
