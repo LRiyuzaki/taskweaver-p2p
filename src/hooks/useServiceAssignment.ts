@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Client, ServiceType, ClientService } from '@/types/client';
@@ -33,16 +32,16 @@ export const useServiceAssignment = () => {
         return false;
       }
 
-      // Check if service is already assigned - handle both string[] and proper service objects
+      // Check if service is already assigned
       const clientServices = Array.isArray(client.services) ? client.services : [];
       const existingService = clientServices.find((s: any) => {
         if (typeof s === 'string') {
           return s === serviceType.name;
         }
-        return s.name === serviceType.name || s.serviceTypeName === serviceType.name;
+        return s.serviceTypeName === serviceType.name;
       });
       
-      if (existingService && (typeof existingService === 'object' && existingService.status === 'active')) {
+      if (existingService && typeof existingService === 'object' && existingService.status === 'active') {
         showWarning('Service is already assigned to this client');
         return false;
       }
@@ -54,7 +53,7 @@ export const useServiceAssignment = () => {
         renewalDate.setMonth(renewalDate.getMonth() + serviceType.renewalPeriod);
       }
 
-      const newService = {
+      const newClientService: ClientService = {
         id: `service_${Date.now()}`,
         clientId,
         serviceTypeId,
@@ -66,23 +65,15 @@ export const useServiceAssignment = () => {
         status: 'active' as const
       };
 
-      // Update client with new service - ensure services is always an array of proper objects
+      // Update client with new service
       const updatedServices = clientServices.filter((s: any) => {
         if (typeof s === 'string') {
           return s !== serviceType.name;
         }
-        return s.name !== serviceType.name && s.serviceTypeName !== serviceType.name;
+        return s.serviceTypeName !== serviceType.name;
       });
       
-      updatedServices.push({
-        id: newService.id,
-        name: serviceType.name,
-        description: serviceType.description,
-        startDate,
-        endDate,
-        renewalDate,
-        status: 'active'
-      });
+      updatedServices.push(newClientService);
 
       // Update required services flag
       const updatedRequiredServices = {

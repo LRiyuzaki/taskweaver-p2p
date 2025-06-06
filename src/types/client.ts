@@ -11,6 +11,15 @@ export interface Address {
   country?: string;
 }
 
+export interface BankAccount {
+  id: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  accountType: string;
+  branch: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -21,7 +30,7 @@ export interface Client {
   status: ClientStatus;
   createdAt: Date;
   updatedAt?: Date;
-  notes?: string;
+  notes?: Note[];
   contacts?: Contact[];
   services?: string[] | ClientService[];
   requiredServices?: Record<string, boolean>;
@@ -30,8 +39,9 @@ export interface Client {
   startDate?: Date;
   incorporationDate?: Date;
   gstRegistrationDate?: Date;
+  documents?: Document[];
   
-  // Additional properties that were missing
+  // Additional properties
   contactPerson?: string;
   entityType?: string;
   gstin?: string;
@@ -46,16 +56,17 @@ export interface Client {
   isIECHolder?: boolean;
   iecNumber?: string;
   financialYearEnd?: string;
-  statutoryDueDates?: Record<string, Date>;
+  statutoryDueDates?: Record<string, number>;
   active?: boolean;
-}
-
-export interface BankAccount {
-  id: string;
-  accountNumber: string;
-  bankName: string;
-  ifscCode: string;
-  accountType: string;
+  
+  // Additional compliance properties
+  isDirector?: boolean;
+  hasIECode?: boolean;
+  hasDSC?: boolean;
+  dscStartDate?: Date;
+  hasTrademark?: boolean;
+  trademarkDate?: Date;
+  licenseDate?: Date;
 }
 
 export interface Contact {
@@ -118,6 +129,7 @@ export interface ServiceRenewal {
   id: string;
   clientId?: string;
   clientServiceId: string;
+  serviceTypeId: string;
   renewalDate: Date;
   dueDate?: Date;
   reminderDate?: Date;
@@ -160,6 +172,7 @@ export interface ComplianceStatus {
   status: 'current' | 'upcoming' | 'overdue';
   dueDate: Date;
   description: string;
+  missingDocuments?: string[];
 }
 
 export interface ClientFormData {
@@ -183,7 +196,7 @@ export interface ClientFormData {
   isIECHolder?: boolean;
   iecNumber?: string;
   financialYearEnd?: string;
-  statutoryDueDates?: Record<string, Date>;
+  statutoryDueDates?: Record<string, number>;
   requiredServices?: Record<string, boolean>;
   financialDetails?: FinancialDetails;
   businessDetails?: BusinessDetails;

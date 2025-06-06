@@ -1,182 +1,279 @@
-
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
+import { ClientService, ClientServicesTabProps, Client } from '@/types/client';
 import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
-import { Client, ClientService } from '@/types/client';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { MoreVertical, Edit, Trash, Plus } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast-extensions';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { TaskForm } from '@/components/TaskForm';
-
-interface ClientServicesTabProps {
-  clientId: string;
-}
+import { Separator } from "@/components/ui/separator";
+import { useServiceAssignment } from '@/hooks/useServiceAssignment';
 
 export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ clientId }) => {
-  const { clients, clientServices, updateClientService } = useClientContext();
+  const { clients } = useClientContext();
   const { addTask } = useTaskContext();
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<ClientService | null>(null);
-  
+  const { assignServiceToClient, removeServiceFromClient, serviceTypes } = useServiceAssignment();
+
+  const [isAssigningService, setIsAssigningService] = useState(false);
+  const [selectedService, setSelectedService] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [isRemovingService, setIsRemovingService] = useState(false);
+  const [serviceToRemove, setServiceToRemove] = useState<string | null>(null);
+
   const client = clients.find(c => c.id === clientId);
-  const services = clientServices.filter(s => s.clientId === clientId);
-  
-  const handleAddTask = (service: ClientService) => {
-    setSelectedService(service);
-    setIsAddTaskDialogOpen(true);
+  if (!client) return <div>Client not found</div>;
+
+  const handleAssignService = async () => {
+    if (!selectedService) {
+      toast.error('Please select a service to assign.');
+      return;
+    }
+
+    setIsAssigningService(true);
+    try {
+      const success = await assignServiceToClient(clientId, selectedService, startDate);
+      if (success) {
+        toast.success('Service assigned successfully!');
+      } else {
+        toast.error('Failed to assign service.');
+      }
+    } finally {
+      setIsAssigningService(false);
+      setSelectedService('');
+    }
   };
-  
-  const handleTaskFormSubmit = (formData: Omit<Task, 'id' | 'createdAt'>) => {
-    // Ensure the task data has all required properties
-    const taskData: Omit<Task, 'id' | 'createdAt'> = {
-      ...formData,
-      updatedAt: formData.updatedAt || new Date(),
-      subtasks: formData.subtasks || []
-    };
-    
-    addTask(taskData);
-    setIsAddTaskDialogOpen(false);
-    toast.success('Task created successfully');
+
+  const handleRemoveService = async () => {
+    if (!serviceToRemove) return;
+
+    setIsRemovingService(true);
+    try {
+      const success = await removeServiceFromClient(clientId, serviceToRemove);
+      if (success) {
+        toast.success('Service removed successfully!');
+      } else {
+        toast.error('Failed to remove service.');
+      }
+    } finally {
+      setIsRemovingService(false);
+      setServiceToRemove(null);
+    }
   };
-  
-  const handleServiceStatusChange = (service: ClientService, status: 'active' | 'inactive' | 'completed') => {
-    updateClientService(service.clientId, service.serviceTypeId, {
-      ...service,
-      status
-    });
-    toast.success(`Service status updated to ${status}`);
+
+  const getClientServices = (): ClientService[] => {
+    return (client.services || []).filter(service => typeof service !== 'string') as ClientService[];
   };
-  
-  const createRenewalTask = (service: ClientService, client: Client) => {
-    const renewalTask: Omit<Task, 'id' | 'createdAt'> = {
-      title: `${service.serviceTypeName} Renewal for ${client.name}`,
-      description: `Service renewal task for ${service.serviceTypeName}`,
+
+  const createComplianceTask = (client: Client, serviceName: string, dueDate: Date) => {
+    const newTask = {
+      id: `task_${Date.now()}`,
+      title: `${serviceName} for ${client.name}`,
+      description: `Compliance task for ${serviceName}`,
       status: 'todo' as TaskStatus,
       priority: 'medium' as TaskPriority,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       clientId: client.id,
       clientName: client.name,
-      serviceId: service.serviceTypeId,
-      serviceName: service.serviceTypeName,
-      tags: ['Renewal', 'Service'],
+      serviceId: 'compliance',
+      serviceName: serviceName,
+      tags: ['Compliance'],
       recurrence: 'none' as RecurrenceType,
-      updatedAt: new Date(),
       subtasks: []
     };
-
-    addTask(renewalTask);
+    
+    addTask(newTask);
+    toast.success('Compliance task created');
   };
-  
-  if (!client) {
-    return <div>Client not found</div>;
-  }
-  
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Services for {client.name}</h2>
-      
-      {services.length === 0 ? (
-        <div className="text-center p-8 border rounded-lg">
-          <p className="text-muted-foreground">No services found for this client.</p>
-          <Button className="mt-4">Add Service</Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {services.map((service) => (
-            <div key={service.serviceTypeId} className="border rounded-lg p-4 shadow-sm">
-              <div className="flex justify-between items-start">
-                <h3 className="font-medium">{service.serviceTypeName}</h3>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleAddTask(service)}
-                  >
-                    Create Task
-                  </Button>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Assigned Services</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            {getClientServices().map((service) => (
+              <div key={service.id} className="border rounded-md p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold">{service.serviceTypeName}</h3>
+                    <Badge variant="secondary">{service.status}</Badge>
+                    <p className="text-sm text-muted-foreground">
+                      Start Date: {format(new Date(service.startDate), 'PPP')}
+                    </p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem disabled>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem>
+                            <Trash className="mr-2 h-4 w-4" /> Remove
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently remove the service from the client.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {
+                              setServiceToRemove(service.serviceTypeId);
+                              handleRemoveService();
+                            }}
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-              
-              <div className="mt-2 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="font-medium">{service.status || 'Active'}</span>
-                </div>
-                
-                {service.startDate && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Start Date:</span>
-                    <span>{new Date(service.startDate).toLocaleDateString()}</span>
-                  </div>
-                )}
-                
-                {service.nextRenewalDate && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Next Renewal:</span>
-                    <span>{new Date(service.nextRenewalDate).toLocaleDateString()}</span>
-                  </div>
-                )}
-                
-                {service.fee && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Fee:</span>
-                    <span>${service.fee}</span>
-                  </div>
-                )}
+            ))}
+            {getClientServices().length === 0 && (
+              <div className="text-center py-4 text-muted-foreground">
+                No services assigned to this client.
               </div>
-              
-              <div className="mt-4 pt-2 border-t flex justify-end gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleServiceStatusChange(service, 'active')}
-                  disabled={service.status === 'active'}
-                >
-                  Mark Active
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleServiceStatusChange(service, 'inactive')}
-                  disabled={service.status === 'inactive'}
-                >
-                  Mark Inactive
-                </Button>
-              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Assign New Service</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="service">Service</Label>
+              <Select onValueChange={setSelectedService} value={selectedService}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ))}
-        </div>
-      )}
-      
-      <Dialog open={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              Create Task for {selectedService?.serviceTypeName}
-            </DialogTitle>
-          </DialogHeader>
-          <TaskForm 
-            onSubmit={handleTaskFormSubmit}
-            initialClientId={clientId}
-            task={{
-              title: selectedService ? `${selectedService.serviceTypeName} for ${client.name}` : '',
-              description: '',
-              status: 'todo' as TaskStatus,
-              priority: 'medium' as TaskPriority,
-              clientId: clientId,
-              clientName: client.name,
-              serviceId: selectedService?.serviceTypeId,
-              serviceName: selectedService?.serviceTypeName,
-              tags: selectedService ? [selectedService.serviceTypeName] : [],
-              recurrence: 'none' as RecurrenceType,
-              updatedAt: new Date(),
-              subtasks: []
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+            <div>
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full pl-3 text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    {startDate ? (
+                      format(startDate, "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date('1900-01-01')
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <Button
+            className="mt-4"
+            onClick={handleAssignService}
+            disabled={isAssigningService || !selectedService}
+          >
+            {isAssigningService ? 'Assigning...' : 'Assign Service'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={isRemovingService}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Removing Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please wait while we remove the service from the client.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
-
-export default ClientServicesTab;

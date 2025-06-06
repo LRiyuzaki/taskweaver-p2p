@@ -46,7 +46,10 @@ const defaultServiceTypes: ServiceType[] = [
     category: 'gst',
     requiresGST: true,
     applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship'],
-    renewalPeriod: 12
+    renewalPeriod: 12,
+    isRecurring: true,
+    isActive: true,
+    createdAt: new Date()
   },
   {
     id: 'income-tax',
@@ -56,7 +59,10 @@ const defaultServiceTypes: ServiceType[] = [
     category: 'incometax',
     requiresPAN: true,
     applicableEntities: ['Individual', 'Company', 'LLP', 'Partnership', 'Proprietorship', 'Trust', 'HUF'],
-    renewalPeriod: 12
+    renewalPeriod: 12,
+    isRecurring: true,
+    isActive: true,
+    createdAt: new Date()
   },
   {
     id: 'tds-filing',
@@ -66,7 +72,10 @@ const defaultServiceTypes: ServiceType[] = [
     category: 'tds',
     requiresTAN: true,
     applicableEntities: ['Company', 'LLP', 'Partnership'],
-    renewalPeriod: 12
+    renewalPeriod: 12,
+    isRecurring: true,
+    isActive: true,
+    createdAt: new Date()
   },
   {
     id: 'bookkeeping',
@@ -75,7 +84,10 @@ const defaultServiceTypes: ServiceType[] = [
     frequency: 'monthly',
     category: 'other',
     applicableEntities: ['Company', 'LLP', 'Partnership', 'Proprietorship'],
-    renewalPeriod: 12
+    renewalPeriod: 12,
+    isRecurring: true,
+    isActive: true,
+    createdAt: new Date()
   },
   {
     id: 'audit',
@@ -84,7 +96,10 @@ const defaultServiceTypes: ServiceType[] = [
     frequency: 'annually',
     category: 'audit',
     applicableEntities: ['Company', 'LLP'],
-    renewalPeriod: 12
+    renewalPeriod: 12,
+    isRecurring: true,
+    isActive: true,
+    createdAt: new Date()
   }
 ];
 

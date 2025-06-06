@@ -23,7 +23,6 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
-import { Separator } from "@/components/ui/separator";
 
 interface ClientFormProps {
   client?: Client;
@@ -59,21 +58,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
     statutoryDueDates: {
       gstReturn: 20,
       tdsReturn: 7
-    }
+    },
+    status: 'active'
   });
 
-  // Get available service names
   const availableServices = getAvailableServiceNames();
 
-  // Initialize form with client data if provided
   useEffect(() => {
     if (client) {
-      // Handle address conversion - always convert to string
       let addressString = '';
       if (typeof client.address === 'string') {
         addressString = client.address;
       } else if (client.address && typeof client.address === 'object') {
-        // Convert Address object to string if it exists
         const addr = client.address as any;
         if (addr.street || addr.city || addr.state || addr.pincode || addr.country) {
           addressString = [addr.street, addr.city, addr.state, addr.pincode, addr.country]
@@ -84,12 +80,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
 
       setFormData({
         name: client.name,
-        email: client.email,
+        email: client.email || '',
         company: client.company || '',
         contactPerson: client.contactPerson || '',
         phone: client.phone || '',
         requiredServices: { ...client.requiredServices },
-        entityType: client.entityType,
+        entityType: client.entityType || 'Company',
         gstin: client.gstin || '',
         pan: client.pan || '',
         tan: client.tan || '',
@@ -106,10 +102,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         financialYearEnd: client.financialYearEnd || 'March',
         incorporationDate: client.incorporationDate,
         gstRegistrationDate: client.gstRegistrationDate,
-        statutoryDueDates: client.statutoryDueDates || { gstReturn: 20, tdsReturn: 7 }
+        statutoryDueDates: client.statutoryDueDates || { gstReturn: 20, tdsReturn: 7 },
+        status: client.status || 'active'
       });
     } else {
-      // Initialize requiredServices for new client
       const initialRequiredServices: Record<string, boolean> = {};
       availableServices.forEach(service => {
         initialRequiredServices[service] = false;
@@ -128,7 +124,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   };
 
   const handleDateChange = (name: string) => (date: Date | undefined) => {
-    setFormData(prev => ({ ...prev, [name]: date || new Date() }));
+    setFormData(prev => ({ ...prev, [name]: date }));
   };
 
   const handleSelectChange = (name: string) => (value: string) => {
@@ -218,7 +214,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
             <Label htmlFor="entityType">Entity Type <span className="text-destructive">*</span></Label>
             <Select
               value={formData.entityType}
-              onValueChange={(value) => handleSelectChange('entityType')(value)}
+              onValueChange={handleSelectChange('entityType')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select entity type" />
@@ -256,17 +252,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="gstin">GSTIN</Label>
-              <Checkbox 
-                id="isGSTRegistered"
-                checked={formData.isGSTRegistered}
-                onCheckedChange={(checked) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    isGSTRegistered: checked === true
-                  }));
-                }}
-              />
-              <Label htmlFor="isGSTRegistered" className="text-sm">GST Registered</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isGSTRegistered"
+                  checked={formData.isGSTRegistered}
+                  onCheckedChange={(checked) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      isGSTRegistered: checked === true
+                    }));
+                  }}
+                />
+                <Label htmlFor="isGSTRegistered" className="text-sm">GST Registered</Label>
+              </div>
             </div>
             <Input
               id="gstin"
@@ -325,7 +323,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
             <Label>Financial Year End</Label>
             <Select
               value={formData.financialYearEnd}
-              onValueChange={(value) => handleSelectChange('financialYearEnd')(value)}
+              onValueChange={handleSelectChange('financialYearEnd')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select financial year end" />
@@ -360,7 +358,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
                 <Calendar
                   mode="single"
                   selected={formData.incorporationDate}
-                  onSelect={(date) => handleDateChange('incorporationDate')(date)}
+                  onSelect={handleDateChange('incorporationDate')}
                   disabled={(date) =>
                     date > new Date() || date < new Date('1900-01-01')
                   }
@@ -380,7 +378,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
           <Textarea
             id="address"
             name="address"
-            value={formData.address}
+            value={typeof formData.address === 'string' ? formData.address : ''}
             onChange={handleChange}
             required
             rows={3}
@@ -401,7 +399,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
                 ...prev,
                 bankAccounts: [
                   ...(prev.bankAccounts || []),
-                  { accountNumber: '', ifscCode: '', bankName: '', branch: '' }
+                  { 
+                    id: `bank_${Date.now()}`,
+                    accountNumber: '', 
+                    ifscCode: '', 
+                    bankName: '', 
+                    branch: '',
+                    accountType: 'current'
+                  }
                 ]
               }));
             }}
@@ -412,7 +417,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
         </div>
 
         {formData.bankAccounts?.map((account, index) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md">
+          <div key={account.id || index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md">
             <div className="space-y-2">
               <Label>Account Number</Label>
               <Input
@@ -567,13 +572,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
               type="number"
               min={1}
               max={31}
-              value={formData.statutoryDueDates?.gstReturn}
+              value={formData.statutoryDueDates?.gstReturn || 20}
               onChange={(e) => {
                 setFormData(prev => ({
                   ...prev,
                   statutoryDueDates: {
                     ...prev.statutoryDueDates,
-                    gstReturn: parseInt(e.target.value)
+                    gstReturn: parseInt(e.target.value) || 20
                   }
                 }));
               }}
@@ -587,13 +592,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
               type="number"
               min={1}
               max={31}
-              value={formData.statutoryDueDates?.tdsReturn}
+              value={formData.statutoryDueDates?.tdsReturn || 7}
               onChange={(e) => {
                 setFormData(prev => ({
                   ...prev,
                   statutoryDueDates: {
                     ...prev.statutoryDueDates,
-                    tdsReturn: parseInt(e.target.value)
+                    tdsReturn: parseInt(e.target.value) || 7
                   }
                 }));
               }}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -8,6 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, FileText } from 'lucide-react';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
+
+const mockComplianceData = [
+  {
+    type: 'GST Filing',
+    status: 'current' as const,
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    description: 'Monthly GST return due in 7 days',
+    missingDocuments: ['Purchase invoices', 'Sales register']
+  },
+  {
+    type: 'Income Tax',
+    status: 'upcoming' as const,
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    description: 'Annual income tax return due in 30 days',
+    missingDocuments: ['Form 16', 'Investment proofs']
+  },
+  {
+    type: 'TDS Filing',
+    status: 'overdue' as const,
+    dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    description: 'TDS return was due 2 days ago',
+    missingDocuments: []
+  }
+];
 
 export const ComplianceReporting: React.FC = () => {
   const { clients } = useClientContext();
