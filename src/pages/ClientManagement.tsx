@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -32,13 +33,13 @@ const ClientManagement = () => {
 
   const handleCreateClient = async () => {
     if (newClientName && newClientCompany) {
-      const newClient = await createClient({
-        name: newClientName,
-        company: newClientCompany,
-        createdAt: new Date(),
-      });
+      try {
+        const newClient = await createClient({
+          name: newClientName,
+          company: newClientCompany,
+          status: 'active'
+        });
 
-      if (newClient) {
         toast.success('Client created successfully');
         setNewClientName('');
         setNewClientCompany('');
@@ -74,7 +75,7 @@ const ClientManagement = () => {
 
           addTask(newTask);
         });
-      } else {
+      } catch (error) {
         toast.error('Failed to create client');
       }
     }

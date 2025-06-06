@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Client, ClientService, ServiceType } from '@/types/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -5,13 +6,24 @@ import { v4 as uuidv4 } from 'uuid';
 interface ClientContextType {
   clients: Client[];
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
-  createClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  createClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<Client>;
   updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
   getClientById: (id: string) => Client | undefined;
   getAvailableServiceTypes: () => ServiceType[];
+  getAvailableServiceNames: () => string[];
   assignServiceToClient: (clientId: string, serviceTypeId: string) => Promise<void>;
   removeServiceFromClient: (clientId: string, serviceTypeId: string) => Promise<void>;
+  serviceTypes: ServiceType[];
+  clientServices: ClientService[];
+  addClientService: (service: ClientService) => Promise<void>;
+  updateClientService: (id: string, updates: Partial<ClientService>) => Promise<void>;
+  deleteClientService: (id: string) => Promise<void>;
+  addServiceType: (serviceType: Omit<ServiceType, 'id' | 'createdAt'>) => Promise<void>;
+  updateServiceType: (id: string, updates: Partial<ServiceType>) => Promise<void>;
+  deleteServiceType: (id: string) => Promise<void>;
+  serviceRenewals: any[];
+  addServiceRenewal: (renewal: any) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -36,6 +48,17 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
       return [];
     }
   });
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(() => {
+    try {
+      const storedServiceTypes = localStorage.getItem('serviceTypes');
+      return storedServiceTypes ? JSON.parse(storedServiceTypes) : [];
+    } catch (error) {
+      console.error("Failed to load service types from local storage:", error);
+      return [];
+    }
+  });
+  const [clientServices, setClientServices] = useState<ClientService[]>([]);
+  const [serviceRenewals, setServiceRenewals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +70,14 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setError("Failed to save clients to local storage.");
     }
   }, [clients]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('serviceTypes', JSON.stringify(serviceTypes));
+    } catch (error) {
+      console.error("Failed to save service types to local storage:", error);
+    }
+  }, [serviceTypes]);
 
   const addClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
     setLoading(true);
@@ -65,8 +96,23 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   
-  const createClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
-    return addClient(clientData);
+  const createClient = async (clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const newClient: Client = {
+        id: uuidv4(),
+        createdAt: new Date(),
+        ...clientData,
+      };
+      setClients(prevClients => [...prevClients, newClient]);
+      return newClient;
+    } catch (e) {
+      setError('Failed to create client');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateClient = async (id: string, updates: Partial<Client>) => {
@@ -100,24 +146,21 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getAvailableServiceTypes = (): ServiceType[] => {
-    try {
-      const storedServiceTypes = localStorage.getItem('serviceTypes');
-      return storedServiceTypes ? JSON.parse(storedServiceTypes) : [];
-    } catch (error) {
-      console.error("Failed to load service types from local storage:", error);
-      return [];
-    }
+    return serviceTypes;
+  };
+
+  const getAvailableServiceNames = (): string[] => {
+    return serviceTypes.map(serviceType => serviceType.name);
   };
 
   const assignServiceToClient = async (clientId: string, serviceTypeId: string) => {
     setLoading(true);
     setError(null);
     try {
-      // Logic to assign service to client
       setClients(prevClients =>
         prevClients.map(client => {
           if (client.id === clientId) {
-            const serviceType = getAvailableServiceTypes().find(st => st.id === serviceTypeId);
+            const serviceType = serviceTypes.find(st => st.id === serviceTypeId);
             if (serviceType) {
               const newService: ClientService = {
                 id: uuidv4(),
@@ -128,9 +171,13 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
                 startDate: new Date(),
                 status: 'active' as const
               };
+              const updatedServices: ClientService[] = [
+                ...(client.services?.filter(s => typeof s === 'object') as ClientService[] || []),
+                newService
+              ];
               return {
                 ...client,
-                services: [...(client.services || []), newService],
+                services: updatedServices,
               };
             }
           }
@@ -148,19 +195,19 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     setError(null);
     try {
-      // Logic to remove service from client
       setClients(prevClients =>
         prevClients.map(client => {
           if (client.id === clientId) {
+            const updatedServices = (client.services || []).filter((service: any) => {
+              if (typeof service === 'string') {
+                return service !== serviceTypeId;
+              } else {
+                return service.serviceTypeId !== serviceTypeId;
+              }
+            }) as ClientService[];
             return {
               ...client,
-              services: (client.services || []).filter((service: any) => {
-                if (typeof service === 'string') {
-                  return service !== serviceTypeId;
-                } else {
-                  return service.serviceTypeId !== serviceTypeId;
-                }
-              }),
+              services: updatedServices,
             };
           }
           return client;
@@ -168,6 +215,99 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
       );
     } catch (e) {
       setError('Failed to remove service from client');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addServiceType = async (serviceTypeData: Omit<ServiceType, 'id' | 'createdAt'>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const newServiceType: ServiceType = {
+        id: uuidv4(),
+        createdAt: new Date(),
+        ...serviceTypeData,
+      };
+      setServiceTypes(prev => [...prev, newServiceType]);
+    } catch (e) {
+      setError('Failed to add service type');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateServiceType = async (id: string, updates: Partial<ServiceType>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setServiceTypes(prev =>
+        prev.map(serviceType => (serviceType.id === id ? { ...serviceType, ...updates } : serviceType))
+      );
+    } catch (e) {
+      setError('Failed to update service type');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteServiceType = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setServiceTypes(prev => prev.filter(serviceType => serviceType.id !== id));
+    } catch (e) {
+      setError('Failed to delete service type');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addClientService = async (service: ClientService) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setClientServices(prev => [...prev, service]);
+    } catch (e) {
+      setError('Failed to add client service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateClientService = async (id: string, updates: Partial<ClientService>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setClientServices(prev =>
+        prev.map(service => (service.id === id ? { ...service, ...updates } : service))
+      );
+    } catch (e) {
+      setError('Failed to update client service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteClientService = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setClientServices(prev => prev.filter(service => service.id !== id));
+    } catch (e) {
+      setError('Failed to delete client service');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addServiceRenewal = async (renewal: any) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setServiceRenewals(prev => [...prev, renewal]);
+    } catch (e) {
+      setError('Failed to add service renewal');
     } finally {
       setLoading(false);
     }
@@ -181,8 +321,19 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
     deleteClient,
     getClientById,
     getAvailableServiceTypes,
+    getAvailableServiceNames,
     assignServiceToClient,
     removeServiceFromClient,
+    serviceTypes,
+    clientServices,
+    addClientService,
+    updateClientService,
+    deleteClientService,
+    addServiceType,
+    updateServiceType,
+    deleteServiceType,
+    serviceRenewals,
+    addServiceRenewal,
     loading,
     error
   };
@@ -193,3 +344,6 @@ export const ClientContextProvider: React.FC<{ children: React.ReactNode }> = ({
     </ClientContext.Provider>
   );
 };
+
+// Export as ClientProvider for backward compatibility
+export const ClientProvider = ClientContextProvider;
