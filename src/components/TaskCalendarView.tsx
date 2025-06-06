@@ -34,7 +34,7 @@ import {
   DialogTitle,
   DialogDescription 
 } from '@/components/ui/dialog';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { useNavigate } from 'react-router-dom';
 
 export const TaskCalendarView = () => {
@@ -274,7 +274,7 @@ export const TaskCalendarView = () => {
                       
                       <Badge variant={task.status === 'done' ? "outline" : isOverdue(task) ? "destructive" : "default"}>
                         {task.status === 'todo' ? 'To Do' : 
-                         task.status === 'inProgress' ? 'In Progress' : 
+                         task.status === 'in-progress' ? 'In Progress' : 
                          task.status === 'review' ? 'Review' : 'Done'}
                       </Badge>
                     </div>

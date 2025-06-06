@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
@@ -9,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { TaskForm } from '@/components/TaskForm';
 import { ClientService } from '@/types/client';
 
-export const ClientServicesTab: React.FC<{ clientId: string }> = ({ clientId }) => {
+export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ clientId }) => {
   const { clients, clientServices, updateClientService } = useClientContext();
   const { addTask } = useTaskContext();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -42,6 +41,25 @@ export const ClientServicesTab: React.FC<{ clientId: string }> = ({ clientId }) 
       status
     });
     toast.success(`Service status updated to ${status}`);
+  };
+  
+  const createRenewalTask = (service: ClientService, client: Client) => {
+    const renewalTask = {
+      title: `${service.serviceTypeName} Renewal for ${client.name}`,
+      description: `Service renewal task for ${service.serviceTypeName}`,
+      status: 'todo' as TaskStatus,
+      priority: 'medium' as TaskPriority,
+      clientId: client.id,
+      clientName: client.name,
+      serviceId: service.serviceTypeId,
+      serviceName: service.serviceTypeName,
+      tags: ['Renewal', 'Service'],
+      recurrence: 'none' as RecurrenceType,
+      updatedAt: new Date(),
+      subtasks: []
+    };
+
+    addTask(renewalTask);
   };
   
   if (!client) {

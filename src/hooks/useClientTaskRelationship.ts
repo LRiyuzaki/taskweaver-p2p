@@ -149,6 +149,7 @@ export const useClientTaskRelationship = () => {
     unassignTaskFromClient,
     getUnassignedTasks,
     getClientsWithoutTasks,
-    getTaskCompletionStats
+    getTaskCompletionStats,
+    getClientTaskStats
   };
 };

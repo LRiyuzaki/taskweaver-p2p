@@ -33,9 +33,16 @@ export const useServiceAssignment = () => {
         return false;
       }
 
-      // Check if service is already assigned
-      const existingService = client.services?.find(s => s.name === serviceType.name);
-      if (existingService && existingService.status === 'active') {
+      // Check if service is already assigned - handle both string[] and proper service objects
+      const clientServices = Array.isArray(client.services) ? client.services : [];
+      const existingService = clientServices.find((s: any) => {
+        if (typeof s === 'string') {
+          return s === serviceType.name;
+        }
+        return s.name === serviceType.name || s.serviceTypeName === serviceType.name;
+      });
+      
+      if (existingService && (typeof existingService === 'object' && existingService.status === 'active')) {
         showWarning('Service is already assigned to this client');
         return false;
       }
@@ -47,37 +54,35 @@ export const useServiceAssignment = () => {
         renewalDate.setMonth(renewalDate.getMonth() + serviceType.renewalPeriod);
       }
 
-      const newService: ClientService = {
+      const newService = {
+        id: `service_${Date.now()}`,
         clientId,
         serviceTypeId,
         serviceTypeName: serviceType.name,
+        isActive: true,
         startDate,
         endDate,
         nextRenewalDate: renewalDate,
-        status: 'active'
+        status: 'active' as const
       };
 
-      // Update client with new service
-      const updatedServices = client.services ? [...client.services] : [];
-      const existingIndex = updatedServices.findIndex(s => s.name === serviceType.name);
+      // Update client with new service - ensure services is always an array of proper objects
+      const updatedServices = clientServices.filter((s: any) => {
+        if (typeof s === 'string') {
+          return s !== serviceType.name;
+        }
+        return s.name !== serviceType.name && s.serviceTypeName !== serviceType.name;
+      });
       
-      if (existingIndex >= 0) {
-        updatedServices[existingIndex] = {
-          ...updatedServices[existingIndex],
-          ...newService,
-          id: updatedServices[existingIndex].id
-        };
-      } else {
-        updatedServices.push({
-          id: `service_${Date.now()}`,
-          name: serviceType.name,
-          description: serviceType.description,
-          startDate,
-          endDate,
-          renewalDate,
-          status: 'active'
-        });
-      }
+      updatedServices.push({
+        id: newService.id,
+        name: serviceType.name,
+        description: serviceType.description,
+        startDate,
+        endDate,
+        renewalDate,
+        status: 'active'
+      });
 
       // Update required services flag
       const updatedRequiredServices = {
@@ -122,12 +127,16 @@ export const useServiceAssignment = () => {
         return false;
       }
 
-      // Update services array
-      const updatedServices = client.services?.map(service => 
-        service.name === serviceType.name 
+      // Update services array - handle both string[] and proper service objects
+      const clientServices = Array.isArray(client.services) ? client.services : [];
+      const updatedServices = clientServices.map((service: any) => {
+        if (typeof service === 'string') {
+          return service === serviceType.name ? null : service;
+        }
+        return (service.name === serviceType.name || service.serviceTypeName === serviceType.name)
           ? { ...service, status: 'inactive' as const, endDate: new Date() }
-          : service
-      ) || [];
+          : service;
+      }).filter(Boolean);
 
       // Update required services flag
       const updatedRequiredServices = {
@@ -199,10 +208,21 @@ export const useServiceAssignment = () => {
 
     const now = new Date();
     
-    return client.services.map(service => {
-      const isRenewalDue = service.renewalDate && new Date(service.renewalDate) <= now;
-      const daysUntilRenewal = service.renewalDate 
-        ? Math.ceil((new Date(service.renewalDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return client.services.map((service: any) => {
+      // Handle both string and object services
+      if (typeof service === 'string') {
+        return {
+          name: service,
+          isRenewalDue: false,
+          daysUntilRenewal: null,
+          renewalStatus: 'current'
+        };
+      }
+      
+      const renewalDate = service.renewalDate || service.nextRenewalDate;
+      const isRenewalDue = renewalDate && new Date(renewalDate) <= now;
+      const daysUntilRenewal = renewalDate 
+        ? Math.ceil((new Date(renewalDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
         : null;
 
       return {
@@ -228,17 +248,21 @@ export const useServiceAssignment = () => {
 
     clients.forEach(client => {
       if (client.services) {
-        client.services.forEach(service => {
-          if (service.renewalDate) {
-            const renewalDate = new Date(service.renewalDate);
-            const daysUntilRenewal = Math.ceil((renewalDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        client.services.forEach((service: any) => {
+          // Skip string services
+          if (typeof service === 'string') return;
+          
+          const renewalDate = service.renewalDate || service.nextRenewalDate;
+          if (renewalDate) {
+            const renewalDateObj = new Date(renewalDate);
+            const daysUntilRenewal = Math.ceil((renewalDateObj.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             
-            if (renewalDate <= renewalThreshold) {
+            if (renewalDateObj <= renewalThreshold) {
               servicesNeedingRenewal.push({
                 client,
                 service,
                 daysUntilRenewal,
-                isOverdue: renewalDate < now
+                isOverdue: renewalDateObj < now
               });
             }
           }

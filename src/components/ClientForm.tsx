@@ -68,16 +68,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ client, onSubmit }) => {
   // Initialize form with client data if provided
   useEffect(() => {
     if (client) {
-      // Handle address conversion
+      // Handle address conversion - always convert to string
       let addressString = '';
       if (typeof client.address === 'string') {
         addressString = client.address;
       } else if (client.address && typeof client.address === 'object') {
-        // Convert Address object to string
-        const addr = client.address;
-        addressString = [addr.street, addr.city, addr.state, addr.pincode, addr.country]
-          .filter(Boolean)
-          .join(', ');
+        // Convert Address object to string if it exists
+        const addr = client.address as any;
+        if (addr.street || addr.city || addr.state || addr.pincode || addr.country) {
+          addressString = [addr.street, addr.city, addr.state, addr.pincode, addr.country]
+            .filter(Boolean)
+            .join(', ');
+        }
       }
 
       setFormData({

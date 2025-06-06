@@ -1,10 +1,16 @@
+
 import { Client, ServiceType, ClientService, ServiceRenewal } from '@/types/client';
+import { Task, Project, TaskTemplate, SubTask } from '@/types/task';
 
 interface LocalStorageData {
   clients: Client[];
   serviceTypes: ServiceType[];
   clientServices: ClientService[];
   serviceRenewals: ServiceRenewal[];
+  tasks: Task[];
+  projects: Project[];
+  taskTemplates: TaskTemplate[];
+  subtasks: SubTask[];
 }
 
 class LocalStorageManager {
@@ -32,6 +38,99 @@ class LocalStorageManager {
       localStorage.setItem('clients', JSON.stringify(clients));
     } catch (error) {
       console.error('Error saving clients:', error);
+    }
+  }
+
+  getTasks(): Task[] {
+    try {
+      const stored = localStorage.getItem('tasks');
+      if (!stored) return [];
+      
+      const tasks = JSON.parse(stored);
+      return Array.isArray(tasks) ? tasks.map((task: any) => ({
+        ...task,
+        createdAt: new Date(task.createdAt),
+        updatedAt: new Date(task.updatedAt),
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+        startedAt: task.startedAt ? new Date(task.startedAt) : undefined,
+        completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+        recurrenceEndDate: task.recurrenceEndDate ? new Date(task.recurrenceEndDate) : undefined
+      })) : [];
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      return [];
+    }
+  }
+
+  saveTasks(tasks: Task[]): void {
+    try {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    } catch (error) {
+      console.error('Error saving tasks:', error);
+    }
+  }
+
+  getProjects(): Project[] {
+    try {
+      const stored = localStorage.getItem('projects');
+      if (!stored) return [];
+      
+      const projects = JSON.parse(stored);
+      return Array.isArray(projects) ? projects.map((project: any) => ({
+        ...project,
+        createdAt: new Date(project.createdAt),
+        startDate: project.startDate ? new Date(project.startDate) : undefined,
+        endDate: project.endDate ? new Date(project.endDate) : undefined
+      })) : [];
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      return [];
+    }
+  }
+
+  saveProjects(projects: Project[]): void {
+    try {
+      localStorage.setItem('projects', JSON.stringify(projects));
+    } catch (error) {
+      console.error('Error saving projects:', error);
+    }
+  }
+
+  getTaskTemplates(): TaskTemplate[] {
+    try {
+      const stored = localStorage.getItem('taskTemplates');
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Error loading task templates:', error);
+      return [];
+    }
+  }
+
+  saveTaskTemplates(templates: TaskTemplate[]): void {
+    try {
+      localStorage.setItem('taskTemplates', JSON.stringify(templates));
+    } catch (error) {
+      console.error('Error saving task templates:', error);
+    }
+  }
+
+  getSubtasks(): SubTask[] {
+    try {
+      const stored = localStorage.getItem('subtasks');
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Error loading subtasks:', error);
+      return [];
+    }
+  }
+
+  saveSubtasks(subtasks: SubTask[]): void {
+    try {
+      localStorage.setItem('subtasks', JSON.stringify(subtasks));
+    } catch (error) {
+      console.error('Error saving subtasks:', error);
     }
   }
 
@@ -78,6 +177,32 @@ class LocalStorageManager {
       localStorage.setItem('clientServices', JSON.stringify(clientServices));
     } catch (error) {
       console.error('Error saving client services:', error);
+    }
+  }
+
+  getClientRenewals(): ServiceRenewal[] {
+    try {
+      const stored = localStorage.getItem('serviceRenewals');
+      if (!stored) return [];
+      
+      const renewals = JSON.parse(stored);
+      return Array.isArray(renewals) ? renewals.map((renewal: any) => ({
+        ...renewal,
+        renewalDate: new Date(renewal.renewalDate),
+        dueDate: renewal.dueDate ? new Date(renewal.dueDate) : undefined,
+        reminderDate: renewal.reminderDate ? new Date(renewal.reminderDate) : undefined
+      })) : [];
+    } catch (error) {
+      console.error('Error loading service renewals:', error);
+      return [];
+    }
+  }
+
+  saveServiceRenewals(renewals: ServiceRenewal[]): void {
+    try {
+      localStorage.setItem('serviceRenewals', JSON.stringify(renewals));
+    } catch (error) {
+      console.error('Error saving service renewals:', error);
     }
   }
 
@@ -135,33 +260,6 @@ class LocalStorageManager {
     } catch (error) {
       console.error('Repair failed:', error);
       return false;
-    }
-  }
-
-  // Add missing method for client renewals
-  getClientRenewals(): ServiceRenewal[] {
-    try {
-      const stored = localStorage.getItem('serviceRenewals');
-      if (!stored) return [];
-      
-      const renewals = JSON.parse(stored);
-      return Array.isArray(renewals) ? renewals.map((renewal: any) => ({
-        ...renewal,
-        renewalDate: new Date(renewal.renewalDate),
-        dueDate: renewal.dueDate ? new Date(renewal.dueDate) : undefined,
-        reminderDate: renewal.reminderDate ? new Date(renewal.reminderDate) : undefined
-      })) : [];
-    } catch (error) {
-      console.error('Error loading service renewals:', error);
-      return [];
-    }
-  }
-
-  saveServiceRenewals(renewals: ServiceRenewal[]): void {
-    try {
-      localStorage.setItem('serviceRenewals', JSON.stringify(renewals));
-    } catch (error) {
-      console.error('Error saving service renewals:', error);
     }
   }
 }
