@@ -1,6 +1,15 @@
+
 export type ClientStatus = 'active' | 'inactive' | 'pending';
-export type ServiceCategory = 'accounting' | 'tax' | 'consulting' | 'other' | 'registration';
+export type ServiceCategory = 'accounting' | 'tax' | 'consulting' | 'other' | 'registration' | 'gst' | 'incometax' | 'tds' | 'audit';
 export type ServiceFrequency = 'one-time' | 'monthly' | 'quarterly' | 'annually';
+
+export interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+}
 
 export interface Client {
   id: string;
@@ -8,7 +17,7 @@ export interface Client {
   company?: string;
   email?: string;
   phone?: string;
-  address?: string;
+  address?: string | Address;
   status: ClientStatus;
   createdAt: Date;
   updatedAt?: Date;
@@ -21,6 +30,32 @@ export interface Client {
   startDate?: Date;
   incorporationDate?: Date;
   gstRegistrationDate?: Date;
+  
+  // Additional properties that were missing
+  contactPerson?: string;
+  entityType?: string;
+  gstin?: string;
+  pan?: string;
+  tan?: string;
+  cin?: string;
+  llpin?: string;
+  bankAccounts?: BankAccount[];
+  isGSTRegistered?: boolean;
+  isMSME?: boolean;
+  msmeNumber?: string;
+  isIECHolder?: boolean;
+  iecNumber?: string;
+  financialYearEnd?: string;
+  statutoryDueDates?: Record<string, Date>;
+  active?: boolean;
+}
+
+export interface BankAccount {
+  id: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  accountType: string;
 }
 
 export interface Contact {
@@ -57,6 +92,10 @@ export interface ServiceType {
   documentRequirements?: string[];
   isActive: boolean;
   createdAt: Date;
+  requiresGST?: boolean;
+  requiresPAN?: boolean;
+  requiresTAN?: boolean;
+  applicableEntities?: string[];
 }
 
 export interface ClientService {
@@ -71,10 +110,13 @@ export interface ClientService {
   nextRenewalDate?: Date;
   status: 'active' | 'inactive' | 'completed';
   fee?: number;
+  reminderDays?: number;
+  reminderType?: string;
 }
 
 export interface ServiceRenewal {
   id: string;
+  clientId?: string;
   clientServiceId: string;
   renewalDate: Date;
   dueDate?: Date;
@@ -111,4 +153,49 @@ export interface Service {
   documentRequirements?: string[];
   isActive: boolean;
   createdAt: Date;
+}
+
+export interface ComplianceStatus {
+  type: string;
+  status: 'current' | 'upcoming' | 'overdue';
+  dueDate: Date;
+  description: string;
+}
+
+export interface ClientFormData {
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  address?: string | Address;
+  status: ClientStatus;
+  contactPerson?: string;
+  entityType?: string;
+  gstin?: string;
+  pan?: string;
+  tan?: string;
+  cin?: string;
+  llpin?: string;
+  bankAccounts?: BankAccount[];
+  isGSTRegistered?: boolean;
+  isMSME?: boolean;
+  msmeNumber?: string;
+  isIECHolder?: boolean;
+  iecNumber?: string;
+  financialYearEnd?: string;
+  statutoryDueDates?: Record<string, Date>;
+  requiredServices?: Record<string, boolean>;
+  financialDetails?: FinancialDetails;
+  businessDetails?: BusinessDetails;
+  startDate?: Date;
+  incorporationDate?: Date;
+  gstRegistrationDate?: Date;
+}
+
+export interface ClientServicesTabProps {
+  clientId: string;
+}
+
+export interface ClientDetailsTabProps {
+  client: Client;
 }
