@@ -1,173 +1,114 @@
-
-export type EntityType = 'Individual' | 'Company' | 'LLP' | 'Partnership' | 'Proprietorship' | 'Trust' | 'HUF';
-export type ServiceFrequency = 'monthly' | 'quarterly' | 'annually' | 'one-time';
-export type ServiceCategory = 'gst' | 'incometax' | 'tds' | 'audit' | 'other';
+export type ClientStatus = 'active' | 'inactive' | 'pending';
+export type ServiceCategory = 'accounting' | 'tax' | 'consulting' | 'other' | 'registration';
+export type ServiceFrequency = 'one-time' | 'monthly' | 'quarterly' | 'annually';
 
 export interface Client {
   id: string;
   name: string;
+  company?: string;
   email?: string;
   phone?: string;
-  company?: string;
-  contactPerson?: string;
-  entityType: EntityType;
-  gstin?: string;
-  pan?: string;
-  tan?: string;
-  cin?: string;
-  llpin?: string;
-  registeredAddress?: Address;
-  businessAddress?: Address;
   address?: string;
-  bankAccount?: BankAccount;
-  bankAccounts?: BankAccount[];
-  services: string[];
-  notes: ClientNote[];
-  documents: ClientDocument[];
+  status: ClientStatus;
   createdAt: Date;
+  updatedAt?: Date;
+  notes?: string;
+  contacts?: Contact[];
+  services?: string[] | ClientService[];
+  requiredServices?: Record<string, boolean>;
+  financialDetails?: FinancialDetails;
+  businessDetails?: BusinessDetails;
   startDate?: Date;
-  active: boolean;
-  requiredServices: Record<string, boolean>;
-  isGSTRegistered?: boolean;
-  isMSME?: boolean;
-  msmeNumber?: string;
-  isIECHolder?: boolean;
-  iecNumber?: string;
-  financialYearEnd?: string;
   incorporationDate?: Date;
   gstRegistrationDate?: Date;
-  statutoryDueDates?: {
-    gstReturn?: number;
-    tdsReturn?: number;
-    advanceTax?: number;
-  };
-  // Additional properties for recurring tasks
-  isDirector?: boolean;
-  hasIECode?: boolean;
-  hasDSC?: boolean;
-  dscStartDate?: Date;
-  hasTrademark?: boolean;
-  trademarkDate?: Date;
-  licenseDate?: Date;
 }
 
-export interface Address {
-  street: string;
-  city: string;
-  state: string;
-  pincode: string;
-  country: string;
-  registered?: string;
-  business?: string;
-}
-
-export interface BankAccount {
-  accountNumber: string;
-  ifscCode: string;
-  bankName: string;
-  branch: string;
-}
-
-export interface ClientNote {
-  id: string;
-  content: string;
-  createdAt: Date;
-  createdBy: string;
-}
-
-export interface ClientDocument {
+export interface Contact {
   id: string;
   name: string;
-  type: string;
-  url: string;
-  uploadedAt: Date;
-  uploadedBy: string;
+  email?: string;
+  phone?: string;
+  position?: string;
+}
+
+export interface FinancialDetails {
+  annualRevenue?: number;
+  currency?: string;
+  paymentTerms?: string;
+}
+
+export interface BusinessDetails {
+  industry?: string;
+  numberOfEmployees?: number;
+  businessType?: string;
+  registeredNumber?: string;
 }
 
 export interface ServiceType {
   id: string;
   name: string;
-  description: string;
-  frequency: ServiceFrequency;
+  description?: string;
   category: ServiceCategory;
-  requiresGST?: boolean;
-  requiresPAN?: boolean;
-  requiresTAN?: boolean;
-  applicableEntities: EntityType[];
-  renewalPeriod: number;
+  frequency?: ServiceFrequency;
+  isRecurring: boolean;
+  reminderDays?: number;
+  renewalPeriod?: number;
+  complianceRequirements?: string[];
+  documentRequirements?: string[];
+  isActive: boolean;
+  createdAt: Date;
 }
 
 export interface ClientService {
   id: string;
   clientId: string;
   serviceTypeId: string;
-  serviceTypeName?: string;
+  serviceTypeName: string;
   isActive: boolean;
-  status?: 'active' | 'inactive' | 'completed' | 'pending';
   startDate: Date;
   endDate?: Date;
   renewalDate?: Date;
   nextRenewalDate?: Date;
-  notes?: string;
-  reminderDays?: number;
-  reminderType?: 'days' | 'months' | 'specificDate';
+  status: 'active' | 'inactive' | 'completed';
   fee?: number;
 }
 
 export interface ServiceRenewal {
   id: string;
-  clientId: string;
-  serviceTypeId: string;
-  serviceId?: string;
+  clientServiceId: string;
   renewalDate: Date;
   dueDate?: Date;
   reminderDate?: Date;
-  isCompleted: boolean;
-  reminderSent: boolean;
+  status: 'pending' | 'completed' | 'overdue';
+  notes?: string;
 }
 
-export interface ComplianceStatus {
-  type: string;
-  status: 'current' | 'upcoming' | 'overdue';
-  dueDate: Date;
-  description: string;
-  missingDocuments?: string[];
-  isCompliant?: boolean;
+export interface Note {
+  id: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ClientFormData {
+export interface Document {
+  id: string;
   name: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  contactPerson?: string;
-  entityType: EntityType;
-  gstin?: string;
-  pan?: string;
-  tan?: string;
-  cin?: string;
-  llpin?: string;
-  registeredAddress?: Address;
-  businessAddress?: Address;
-  address?: string;
-  bankAccount?: BankAccount;
-  bankAccounts?: BankAccount[];
-  requiredServices?: Record<string, boolean>;
-  startDate?: Date;
-  isGSTRegistered?: boolean;
-  isMSME?: boolean;
-  msmeNumber?: string;
-  isIECHolder?: boolean;
-  iecNumber?: string;
-  financialYearEnd?: string;
-  incorporationDate?: Date;
-  gstRegistrationDate?: Date;
-  statutoryDueDates?: {
-    gstReturn?: number;
-    tdsReturn?: number;
-    advanceTax?: number;
-  };
+  url: string;
+  type: string;
+  uploadedAt: Date;
 }
 
-// Re-export types from task module for backward compatibility
-export type { SubTask, TaskTemplate } from '@/types/task';
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  category: ServiceCategory;
+  frequency?: ServiceFrequency;
+  isRecurring: boolean;
+  reminderDays?: number;
+  renewalPeriod?: number;
+  complianceRequirements?: string[];
+  documentRequirements?: string[];
+  isActive: boolean;
+  createdAt: Date;
+}

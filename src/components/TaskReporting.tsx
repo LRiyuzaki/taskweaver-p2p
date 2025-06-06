@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -11,7 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from '@/components/ui/badge';
 
-const TaskReporting = () => {
+export const TaskReporting = () => {
   const { tasks } = useTaskContext();
   const { clients } = useClientContext();
 

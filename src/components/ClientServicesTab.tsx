@@ -1,12 +1,17 @@
+
 import React, { useState } from 'react';
 import { useClientContext } from '@/contexts/ClientContext';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { Task, TaskStatus, TaskPriority, RecurrenceType } from '@/types/task';
+import { Client, ClientService } from '@/types/client';
 import { toast } from '@/hooks/use-toast-extensions';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TaskForm } from '@/components/TaskForm';
-import { ClientService } from '@/types/client';
+
+interface ClientServicesTabProps {
+  clientId: string;
+}
 
 export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ clientId }) => {
   const { clients, clientServices, updateClientService } = useClientContext();
@@ -44,7 +49,7 @@ export const ClientServicesTab: React.FC<ClientServicesTabProps> = ({ clientId }
   };
   
   const createRenewalTask = (service: ClientService, client: Client) => {
-    const renewalTask = {
+    const renewalTask: Omit<Task, 'id' | 'createdAt'> = {
       title: `${service.serviceTypeName} Renewal for ${client.name}`,
       description: `Service renewal task for ${service.serviceTypeName}`,
       status: 'todo' as TaskStatus,

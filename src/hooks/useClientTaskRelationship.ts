@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useTaskContext } from '@/contexts/TaskContext';
 import { useClientContext } from '@/contexts/ClientContext';
@@ -45,7 +46,7 @@ export const useClientTaskRelationship = () => {
       new Date(task.dueDate) <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
     ).length;
     const activeTasks = clientTasks.filter(task => 
-      task.status === 'inProgress' || task.status === 'review'
+      task.status === 'in-progress' || task.status === 'review'
     ).length;
 
     return {
