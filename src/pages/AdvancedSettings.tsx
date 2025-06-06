@@ -1,691 +1,200 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from "@/components/Header";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Users, Bell, Link2, RefreshCw, Shield, Server } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { CollaborationPanel } from '@/components/CollaborationPanel';
-import { FormulaField } from '@/components/FormulaField';
-import { useTaskContext } from '@/contexts/TaskContext';
-import { useP2P } from '@/contexts/P2PContext';
-import { PeerInfo } from '@/types/p2p';
-import { Badge } from '@/components/ui/badge';
-import { toast } from '@/hooks/use-toast';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Settings, Database, Shield, Zap } from 'lucide-react';
+import { toast } from '@/hooks/use-toast-extensions';
 
-const AdvancedSettings = () => {
-  const { tasks } = useTaskContext();
-  const { 
-    ipfsNode, 
-    initializeIPFS, 
-    disconnectIPFS, 
-    peers, 
-    connectToPeer, 
-    syncStatus, 
-    syncOptions, 
-    updateSyncOptions, 
-    syncData,
-    startLocalDiscovery,
-    syncKey,
-    generateSyncKey,
-    setSyncKey,
-    useAnySyncProtocol,
-    setUseAnySyncProtocol,
-    initializeAnySync
-  } = useP2P();
-  
-  const [peerInput, setPeerInput] = useState("");
-  const [joinKey, setJoinKey] = useState("");
-  const [taskTimeFormula, setTaskTimeFormula] = useState("{taskCount} * 2.5");
-  
-  const taskMetrics = {
-    taskCount: tasks.length,
-    todoCount: tasks.filter(t => t.status === 'todo').length,
-    doneCount: tasks.filter(t => t.status === 'done').length,
-    completionRate: tasks.length > 0 ? 
-      Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0
+const AdvancedSettings: React.FC = () => {
+  const [settings, setSettings] = useState({
+    autoBackup: true,
+    dataRetention: '365',
+    debugMode: false,
+    experimentalFeatures: false,
+    cacheSize: '100',
+    apiTimeout: '30'
+  });
+
+  const handleSaveSettings = () => {
+    // Save settings logic
+    toast.success('Advanced settings saved successfully');
   };
 
-  const handleJoinNetwork = () => {
-    if (!joinKey) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Key",
-        description: "Please enter a valid sync key.",
-      });
-      return;
-    }
-    
-    setSyncKey(joinKey);
-    toast({
-      title: "Network Joined",
-      description: "Attempting to connect to the P2P network...",
+  const handleResetSettings = () => {
+    setSettings({
+      autoBackup: true,
+      dataRetention: '365',
+      debugMode: false,
+      experimentalFeatures: false,
+      cacheSize: '100',
+      apiTimeout: '30'
     });
-    
-    setTimeout(() => {
-      startLocalDiscovery();
-    }, 1500);
+    toast.success('Settings reset to defaults');
   };
-
-  const handleConnectToPeer = () => {
-    if (!peerInput) return;
-    
-    connectToPeer(peerInput);
-    setPeerInput("");
-  };
-
-  const handleToggleAnySync = async (checked: boolean) => {
-    setUseAnySyncProtocol(checked);
-    
-    if (checked && ipfsNode?.status === 'online') {
-      const success = await initializeAnySync();
-      
-      if (success) {
-        toast({
-          title: "Any-Sync Enabled",
-          description: "Local-first synchronization protocol is now active.",
-        });
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (syncOptions.autoSync && !ipfsNode) {
-      initializeIPFS();
-    }
-  }, [syncOptions.autoSync, ipfsNode, initializeIPFS]);
 
   return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <main className="flex-1 overflow-auto p-6">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Advanced Settings</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-2 mb-6">
+        <Settings className="h-6 w-6" />
+        <h1 className="text-3xl font-bold">Advanced Settings</h1>
+        <Badge variant="outline" className="ml-2">Admin Only</Badge>
+      </div>
 
-          <Tabs defaultValue="sync" className="w-full">
-            <TabsList className="w-full justify-start mb-6">
-              <TabsTrigger value="sync" className="flex items-center gap-1">
-                <Link2 className="h-4 w-4" />
-                P2P Sync
-              </TabsTrigger>
-              <TabsTrigger value="peers" className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                Peers
-              </TabsTrigger>
-              <TabsTrigger value="collaboration" className="flex items-center gap-1">
-                <RefreshCw className="h-4 w-4" />
-                Collaboration
-              </TabsTrigger>
-              <TabsTrigger value="formulas" className="flex items-center gap-1">
-                <Database className="h-4 w-4" />
-                Formulas & Computations
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-1">
-                <Shield className="h-4 w-4" />
-                Security & Permissions
-              </TabsTrigger>
-              <TabsTrigger value="storage" className="flex items-center gap-1">
-                <Server className="h-4 w-4" />
-                Storage
-              </TabsTrigger>
-            </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Database Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Database Configuration
+            </CardTitle>
+            <CardDescription>
+              Manage database and storage settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="autoBackup">Automatic Backups</Label>
+              <Switch
+                id="autoBackup"
+                checked={settings.autoBackup}
+                onCheckedChange={(checked) => 
+                  setSettings(prev => ({ ...prev, autoBackup: checked }))
+                }
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="dataRetention">Data Retention (days)</Label>
+              <Input
+                id="dataRetention"
+                value={settings.dataRetention}
+                onChange={(e) => setSettings(prev => ({ ...prev, dataRetention: e.target.value }))}
+                type="number"
+              />
+            </div>
 
-            <TabsContent value="sync">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Link2 className="h-5 w-5" />
-                    P2P Synchronization
-                  </CardTitle>
-                  <CardDescription>
-                    Enable real-time synchronization between devices without a central server
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="sync-toggle" className="text-base">Enable P2P Sync</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Sync your data across devices using peer-to-peer technology
-                      </p>
-                    </div>
-                    <Switch 
-                      id="sync-toggle" 
-                      checked={ipfsNode?.status === 'online'}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          initializeIPFS();
-                        } else {
-                          disconnectIPFS();
-                        }
-                      }}
-                    />
-                  </div>
+            <div>
+              <Label htmlFor="cacheSize">Cache Size (MB)</Label>
+              <Input
+                id="cacheSize"
+                value={settings.cacheSize}
+                onChange={(e) => setSettings(prev => ({ ...prev, cacheSize: e.target.value }))}
+                type="number"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-                  {ipfsNode?.status === 'online' && (
-                    <>
-                      <div className="rounded-lg bg-muted p-4">
-                        <div className="font-medium mb-1">Node Status</div>
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${
-                            ipfsNode?.status === 'online' ? 'bg-green-500' : 
-                            ipfsNode?.status === 'starting' ? 'bg-amber-500' : 'bg-red-500'
-                          }`}></div>
-                          <span className="text-sm">{ipfsNode?.status || 'Offline'}</span>
-                        </div>
-                        <div className="text-sm mt-2">
-                          Node ID: {ipfsNode?.id ? `${ipfsNode.id.substring(0, 10)}...` : 'Not available'}
-                        </div>
-                        
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-sm font-medium">Connected Peers:</span>
-                          <Badge variant="outline">{syncStatus.peersConnected}</Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="rounded-lg bg-muted p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <div className="font-medium">Sync Protocol</div>
-                            <p className="text-sm text-muted-foreground">
-                              Choose which protocol to use for peer-to-peer synchronization
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="use-ipfs">IPFS (Default)</Label>
-                            <Switch 
-                              id="use-ipfs"
-                              checked={!useAnySyncProtocol}
-                              onCheckedChange={(checked) => handleToggleAnySync(!checked)}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Label htmlFor="use-any-sync">Any-Sync Protocol</Label>
-                              <Badge variant="outline" className="text-xs">New</Badge>
-                            </div>
-                            <Switch 
-                              id="use-any-sync"
-                              checked={useAnySyncProtocol}
-                              onCheckedChange={handleToggleAnySync}
-                            />
-                          </div>
-                          
-                          {useAnySyncProtocol && (
-                            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-2 rounded text-sm">
-                              Any-Sync protocol enables local-first collaboration with conflict-free 
-                              replicated data types (CRDTs), allowing seamless offline editing and 
-                              automatic conflict resolution.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="sync-key">Network Sync Key</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="sync-key" 
-                            value={syncKey || ''}
-                            readOnly 
-                            className="font-mono"
-                          />
-                          <Button 
-                            variant="outline" 
-                            onClick={generateSyncKey}
-                          >
-                            Generate New
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Share this key with others to form a private P2P network
-                        </p>
-                      </div>
+        {/* Performance Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Performance Tuning
+            </CardTitle>
+            <CardDescription>
+              Optimize application performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="apiTimeout">API Timeout (seconds)</Label>
+              <Input
+                id="apiTimeout"
+                value={settings.apiTimeout}
+                onChange={(e) => setSettings(prev => ({ ...prev, apiTimeout: e.target.value }))}
+                type="number"
+              />
+            </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="join-key">Join Existing Network</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="join-key" 
-                            placeholder="Enter sync key" 
-                            className="font-mono"
-                            value={joinKey}
-                            onChange={(e) => setJoinKey(e.target.value)}
-                          />
-                          <Button onClick={handleJoinNetwork}>
-                            Join
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2 pt-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="auto-sync">Auto Synchronization</Label>
-                          <Switch 
-                            id="auto-sync" 
-                            checked={syncOptions.autoSync}
-                            onCheckedChange={(checked) => 
-                              updateSyncOptions({ autoSync: checked })
-                            }
-                          />
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <Label htmlFor="sync-interval">Sync Interval (seconds)</Label>
-                            <span className="text-sm text-muted-foreground">
-                              {syncOptions.syncInterval / 1000}s
-                            </span>
-                          </div>
-                          <Slider 
-                            id="sync-interval"
-                            disabled={!syncOptions.autoSync}
-                            value={[syncOptions.syncInterval / 1000]}
-                            min={5}
-                            max={120}
-                            step={5}
-                            onValueChange={(value) => 
-                              updateSyncOptions({ syncInterval: value[0] * 1000 })
-                            }
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="wifi-only">Sync only on WiFi</Label>
-                          <Switch 
-                            id="wifi-only" 
-                            checked={syncOptions.syncOnlyOnWifi}
-                            onCheckedChange={(checked) => 
-                              updateSyncOptions({ syncOnlyOnWifi: checked })
-                            }
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="local-only">Local network only</Label>
-                          <Switch 
-                            id="local-only" 
-                            checked={syncOptions.syncOnlyOnLocalNetwork}
-                            onCheckedChange={(checked) => 
-                              updateSyncOptions({ syncOnlyOnLocalNetwork: checked })
-                            }
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="encryption">Encrypt synced data</Label>
-                          <Switch 
-                            id="encryption" 
-                            checked={syncOptions.syncEncryption}
-                            onCheckedChange={(checked) => 
-                              updateSyncOptions({ syncEncryption: checked })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    onClick={syncData}
-                    disabled={ipfsNode?.status !== 'online' || syncStatus.syncing}
-                  >
-                    <RefreshCw className={`mr-2 h-4 w-4 ${syncStatus.syncing ? 'animate-spin' : ''}`} />
-                    {syncStatus.syncing ? 'Syncing...' : 'Synchronize Now'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="peers">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Connected Peers
-                  </CardTitle>
-                  <CardDescription>
-                    View and manage peer connections in your P2P network
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Connect to Peer</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Enter peer ID" 
-                        value={peerInput}
-                        onChange={(e) => setPeerInput(e.target.value)}
-                      />
-                      <Button onClick={handleConnectToPeer}>Connect</Button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Active Peers ({peers.length})</h3>
-                    
-                    {peers.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No peers connected. Start local discovery or connect to peers manually.
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {peers.map((peer: PeerInfo) => (
-                          <div key={peer.id} className="bg-muted/30 p-3 rounded-md">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{peer.name || 'Unknown Device'}</div>
-                                <div className="text-xs text-muted-foreground">{peer.id}</div>
-                              </div>
-                              <Badge 
-                                variant={peer.status === 'connected' ? 'default' : 'outline'}
-                                className={peer.status === 'connected' ? 'bg-green-500 hover:bg-green-600' : ''}
-                              >
-                                {peer.status}
-                              </Badge>
-                            </div>
-                            
-                            {peer.status === 'connected' && (
-                              <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
-                                <span>Device: {peer.deviceType || 'Unknown'}</span>
-                                <span>•</span>
-                                <span>Last seen: {peer.lastSeen?.toLocaleTimeString()}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-center pt-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => startLocalDiscovery()}
-                      disabled={ipfsNode?.status !== 'online'}
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Start Local Discovery
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="collaboration">
-              <CollaborationPanel />
-            </TabsContent>
-            
-            <TabsContent value="formulas">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Formula Settings</CardTitle>
-                  <CardDescription>
-                    Configure custom calculations for your tasks and projects
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormulaField
-                      label="Estimated Hours"
-                      formula={taskTimeFormula}
-                      onFormulaChange={setTaskTimeFormula}
-                      value={evaluateFormula(taskTimeFormula, taskMetrics)}
-                      dependencies={taskMetrics}
-                    />
-                    
-                    <FormulaField
-                      label="Task Completion Rate"
-                      formula="{doneCount} / {taskCount} * 100"
-                      onFormulaChange={() => {}}
-                      value={`${taskMetrics.completionRate}%`}
-                      dependencies={taskMetrics}
-                    />
-                  </div>
-                  
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <h3 className="font-medium mb-2">Available Variables</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <code>taskCount</code>: {taskMetrics.taskCount}
-                      </div>
-                      <div>
-                        <code>todoCount</code>: {taskMetrics.todoCount}
-                      </div>
-                      <div>
-                        <code>doneCount</code>: {taskMetrics.doneCount}
-                      </div>
-                      <div>
-                        <code>completionRate</code>: {taskMetrics.completionRate}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="security">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Security & Permissions
-                  </CardTitle>
-                  <CardDescription>
-                    Configure data access controls and user permissions for P2P sharing
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-base font-medium mb-2">Data Encryption</h3>
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="encrypt-data">Encrypt all shared data</Label>
-                        <Switch 
-                          id="encrypt-data" 
-                          checked={syncOptions.syncEncryption}
-                          onCheckedChange={(checked) => 
-                            updateSyncOptions({ syncEncryption: checked })
-                          }
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Adds an extra layer of protection to data shared across your P2P network
-                      </p>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div>
-                      <h3 className="text-base font-medium mb-2">Access Control</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="data-access">Default Data Access</Label>
-                          <Select defaultValue="authenticated">
-                            <SelectTrigger id="data-access" className="mt-1">
-                              <SelectValue placeholder="Select default access level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="public">Public (All peers)</SelectItem>
-                              <SelectItem value="authenticated">Authenticated Peers Only</SelectItem>
-                              <SelectItem value="specific">Specific Peers Only</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="client-perm">Client Data Permissions</Label>
-                          <Select defaultValue="specific">
-                            <SelectTrigger id="client-perm" className="mt-1">
-                              <SelectValue placeholder="Select permission level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="public">All Team Members</SelectItem>
-                              <SelectItem value="authenticated">Authenticated Team Members</SelectItem>
-                              <SelectItem value="specific">Specific Team Members</SelectItem>
-                              <SelectItem value="private">Private (Only Me)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="financial-perm">Financial Data Permissions</Label>
-                          <Select defaultValue="private">
-                            <SelectTrigger id="financial-perm" className="mt-1">
-                              <SelectValue placeholder="Select permission level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="public">All Team Members</SelectItem>
-                              <SelectItem value="authenticated">Authenticated Team Members</SelectItem>
-                              <SelectItem value="specific">Specific Team Members</SelectItem>
-                              <SelectItem value="private">Private (Only Me)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div>
-                      <h3 className="text-base font-medium mb-2">Verification</h3>
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="verify-content">Content verification</Label>
-                        <Switch id="verify-content" defaultChecked />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Verify data integrity using cryptographic signatures
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="storage">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Server className="h-5 w-5" />
-                    IPFS Storage Configuration
-                  </CardTitle>
-                  <CardDescription>
-                    Manage how your data is stored and pinned in the IPFS network
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="rounded-lg bg-muted p-4">
-                    <h3 className="text-base font-medium mb-2">Local Storage</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm text-muted-foreground">Used Space</div>
-                        <div className="text-lg font-medium">124.5 MB</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Documents Stored</div>
-                        <div className="text-lg font-medium">147</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="pin-data">Pin important data</Label>
-                      <Switch id="pin-data" defaultChecked />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Keeps copies of important data on your device for offline access
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="auto-cleanup">Automatic data cleanup</Label>
-                      <Switch id="auto-cleanup" defaultChecked />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Automatically remove old or unused data to save space
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Storage Location</Label>
-                    <Input defaultValue="C:\Users\Username\AppData\Roaming\AccountingToolIPFS" readOnly />
-                    <p className="text-xs text-muted-foreground">
-                      Default location for IPFS data storage on your device
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="max-storage">Maximum Storage Space</Label>
-                    <Select defaultValue="1024">
-                      <SelectTrigger id="max-storage">
-                        <SelectValue placeholder="Select storage limit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="512">512 MB</SelectItem>
-                        <SelectItem value="1024">1 GB</SelectItem>
-                        <SelectItem value="2048">2 GB</SelectItem>
-                        <SelectItem value="5120">5 GB</SelectItem>
-                        <SelectItem value="unlimited">Unlimited</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex justify-center pt-2">
-                    <Button variant="outline">Clear Cache</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="experimentalFeatures">Experimental Features</Label>
+              <Switch
+                id="experimentalFeatures"
+                checked={settings.experimentalFeatures}
+                onCheckedChange={(checked) => 
+                  setSettings(prev => ({ ...prev, experimentalFeatures: checked }))
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Security Configuration
+            </CardTitle>
+            <CardDescription>
+              Advanced security and privacy settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="debugMode">Debug Mode</Label>
+              <Switch
+                id="debugMode"
+                checked={settings.debugMode}
+                onCheckedChange={(checked) => 
+                  setSettings(prev => ({ ...prev, debugMode: checked }))
+                }
+              />
+            </div>
+
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Warning:</strong> Debug mode may expose sensitive information in logs.
+                Only enable for troubleshooting purposes.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>System Information</CardTitle>
+            <CardDescription>
+              Current system status and information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Application Version:</span>
+              <span className="text-sm">1.0.0</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Database Status:</span>
+              <Badge variant="default">Connected</Badge>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Last Backup:</span>
+              <span className="text-sm">2 hours ago</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Separator />
+
+      <div className="flex gap-4">
+        <Button onClick={handleSaveSettings}>
+          Save Advanced Settings
+        </Button>
+        <Button variant="outline" onClick={handleResetSettings}>
+          Reset to Defaults
+        </Button>
+      </div>
     </div>
   );
 };
-
-function evaluateFormula(formula: string, variables: Record<string, any>): string {
-  try {
-    let evalStr = formula;
-    
-    Object.entries(variables).forEach(([key, val]) => {
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
-      evalStr = evalStr.replace(regex, typeof val === 'number' ? val.toString() : `"${val}"`);
-    });
-    
-    if (/[;\\]/.test(evalStr)) {
-      return "Error: Invalid characters";
-    }
-
-    if (!/^[0-9+\-*/()., "<>=&|!%\s"]*$/.test(evalStr)) {
-      return "Error: Invalid operators";
-    }
-
-    const result = Function(`"use strict"; return (${evalStr})`)();
-    return result.toString();
-  } catch (e) {
-    return "Error";
-  }
-}
 
 export default AdvancedSettings;

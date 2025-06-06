@@ -1,85 +1,92 @@
 
-import { DeviceRegistration, DatabaseDevice, mapDatabaseDeviceToDeviceRegistration } from '@/types/p2p-auth';
-import { makeRpcRequest } from './api-helpers';
-import { API_ENDPOINTS } from './constants';
-import { toast } from '@/hooks/use-toast-extensions';
+import { v4 as uuidv4 } from 'uuid';
 
-// Simple device info type
-type SimpleDeviceInfo = {
-  deviceId: string;
-  deviceName?: string;
-  deviceType?: string;
-  publicKey?: string;
-};
+// Local device interface (no longer P2P related)
+interface DeviceInfo {
+  id: string;
+  name: string;
+  type: 'desktop' | 'mobile' | 'tablet';
+  browser: string;
+  platform: string;
+  lastActive: Date;
+  isCurrentDevice: boolean;
+}
 
-export const deviceService = {
-  async registerDevice(
-    teamMemberId: string,
-    deviceInfo: SimpleDeviceInfo
-  ): Promise<string | null> {
-    try {
-      // Use explicit type annotation for the response
-      const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.INSERT_DEVICE, {
-        body: {
-          p_team_member_id: teamMemberId,
-          p_device_id: deviceInfo.deviceId,
-          p_device_name: deviceInfo.deviceName || null,
-          p_device_type: deviceInfo.deviceType || null,
-          p_public_key: deviceInfo.publicKey || null
-        }
-      });
-      
-      // Check response for validation if needed
-      if (response && response.success) {
-        toast.success(`Device ${deviceInfo.deviceName || deviceInfo.deviceId} registered successfully`);
-        return deviceInfo.deviceId;
-      } else {
-        throw new Error('Device registration failed');
-      }
-    } catch (error) {
-      console.error('Device registration error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to register device');
-      return null;
-    }
-  },
+class DeviceService {
+  private deviceId: string;
+  private deviceInfo: DeviceInfo;
 
-  async updateDeviceTrustStatus(deviceId: string, trusted: boolean): Promise<boolean> {
-    try {
-      // Use explicit type annotation for the response
-      const response = await makeRpcRequest<{ success: boolean }>(API_ENDPOINTS.UPDATE_TRUST_STATUS, {
-        body: {
-          p_device_id: deviceId,
-          p_trusted: trusted
-        }
-      });
-      
-      if (response && response.success) {
-        toast.success(`Device trust status updated to ${trusted ? 'trusted' : 'untrusted'}`);
-        return true;
-      } else {
-        throw new Error('Failed to update device trust status');
-      }
-    } catch (error) {
-      console.error('Error updating device trust status:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update device trust status');
-      return false;
-    }
-  },
-
-  async getTeamMemberDevices(teamMemberId: string): Promise<DeviceRegistration[]> {
-    try {
-      // Use explicit type annotation for the database response
-      const data = await makeRpcRequest<DatabaseDevice[]>(API_ENDPOINTS.GET_DEVICES, {
-        body: {
-          p_team_member_id: teamMemberId
-        }
-      });
-      
-      return (data || []).map(mapDatabaseDeviceToDeviceRegistration);
-    } catch (error) {
-      console.error('Error fetching team member devices:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch devices');
-      return [];
-    }
+  constructor() {
+    this.deviceId = this.getOrCreateDeviceId();
+    this.deviceInfo = this.getDeviceInfo();
   }
-};
+
+  private getOrCreateDeviceId(): string {
+    const existingId = localStorage.getItem('device-id');
+    if (existingId) {
+      return existingId;
+    }
+    
+    const newId = uuidv4();
+    localStorage.setItem('device-id', newId);
+    return newId;
+  }
+
+  private getDeviceInfo(): DeviceInfo {
+    const userAgent = navigator.userAgent;
+    
+    return {
+      id: this.deviceId,
+      name: this.getDeviceName(),
+      type: this.getDeviceType(),
+      browser: this.getBrowserName(userAgent),
+      platform: navigator.platform,
+      lastActive: new Date(),
+      isCurrentDevice: true
+    };
+  }
+
+  private getDeviceName(): string {
+    // Generate a friendly device name
+    const platform = navigator.platform;
+    const browser = this.getBrowserName(navigator.userAgent);
+    return `${platform} - ${browser}`;
+  }
+
+  private getDeviceType(): 'desktop' | 'mobile' | 'tablet' {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (/tablet|ipad/.test(userAgent)) {
+      return 'tablet';
+    }
+    
+    if (/mobile|iphone|android/.test(userAgent)) {
+      return 'mobile';
+    }
+    
+    return 'desktop';
+  }
+
+  private getBrowserName(userAgent: string): string {
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Edge')) return 'Edge';
+    return 'Unknown';
+  }
+
+  public getCurrentDevice(): DeviceInfo {
+    return { ...this.deviceInfo, lastActive: new Date() };
+  }
+
+  public getDeviceId(): string {
+    return this.deviceId;
+  }
+
+  public updateLastActive(): void {
+    this.deviceInfo.lastActive = new Date();
+  }
+}
+
+export const deviceService = new DeviceService();
+export default deviceService;

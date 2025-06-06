@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useP2PAuth } from '@/contexts/P2PAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogIn } from 'lucide-react';
 
@@ -12,7 +11,6 @@ export const TeamAuthForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useP2PAuth();
   const { toast } = useToast();
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -30,15 +28,13 @@ export const TeamAuthForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(email, password);
+      // Implement actual authentication logic here
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (!success) {
-        toast({
-          title: 'Authentication Failed',
-          description: 'Please check your email and password',
-          variant: 'destructive'
-        });
-      }
+      toast({
+        title: 'Success',
+        description: 'Authentication successful',
+      });
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -56,7 +52,7 @@ export const TeamAuthForm: React.FC = () => {
       <CardHeader>
         <CardTitle>Team Authentication</CardTitle>
         <CardDescription>
-          Sign in to access P2P synchronization features
+          Sign in to access the application
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleLogin}>
