@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      client_compliance: {
+        Row: {
+          client_compliance_id: string
+          client_id: string
+          compliance_type_id: string
+          created_at: string | null
+          expiry_date: string
+          issue_date: string | null
+          renewal_task_created: boolean | null
+          status: Database["public"]["Enums"]["compliance_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_compliance_id?: string
+          client_id: string
+          compliance_type_id: string
+          created_at?: string | null
+          expiry_date: string
+          issue_date?: string | null
+          renewal_task_created?: boolean | null
+          status?: Database["public"]["Enums"]["compliance_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_compliance_id?: string
+          client_id?: string
+          compliance_type_id?: string
+          created_at?: string | null
+          expiry_date?: string
+          issue_date?: string | null
+          renewal_task_created?: boolean | null
+          status?: Database["public"]["Enums"]["compliance_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_compliance_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_compliance_compliance_type_id_fkey"
+            columns: ["compliance_type_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_types"
+            referencedColumns: ["compliance_type_id"]
+          },
+        ]
+      }
       client_services: {
         Row: {
           client_id: string
@@ -60,6 +111,60 @@ export type Database = {
           },
         ]
       }
+      client_services_enhanced: {
+        Row: {
+          client_id: string
+          client_service_id: string
+          created_at: string | null
+          end_date: string | null
+          engagement_fee: number | null
+          fee_cycle: Database["public"]["Enums"]["fee_cycle"] | null
+          is_active: boolean | null
+          service_id: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          client_service_id?: string
+          created_at?: string | null
+          end_date?: string | null
+          engagement_fee?: number | null
+          fee_cycle?: Database["public"]["Enums"]["fee_cycle"] | null
+          is_active?: boolean | null
+          service_id: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          client_service_id?: string
+          created_at?: string | null
+          end_date?: string | null
+          engagement_fee?: number | null
+          fee_cycle?: Database["public"]["Enums"]["fee_cycle"] | null
+          is_active?: boolean | null
+          service_id?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_services_enhanced_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_services_enhanced_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "team_services"
+            referencedColumns: ["service_id"]
+          },
+        ]
+      }
       client_uploads: {
         Row: {
           client_id: string | null
@@ -97,39 +202,178 @@ export type Database = {
       }
       clients: {
         Row: {
+          abn: string | null
+          address: string | null
+          business_name: string | null
+          city: string | null
+          client_status: string | null
           company: string | null
+          country: string | null
           created_at: string
           email: string
+          entity_type: string | null
           id: string
           name: string
           notes: string | null
           phone: string | null
+          postal_code: string | null
           preferred_contact_method: string | null
+          registration_date: string | null
+          state: string | null
+          status: string | null
+          team_id: string | null
           whatsapp_number: string | null
         }
         Insert: {
+          abn?: string | null
+          address?: string | null
+          business_name?: string | null
+          city?: string | null
+          client_status?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
           email: string
+          entity_type?: string | null
           id?: string
           name: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_contact_method?: string | null
+          registration_date?: string | null
+          state?: string | null
+          status?: string | null
+          team_id?: string | null
           whatsapp_number?: string | null
         }
         Update: {
+          abn?: string | null
+          address?: string | null
+          business_name?: string | null
+          city?: string | null
+          client_status?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
           email?: string
+          entity_type?: string | null
           id?: string
           name?: string
           notes?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferred_contact_method?: string | null
+          registration_date?: string | null
+          state?: string | null
+          status?: string | null
+          team_id?: string | null
           whatsapp_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      compliance_schedules: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          frequency: Database["public"]["Enums"]["recurrence_type"]
+          id: string
+          is_active: boolean | null
+          name: string
+          next_due_date: string | null
+          service_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          frequency: Database["public"]["Enums"]["recurrence_type"]
+          id?: string
+          is_active?: boolean | null
+          name: string
+          next_due_date?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          frequency?: Database["public"]["Enums"]["recurrence_type"]
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          next_due_date?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_schedules_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_types: {
+        Row: {
+          compliance_type_id: string
+          created_at: string | null
+          description: string | null
+          name: string
+          renewal_notice_days: number | null
+          team_id: string
+          typical_duration_months: number | null
+        }
+        Insert: {
+          compliance_type_id?: string
+          created_at?: string | null
+          description?: string | null
+          name: string
+          renewal_notice_days?: number | null
+          team_id: string
+          typical_duration_months?: number | null
+        }
+        Update: {
+          compliance_type_id?: string
+          created_at?: string | null
+          description?: string | null
+          name?: string
+          renewal_notice_days?: number | null
+          team_id?: string
+          typical_duration_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_types_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -286,6 +530,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           assigned_to: string | null
@@ -324,6 +604,130 @@ export type Database = {
           tags?: string[] | null
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          icon: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          filters: Json | null
+          id: string
+          last_generated: string | null
+          name: string
+          schedule: Json | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          last_generated?: string | null
+          name: string
+          schedule?: Json | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          last_generated?: string | null
+          name?: string
+          schedule?: Json | null
+          type?: string
+        }
+        Relationships: []
+      }
+      service_periods: {
+        Row: {
+          created_at: string | null
+          due_days_offset: number | null
+          is_active: boolean | null
+          period_name: string
+          service_id: string
+          service_period_id: string
+          trigger_day: number | null
+          trigger_month: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          due_days_offset?: number | null
+          is_active?: boolean | null
+          period_name: string
+          service_id: string
+          service_period_id?: string
+          trigger_day?: number | null
+          trigger_month?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          due_days_offset?: number | null
+          is_active?: boolean | null
+          period_name?: string
+          service_id?: string
+          service_period_id?: string
+          trigger_day?: number | null
+          trigger_month?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_periods_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "team_services"
+            referencedColumns: ["service_id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -507,63 +911,195 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string
+          assignment_id: string
+          is_primary: boolean | null
+          task_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to: string
+          assignment_id?: string
+          is_primary?: boolean | null
+          task_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string
+          assignment_id?: string
+          is_primary?: boolean | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "team_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "task_assignments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          checklist_items: Json | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          requires_review: boolean | null
+          service_id: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          checklist_items?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          requires_review?: boolean | null
+          service_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          checklist_items?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          requires_review?: boolean | null
+          service_id?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
+          auto_generated: boolean | null
+          budgeted_minutes: number | null
           client_id: string | null
+          client_service_id: string | null
           comments: string | null
           completed_at: string | null
+          compliance_id: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
           id: string
           priority: string
+          project_id: string | null
+          recurrence: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date: string | null
+          recurring_rule: string | null
           requires_review: boolean | null
           review_status: string | null
           reviewer_id: string | null
           service_id: string | null
           started_at: string | null
           status: string
+          tags: string[] | null
+          team_id: string | null
           time_spent_minutes: number | null
           title: string
+          updated_at: string | null
         }
         Insert: {
           assigned_to?: string | null
+          auto_generated?: boolean | null
+          budgeted_minutes?: number | null
           client_id?: string | null
+          client_service_id?: string | null
           comments?: string | null
           completed_at?: string | null
+          compliance_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
+          recurrence?: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date?: string | null
+          recurring_rule?: string | null
           requires_review?: boolean | null
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
           started_at?: string | null
           status?: string
+          tags?: string[] | null
+          team_id?: string | null
           time_spent_minutes?: number | null
           title: string
+          updated_at?: string | null
         }
         Update: {
           assigned_to?: string | null
+          auto_generated?: boolean | null
+          budgeted_minutes?: number | null
           client_id?: string | null
+          client_service_id?: string | null
           comments?: string | null
           completed_at?: string | null
+          compliance_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           priority?: string
+          project_id?: string | null
+          recurrence?: Database["public"]["Enums"]["recurrence_type"] | null
+          recurrence_end_date?: string | null
+          recurring_rule?: string | null
           requires_review?: boolean | null
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
           started_at?: string | null
           status?: string
+          tags?: string[] | null
+          team_id?: string | null
           time_spent_minutes?: number | null
           title?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -581,6 +1117,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_client_service_id_fkey"
+            columns: ["client_service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services_enhanced"
+            referencedColumns: ["client_service_id"]
+          },
+          {
+            foreignKeyName: "tasks_compliance_id_fkey"
+            columns: ["compliance_id"]
+            isOneToOne: false
+            referencedRelation: "client_compliance"
+            referencedColumns: ["client_compliance_id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
@@ -593,6 +1150,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
           },
         ]
       }
@@ -626,15 +1190,263 @@ export type Database = {
         }
         Relationships: []
       }
+      team_services: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          is_compliance_service: boolean | null
+          name: string
+          requires_review: boolean | null
+          service_id: string
+          standard_time_hours: number | null
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          is_compliance_service?: boolean | null
+          name: string
+          requires_review?: boolean | null
+          service_id?: string
+          standard_time_hours?: number | null
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          is_compliance_service?: boolean | null
+          name?: string
+          requires_review?: boolean | null
+          service_id?: string
+          standard_time_hours?: number | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_services_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      team_users: {
+        Row: {
+          auth_user_id: string | null
+          billing_rate: number | null
+          cost_rate: number | null
+          created_at: string | null
+          email: string
+          full_name: string
+          is_active: boolean | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          team_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          billing_rate?: number | null
+          cost_rate?: number | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          team_id: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          billing_rate?: number | null
+          cost_rate?: number | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          team_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_users_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["team_id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          name: string
+          subscription_tier: string | null
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          name: string
+          subscription_tier?: string | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          name?: string
+          subscription_tier?: string | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          billable: boolean | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          rate_per_hour: number | null
+          start_time: string
+          task_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          rate_per_hour?: number | null
+          start_time: string
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          rate_per_hour?: number | null
+          start_time?: string
+          task_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entries_enhanced: {
+        Row: {
+          billable_seconds: number | null
+          created_at: string | null
+          end_time: string | null
+          hourly_rate: number | null
+          notes: string | null
+          start_time: string
+          status: Database["public"]["Enums"]["time_entry_status"] | null
+          task_id: string
+          time_entry_id: string
+          total_logged_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          billable_seconds?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          hourly_rate?: number | null
+          notes?: string | null
+          start_time: string
+          status?: Database["public"]["Enums"]["time_entry_status"] | null
+          task_id: string
+          time_entry_id?: string
+          total_logged_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          billable_seconds?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          hourly_rate?: number | null
+          notes?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["time_entry_status"] | null
+          task_id?: string
+          time_entry_id?: string
+          total_logged_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_enhanced_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_enhanced_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "team_users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_recurring_task: {
+        Args: { original_task_id: string; new_due_date: string }
+        Returns: string
+      }
+      get_user_team_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      update_compliance_status: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      compliance_status: "active" | "expired" | "expiring_soon"
+      contact_method: "email" | "phone" | "whatsapp"
+      fee_cycle: "monthly" | "quarterly" | "annually" | "one_time"
+      project_status: "active" | "completed" | "onHold"
+      recurrence_type:
+        | "none"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "halfYearly"
+        | "yearly"
+      task_priority: "low" | "medium" | "high"
+      task_status: "todo" | "inProgress" | "review" | "done"
+      time_entry_status: "running" | "logged"
+      user_role: "admin" | "manager" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -749,6 +1561,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      compliance_status: ["active", "expired", "expiring_soon"],
+      contact_method: ["email", "phone", "whatsapp"],
+      fee_cycle: ["monthly", "quarterly", "annually", "one_time"],
+      project_status: ["active", "completed", "onHold"],
+      recurrence_type: [
+        "none",
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "halfYearly",
+        "yearly",
+      ],
+      task_priority: ["low", "medium", "high"],
+      task_status: ["todo", "inProgress", "review", "done"],
+      time_entry_status: ["running", "logged"],
+      user_role: ["admin", "manager", "staff"],
+    },
   },
 } as const
