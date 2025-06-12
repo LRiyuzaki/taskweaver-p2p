@@ -9,38 +9,91 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          created_at: string | null
+          date: string
+          hours_worked: number | null
+          id: string
+          marked_by: string | null
+          notes: string | null
+          status: string
+          team_member_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          hours_worked?: number | null
+          id?: string
+          marked_by?: string | null
+          notes?: string | null
+          status: string
+          team_member_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          hours_worked?: number | null
+          id?: string
+          marked_by?: string | null
+          notes?: string | null
+          status?: string
+          team_member_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_compliance: {
         Row: {
+          auto_generate_tasks: boolean | null
           client_compliance_id: string
           client_id: string
           compliance_type_id: string
           created_at: string | null
           expiry_date: string
           issue_date: string | null
+          next_reminder_date: string | null
           renewal_task_created: boolean | null
           status: Database["public"]["Enums"]["compliance_status"] | null
+          task_template_id: string | null
           updated_at: string | null
         }
         Insert: {
+          auto_generate_tasks?: boolean | null
           client_compliance_id?: string
           client_id: string
           compliance_type_id: string
           created_at?: string | null
           expiry_date: string
           issue_date?: string | null
+          next_reminder_date?: string | null
           renewal_task_created?: boolean | null
           status?: Database["public"]["Enums"]["compliance_status"] | null
+          task_template_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          auto_generate_tasks?: boolean | null
           client_compliance_id?: string
           client_id?: string
           compliance_type_id?: string
           created_at?: string | null
           expiry_date?: string
           issue_date?: string | null
+          next_reminder_date?: string | null
           renewal_task_created?: boolean | null
           status?: Database["public"]["Enums"]["compliance_status"] | null
+          task_template_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -59,6 +112,33 @@ export type Database = {
             referencedColumns: ["compliance_type_id"]
           },
         ]
+      }
+      client_groups: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          group_type: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          group_type?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          group_type?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       client_services: {
         Row: {
@@ -206,10 +286,13 @@ export type Database = {
           address: string | null
           business_name: string | null
           city: string | null
+          client_group_id: string | null
           client_status: string | null
           company: string | null
+          cost_center: string | null
           country: string | null
           created_at: string
+          default_team_id: string | null
           email: string
           entity_type: string | null
           id: string
@@ -218,6 +301,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           preferred_contact_method: string | null
+          profit_center: string | null
           registration_date: string | null
           state: string | null
           status: string | null
@@ -229,10 +313,13 @@ export type Database = {
           address?: string | null
           business_name?: string | null
           city?: string | null
+          client_group_id?: string | null
           client_status?: string | null
           company?: string | null
+          cost_center?: string | null
           country?: string | null
           created_at?: string
+          default_team_id?: string | null
           email: string
           entity_type?: string | null
           id?: string
@@ -241,6 +328,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           preferred_contact_method?: string | null
+          profit_center?: string | null
           registration_date?: string | null
           state?: string | null
           status?: string | null
@@ -252,10 +340,13 @@ export type Database = {
           address?: string | null
           business_name?: string | null
           city?: string | null
+          client_group_id?: string | null
           client_status?: string | null
           company?: string | null
+          cost_center?: string | null
           country?: string | null
           created_at?: string
+          default_team_id?: string | null
           email?: string
           entity_type?: string | null
           id?: string
@@ -264,6 +355,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           preferred_contact_method?: string | null
+          profit_center?: string | null
           registration_date?: string | null
           state?: string | null
           status?: string | null
@@ -271,6 +363,13 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_client_group_id_fkey"
+            columns: ["client_group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_team_id_fkey"
             columns: ["team_id"]
@@ -379,8 +478,12 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string
+          current_version: number | null
           form_data: Json | null
           id: string
+          is_locked: boolean | null
+          locked_by: string | null
+          mime_type: string | null
           name: string
           status: string
           submission_status: string | null
@@ -391,8 +494,12 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string
+          current_version?: number | null
           form_data?: Json | null
           id?: string
+          is_locked?: boolean | null
+          locked_by?: string | null
+          mime_type?: string | null
           name: string
           status: string
           submission_status?: string | null
@@ -403,8 +510,12 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string
+          current_version?: number | null
           form_data?: Json | null
           id?: string
+          is_locked?: boolean | null
+          locked_by?: string | null
+          mime_type?: string | null
           name?: string
           status?: string
           submission_status?: string | null
@@ -453,6 +564,47 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_versions: {
+        Row: {
+          created_at: string | null
+          document_id: string | null
+          file_size: number | null
+          file_url: string
+          id: string
+          upload_reason: string | null
+          uploaded_by: string | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          document_id?: string | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          upload_reason?: string | null
+          uploaded_by?: string | null
+          version_number: number
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          upload_reason?: string | null
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -525,6 +677,30 @@ export type Database = {
         Update: {
           created_at?: string
           fields?: Json
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      labels: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string | null
           id?: string
           name?: string
         }
@@ -654,6 +830,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminders: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_sent: boolean | null
+          message: string | null
+          related_entity_id: string
+          related_entity_type: string
+          reminder_date: string
+          reminder_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_sent?: boolean | null
+          message?: string | null
+          related_entity_id: string
+          related_entity_type: string
+          reminder_date: string
+          reminder_type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_sent?: boolean | null
+          message?: string | null
+          related_entity_id?: string
+          related_entity_type?: string
+          reminder_date?: string
+          reminder_type?: string
+        }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -960,6 +1172,63 @@ export type Database = {
           },
         ]
       }
+      task_labels: {
+        Row: {
+          label_id: string
+          task_id: string
+        }
+        Insert: {
+          label_id: string
+          task_id: string
+        }
+        Update: {
+          label_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_labels_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "labels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_labels_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_stages: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          order_position: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          order_position: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          order_position?: number
+        }
+        Relationships: []
+      }
       task_templates: {
         Row: {
           checklist_items: Json | null
@@ -1021,6 +1290,7 @@ export type Database = {
           completed_at: string | null
           compliance_id: string | null
           created_at: string | null
+          custom_fields: Json | null
           description: string | null
           due_date: string | null
           id: string
@@ -1033,6 +1303,7 @@ export type Database = {
           review_status: string | null
           reviewer_id: string | null
           service_id: string | null
+          stage_id: string | null
           started_at: string | null
           status: string
           tags: string[] | null
@@ -1040,6 +1311,7 @@ export type Database = {
           time_spent_minutes: number | null
           title: string
           updated_at: string | null
+          user_labels: string[] | null
         }
         Insert: {
           assigned_to?: string | null
@@ -1051,6 +1323,7 @@ export type Database = {
           completed_at?: string | null
           compliance_id?: string | null
           created_at?: string | null
+          custom_fields?: Json | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1063,6 +1336,7 @@ export type Database = {
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
+          stage_id?: string | null
           started_at?: string | null
           status?: string
           tags?: string[] | null
@@ -1070,6 +1344,7 @@ export type Database = {
           time_spent_minutes?: number | null
           title: string
           updated_at?: string | null
+          user_labels?: string[] | null
         }
         Update: {
           assigned_to?: string | null
@@ -1081,6 +1356,7 @@ export type Database = {
           completed_at?: string | null
           compliance_id?: string | null
           created_at?: string | null
+          custom_fields?: Json | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -1093,6 +1369,7 @@ export type Database = {
           review_status?: string | null
           reviewer_id?: string | null
           service_id?: string | null
+          stage_id?: string | null
           started_at?: string | null
           status?: string
           tags?: string[] | null
@@ -1100,6 +1377,7 @@ export type Database = {
           time_spent_minutes?: number | null
           title?: string
           updated_at?: string | null
+          user_labels?: string[] | null
         }
         Relationships: [
           {
@@ -1149,6 +1427,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "task_stages"
             referencedColumns: ["id"]
           },
           {
@@ -1409,6 +1694,146 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "team_users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      todos: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean | null
+          order_position: number
+          task_id: string | null
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          order_position: number
+          task_id?: string | null
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean | null
+          order_position?: number
+          task_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_type: string
+          scope: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_type: string
+          scope?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_type?: string
+          scope?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_done: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          billable: boolean | null
+          created_at: string | null
+          date_worked: string
+          description: string | null
+          hourly_rate: number | null
+          hours_worked: number
+          id: string
+          rejection_reason: string | null
+          status: string | null
+          task_id: string | null
+          team_member_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean | null
+          created_at?: string | null
+          date_worked: string
+          description?: string | null
+          hourly_rate?: number | null
+          hours_worked: number
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          task_id?: string | null
+          team_member_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean | null
+          created_at?: string | null
+          date_worked?: string
+          description?: string | null
+          hourly_rate?: number | null
+          hours_worked?: number
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          task_id?: string | null
+          team_member_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_done_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_done_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
           },
         ]
       }

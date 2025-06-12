@@ -1,83 +1,134 @@
 
-import React from "react";
+import React from 'react';
 import { 
-  BarChart2, 
-  ClipboardList, 
-  Database, 
-  FileText, 
   Home, 
-  LayoutDashboard, 
-  Settings, 
+  ListTodo, 
   Users, 
+  BarChart, 
+  Settings,
   HelpCircle,
-  PlusSquare,
-  FileBarChart2,
-} from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+  DatabaseIcon,
+  Calendar,
+  UserCheck,
+  UsersRound,
+  FileSpreadsheet,
+  FileText
+} from 'lucide-react';
 
-export default function AppSidebarLinks() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const isActive = (path: string) => location.pathname === path;
-
-  const LinkItem = ({ to, icon, children }: { to: string, icon: React.ReactNode, children: React.ReactNode }) => (
-    <Button
-      variant={isActive(to) ? "secondary" : "ghost"}
-      className="w-full justify-start"
-      onClick={() => navigate(to)}
-    >
-      {icon}
-      <span className="ml-2">{children}</span>
-    </Button>
-  );
-
-  return (
-    <>
-      <LinkItem to="/" icon={<Home className="h-4 w-4" />}>
-        Home
-      </LinkItem>
-
-      <LinkItem to="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>
-        Dashboard
-      </LinkItem>
-
-      <LinkItem to="/tasks" icon={<ClipboardList className="h-4 w-4" />}>
-        Case Management
-      </LinkItem>
-
-      <LinkItem to="/task-templates" icon={<PlusSquare className="h-4 w-4" />}>
-        Templates
-      </LinkItem>
-
-      <LinkItem to="/bulk-task-creation" icon={<FileText className="h-4 w-4" />}>
-        Bulk Creation
-      </LinkItem>
-
-      <LinkItem to="/client-management" icon={<Users className="h-4 w-4" />}>
-        Clients
-      </LinkItem>
-
-      <LinkItem to="/task-column" icon={<BarChart2 className="h-4 w-4" />}>
-        Task Board
-      </LinkItem>
-
-      <LinkItem to="/reports-list" icon={<FileBarChart2 className="h-4 w-4" />}>
-        Reports
-      </LinkItem>
-
-      <LinkItem to="/database" icon={<Database className="h-4 w-4" />}>
-        Database
-      </LinkItem>
-
-      <LinkItem to="/settings" icon={<Settings className="h-4 w-4" />}>
-        Settings
-      </LinkItem>
-
-      <LinkItem to="/help" icon={<HelpCircle className="h-4 w-4" />}>
-        Help
-      </LinkItem>
-    </>
-  );
+export interface AppSidebarLink {
+  title: string;
+  icon?: React.ReactNode;
+  href: string;
+  children?: AppSidebarLink[];
 }
+
+export const appSidebarLinks: AppSidebarLink[] = [
+  {
+    title: 'Dashboard',
+    icon: <Home className="mr-2 h-4 w-4" />,
+    href: '/dashboard'
+  },
+  {
+    title: 'Tasks',
+    icon: <ListTodo className="mr-2 h-4 w-4" />,
+    href: '/tasks',
+    children: [
+      {
+        title: 'All Tasks',
+        href: '/tasks'
+      },
+      {
+        title: 'Bulk Create',
+        href: '/tasks/bulk-create'
+      },
+      {
+        title: 'Templates',
+        href: '/tasks/templates'
+      }
+    ]
+  },
+  {
+    title: 'Clients',
+    icon: <Users className="mr-2 h-4 w-4" />,
+    href: '/clients',
+    children: [
+      {
+        title: 'All Clients',
+        href: '/clients'
+      },
+      {
+        title: 'Create Client',
+        href: '/clients/new'
+      },
+      {
+        title: 'Client Groups',
+        href: '/clients/groups'
+      }
+    ]
+  },
+  {
+    title: 'Calendar',
+    icon: <Calendar className="mr-2 h-4 w-4" />,
+    href: '/calendar'
+  },
+  {
+    title: 'Team',
+    icon: <UsersRound className="mr-2 h-4 w-4" />,
+    href: '/team',
+    children: [
+      {
+        title: 'Team Members',
+        href: '/team/members'
+      },
+      {
+        title: 'Attendance',
+        href: '/attendance'
+      }
+    ]
+  },
+  {
+    title: 'Time & Work',
+    icon: <FileSpreadsheet className="mr-2 h-4 w-4" />,
+    href: '/work',
+    children: [
+      {
+        title: 'Timesheet',
+        href: '/work/timesheet'
+      },
+      {
+        title: 'Approval',
+        href: '/work/approval'
+      }
+    ]
+  },
+  {
+    title: 'Compliance',
+    icon: <UserCheck className="mr-2 h-4 w-4" />,
+    href: '/compliance'
+  },
+  {
+    title: 'Documents',
+    icon: <FileText className="mr-2 h-4 w-4" />,
+    href: '/documents'
+  },
+  {
+    title: 'Reports',
+    icon: <BarChart className="mr-2 h-4 w-4" />,
+    href: '/reports'
+  },
+  {
+    title: 'Database',
+    icon: <DatabaseIcon className="mr-2 h-4 w-4" />,
+    href: '/database'
+  },
+  {
+    title: 'Settings',
+    icon: <Settings className="mr-2 h-4 w-4" />,
+    href: '/settings'
+  },
+  {
+    title: 'Help',
+    icon: <HelpCircle className="mr-2 h-4 w-4" />,
+    href: '/help'
+  }
+];

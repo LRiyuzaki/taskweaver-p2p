@@ -1,74 +1,95 @@
-import { createBrowserRouter } from "react-router-dom";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import TasksPage from "./pages/TasksPage";
-import ClientManagementPage from "./pages/ClientManagementPage";
-import ClientPage from "./pages/ClientPage";
-import Settings from "./pages/Settings";
-import AdvancedSettings from "./pages/AdvancedSettings";
-import TaskTemplatesPage from "./pages/TaskTemplatesPage";
-import Database from "./pages/Database";
-import BulkTaskCreationPage from "./pages/BulkTaskCreationPage";
-import HelpPage from "./pages/HelpPage";
-import NotFound from "./pages/NotFound";
-import ReportListPage from "./pages/ReportListPage";
-import ReportsPage from "./pages/ReportsPage";
+
+import React from 'react';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import ClientDetailsPage from './pages/ClientDetailsPage';
+import ClientManagementPage from './pages/ClientManagementPage';
+import TasksPage from './pages/TasksPage';
+import Dashboard from './pages/Dashboard';
+import ReportsPage from './pages/ReportsPage';
+import ReportListPage from './pages/ReportListPage';
+import Settings from './pages/Settings';
+import AdvancedSettings from './pages/AdvancedSettings';
+import HelpPage from './pages/HelpPage';
+import BulkTaskCreationPage from './pages/BulkTaskCreationPage';
+import NotFound from './pages/NotFound';
+import ClientPage from './pages/ClientPage';
+import TaskTemplatesPage from './pages/TaskTemplatesPage';
+import CreateClientPage from './pages/CreateClientPage';
+import ClientGroups from './pages/ClientGroups';
+import AttendancePage from './pages/AttendancePage';
+import Database from './pages/Database';
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Index />,
+    path: '/',
+    element: <Navigate to="/dashboard" replace />
   },
   {
-    path: "/dashboard",
-    element: <Dashboard />,
+    path: '/dashboard',
+    element: <Dashboard />
   },
   {
-    path: "/tasks",
-    element: <TasksPage />,
+    path: '/tasks',
+    element: <TasksPage />
   },
   {
-    path: "/client-management",
-    element: <ClientManagementPage />,
+    path: '/clients',
+    element: <ClientManagementPage />
   },
   {
-    path: "/client/:id",
-    element: <ClientPage />,
+    path: '/clients/new',
+    element: <CreateClientPage />
   },
   {
-    path: "/reports",
-    element: <ReportsPage />,
+    path: '/clients/groups',
+    element: <ClientGroups />
   },
   {
-    path: "/reports-list",
-    element: <ReportListPage />,
+    path: '/clients/:clientId',
+    element: <ClientDetailsPage />
   },
   {
-    path: "/settings",
-    element: <Settings />,
+    path: '/reports',
+    element: <ReportsPage />
   },
   {
-    path: "/advanced-settings",
-    element: <AdvancedSettings />,
+    path: '/reports/list',
+    element: <ReportListPage />
   },
   {
-    path: "/task-templates",
-    element: <TaskTemplatesPage />,
+    path: '/settings',
+    element: <Settings />
   },
   {
-    path: "/database",
-    element: <Database />,
+    path: '/settings/advanced',
+    element: <AdvancedSettings />
   },
   {
-    path: "/bulk-task-creation",
-    element: <BulkTaskCreationPage />,
+    path: '/help',
+    element: <HelpPage />
   },
   {
-    path: "/help",
-    element: <HelpPage />,
+    path: '/tasks/bulk-create',
+    element: <BulkTaskCreationPage />
   },
   {
-    path: "*",
-    element: <NotFound />,
+    path: '/tasks/templates',
+    element: <TaskTemplatesPage />
   },
+  {
+    path: '/client/:id',
+    element: <ClientPage />
+  },
+  {
+    path: '/attendance',
+    element: <AttendancePage />
+  },
+  {
+    path: '/database',
+    element: <Database />
+  },
+  {
+    path: '*',
+    element: <NotFound />
+  }
 ]);
