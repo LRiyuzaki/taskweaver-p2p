@@ -17,6 +17,8 @@ import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTaskContext } from "@/contexts/TaskContext";
+import { useWebMCP } from 'use-webmcp-tool';
+import { runWebMCPTool } from '@/lib/webmcp-telemetry';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 

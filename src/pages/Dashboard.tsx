@@ -15,6 +15,8 @@ import { ClientList } from '@/components/ClientList';
 import { TaskCalendarView } from '@/components/TaskCalendarView';
 import { ComplianceDashboard } from '@/components/ComplianceDashboard';
 import { useComplianceScheduler } from '@/hooks/useComplianceScheduler';
+import { useWebMCP } from 'use-webmcp-tool';
+import { runWebMCPTool } from '@/lib/webmcp-telemetry';
 
 const Dashboard = () => {
   const { tasks, addTask } = useTaskContext();
@@ -60,6 +62,73 @@ const Dashboard = () => {
     })
     .slice(0, 5);
   
+  // Browser-local agent tools (WebMCP)
+  useWebMCP({
+    name: "get_dashboard_summary",
+    description: "Summarize what the dashboard currently shows: task counts, overdue and upcoming deadlines, and client count.",
+    annotations: { readOnlyHint: true },
+    execute: () =>
+      runWebMCPTool("get_dashboard_summary", () => {
+        const openCount = tasks.filter((t) => t.status !== 'done').length;
+        const lines = [
+          `Tasks: ${tasks.length} total, ${openCount} open, ${overdueTasks.length} overdue`,
+          `Upcoming deadlines (next 7 days): ${upcomingDeadlines.length}`,
+          `Clients: ${clients.length}`,
+        ];
+        const next = upcomingDeadlines[0];
+        if (next) lines.push(`Next due: "${next.title}" on ${new Date(next.dueDate).toLocaleDateString()}`);
+        return lines.join("\n");
+      }),
+  });
+
+  useWebMCP({
+    name: "list_tasks",
+    description: "List tasks with an optional status filter; shows each task's id, title, status, priority, and due date.",
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    inputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["all", "todo", "inProgress", "review", "done"], description: "Filter by task status." },
+      },
+    },
+    execute: ({ status }: { status?: string }) =>
+      runWebMCPTool("list_tasks", () => {
+        const filter = typeof status === "string" ? status : "all";
+        if (!["all", "todo", "inProgress", "review", "done"].includes(filter)) {
+          throw new Error("Unknown status; expected all, todo, inProgress, review, or done.");
+        }
+        const visible = tasks.filter((t) => (filter === "all" ? true : t.status === filter));
+        if (visible.length === 0) return filter === "all" ? "No tasks yet." : `No tasks with status ${filter}.`;
+        return visible
+          .map((t) => `${t.id}: [${t.status}/${t.priority}] ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`)
+          .join("\n");
+      }),
+  });
+
+  useWebMCP({
+    name: "list_clients",
+    description: "List clients with an optional search term; shows each client's id, name, contact person, and email.",
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    inputSchema: {
+      type: "object",
+      properties: {
+        search: { type: "string", description: "Match against client name, contact person, or email." },
+      },
+    },
+    execute: ({ search }: { search?: string }) =>
+      runWebMCPTool("list_clients", () => {
+        const term = typeof search === "string" ? search.toLowerCase() : "";
+        const visible = clients.filter((c) =>
+          !term ||
+          c.name.toLowerCase().includes(term) ||
+          (c.contactPerson ?? "").toLowerCase().includes(term) ||
+          (c.email ?? "").toLowerCase().includes(term)
+        );
+        if (visible.length === 0) return "No clients match that search.";
+        return visible.map((c) => `${c.id}: ${c.name}${c.contactPerson ? ` — ${c.contactPerson}` : ""}${c.email ? ` <${c.email}>` : ""}`).join("\n");
+      }),
+  });
+
   const handleTaskFormSubmit = (formData: any) => {
     addTask(formData);
     setIsTaskDialogOpen(false);
