@@ -17,6 +17,8 @@ import { RecurringTasksPanel } from '@/components/RecurringTasksPanel';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTaskContext } from "@/contexts/TaskContext";
+import { useWebMCP } from 'use-webmcp-tool';
+import { runWebMCPTool } from '@/lib/webmcp-telemetry';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 
@@ -25,7 +27,52 @@ const TasksPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { deleteTasks } = useTaskContext();
+  const { tasks, deleteTasks } = useTaskContext();
+
+  // Browser-local agent tools (WebMCP)
+  useWebMCP({
+    name: "switch_task_view",
+    description: "Change which task view the Tasks page shows: board, list, calendar, or recurring.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        view: { type: "string", enum: ["board", "list", "calendar", "recurring"], description: "Which view to show." },
+      },
+      required: ["view"],
+    },
+    execute: ({ view }: { view: string }) =>
+      runWebMCPTool("switch_task_view", () => {
+        if (!["board", "list", "calendar", "recurring"].includes(view)) {
+          throw new Error("Unknown view; expected board, list, calendar, or recurring.");
+        }
+        setActiveView(view);
+        return `Showing ${view} view.`;
+      }),
+  });
+
+  useWebMCP({
+    name: "list_tasks",
+    description: "List tasks with an optional status filter; shows each task's id, title, status, priority, and due date.",
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    inputSchema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["all", "todo", "inProgress", "review", "done"], description: "Filter by task status." },
+      },
+    },
+    execute: ({ status }: { status?: string }) =>
+      runWebMCPTool("list_tasks", () => {
+        const filter = typeof status === "string" ? status : "all";
+        if (!["all", "todo", "inProgress", "review", "done"].includes(filter)) {
+          throw new Error("Unknown status; expected all, todo, inProgress, review, or done.");
+        }
+        const visible = tasks.filter((t) => (filter === "all" ? true : t.status === filter));
+        if (visible.length === 0) return filter === "all" ? "No tasks yet." : `No tasks with status ${filter}.`;
+        return visible
+          .map((t) => `${t.id}: [${t.status}/${t.priority}] ${t.title}${t.dueDate ? ` (due ${new Date(t.dueDate).toLocaleDateString()})` : ""}`)
+          .join("\n");
+      }),
+  });
 
   const handleCreateTask = () => {
     navigate('/tasks/new');
